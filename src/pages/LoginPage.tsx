@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useForm } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
-import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
@@ -334,17 +334,37 @@ export function LoginScreen(): JSX.Element {
       </div>
 
       <ModalOverlay
+        isDismissable
         isOpen={isOutageDialogOpen}
-        onOpenChange={setIsOutageDialogOpen}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        onOpenChange={(isOpen) => {
+          setIsOutageDialogOpen(isOpen);
+          if (!isOpen) {
+            setGitHubError(null);
+          }
+        }}
+        className={({ isEntering, isExiting }) =>
+          clsx(
+            "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200 ease-out",
+            (isEntering || isExiting) && "opacity-0",
+          )
+        }
       >
-        <Modal className="w-full max-w-xl border border-slate-500 bg-slate-50 shadow-2xl outline-none">
+        <Modal
+          className={({ isEntering, isExiting }) =>
+            clsx(
+              "w-full max-w-xl overflow-hidden border border-slate-500 bg-slate-50 shadow-2xl outline-none transition duration-200 ease-out",
+              (isEntering || isExiting) && "translate-y-2 scale-95",
+            )
+          }
+        >
           <Dialog className="outline-none">
-            <div className="border-b border-b-slate-300 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-2 text-xs font-bold text-slate-900">
-              ログイン方式切替のお知らせ
+            <div className="border-b border-b-slate-300 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-2">
+              <Heading slot="title" className="text-xs font-bold text-slate-900">
+                ログイン方式切替のお知らせ
+              </Heading>
             </div>
             <div className="space-y-3 p-4 text-xs text-slate-900">
-              <div className="border border-red-700 bg-amber-100 px-3 py-2 text-xs text-red-800">
+              <div className="border border-red-700 bg-amber-100 px-3 py-2 text-red-800">
                 現在、社内統合認証基盤が障害中のため、通常の「ログイン」はご利用いただけません。
               </div>
               <div>
@@ -354,7 +374,7 @@ export function LoginScreen(): JSX.Element {
                 <span className={clsx("px-1", MONO_CLASS)}>{redirectTo}</span>
                 に戻ります。
               </div>
-              <div className="border border-slate-300 bg-white px-3 py-2 text-xs">
+              <div className="border border-slate-300 bg-white px-3 py-2">
                 <div>
                   GitHub client_id：
                   {githubConfig.clientId.length > 0 ? (
@@ -375,29 +395,23 @@ export function LoginScreen(): JSX.Element {
                 </div>
               </div>
               {githubError === null ? null : (
-                <div className="border border-red-500 bg-red-100 px-3 py-2 text-xs text-red-800">
-                  {githubError}
-                </div>
+                <div className="border border-red-500 bg-red-100 px-3 py-2 text-red-800">{githubError}</div>
               )}
               <div className="flex justify-end gap-2 border-t border-t-dotted border-t-slate-400 pt-3">
-                <button
-                  type="button"
-                  className={buttonClassName()}
-                  onClick={() => setIsOutageDialogOpen(false)}
-                >
+                <AriaButton slot="close" className={buttonClassName()}>
                   閉じる
-                </button>
-                <button
-                  type="button"
+                </AriaButton>
+                <AriaButton
+                  autoFocus
                   className={clsx(
                     buttonClassName({ tone: "primary" }),
                     "disabled:cursor-not-allowed disabled:opacity-50",
                   )}
-                  disabled={!githubConfig.enabled}
-                  onClick={() => void handleGitHubLogin()}
+                  isDisabled={!githubConfig.enabled}
+                  onPress={() => void handleGitHubLogin()}
                 >
                   GitHubでログイン
-                </button>
+                </AriaButton>
               </div>
             </div>
           </Dialog>
