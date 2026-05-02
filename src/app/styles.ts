@@ -15,8 +15,8 @@ export const FONT_SCALE_CLASS: Record<FontScale, string> = {
   large: "text-[13px] leading-[1.45]",
 };
 
-export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "min-h-screen bg-[#e6e9ef] p-3 text-[#222]");
-export const APP_FRAME_CLASS = "mx-auto w-[1280px] border border-[#888] bg-[#e6e9ef]";
+export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "min-h-screen overflow-x-auto bg-[#e6e9ef] text-[#222]");
+export const APP_FRAME_CLASS = "min-h-screen w-full border border-[#888] bg-[#e6e9ef]";
 
 export const HEADER_ROW_CLASS = clsx(
   "grid min-h-[54px] grid-cols-[280px_minmax(0,1fr)_auto] items-center border-b border-b-[#888]",
@@ -253,5 +253,7 @@ export function flowStepClassName(state: "done" | "current" | "future"): string 
   );
 }
 
-export const LOADING_CLASS =
-  "mx-auto mt-12 w-[1280px] border border-[#999] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-6 py-10 text-center font-bold";
+export const LOADING_CLASS = clsx(
+  FONT_FAMILY_CLASS,
+  "flex min-h-screen w-full items-center justify-center border border-[#999] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-6 py-10 text-center font-bold text-[#222]",
+);

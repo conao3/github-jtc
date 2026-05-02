@@ -16,7 +16,7 @@ import {
 export function LoginScreen(): JSX.Element {
   return (
     <div className={BODY_BG_CLASS}>
-      <div className="mx-auto w-[1280px] border border-[#888] bg-[#e6e9ef]">
+      <div className="min-h-screen w-full border border-[#888] bg-[#e6e9ef]">
         <div className="flex items-center justify-between border-b-2 border-b-[#555] bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72] px-4 py-2 text-white">
           <div>
             <div className={PRODUCT_NAME_CLASS}>
@@ -27,7 +27,7 @@ export function LoginScreen(): JSX.Element {
           <div className="text-[11px]">JTC株式会社 ／ 社内利用専用システム</div>
         </div>
 
-        <div className="flex min-h-[560px] items-start justify-center gap-5 px-8 py-8">
+        <div className="flex min-h-[560px] flex-wrap items-start justify-center gap-5 px-8 py-8">
           <div className="mt-5 w-[380px]">
             <Panel title="ログイン" bodyClassName="p-5">
               <div className="mb-4 border border-[#d4a000] bg-[#fff0c0] px-2 py-1.5 text-[11px] leading-[1.5]">

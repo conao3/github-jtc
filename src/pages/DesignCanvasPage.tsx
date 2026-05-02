@@ -192,7 +192,7 @@ export default function DesignCanvasPage(): JSX.Element {
 
   return (
     <div className={CANVAS_BG_CLASS}>
-      <div className="mx-auto max-w-[1680px]">
+      <div className="w-full">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="m-0 text-[28px] font-bold text-[rgba(40,30,20,0.85)]">JTC GitHub Design Canvas</h1>
@@ -300,7 +300,7 @@ export default function DesignCanvasPage(): JSX.Element {
           onClick={() => setSelectedId(null)}
         >
           <div
-            className="max-h-[92vh] w-full max-w-[1400px] overflow-hidden rounded-md border border-[rgba(60,50,40,0.35)] bg-[#f0eee9] shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+            className="max-h-[92vh] w-full overflow-hidden rounded-md border border-[rgba(60,50,40,0.35)] bg-[#f0eee9] shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 border-b border-b-[rgba(60,50,40,0.18)] bg-white/70 px-4 py-3">
@@ -349,9 +349,7 @@ export default function DesignCanvasPage(): JSX.Element {
             </div>
 
             <div className="max-h-[calc(92vh-64px)] overflow-auto bg-[#d8ddd9] p-4">
-              <div className="mx-auto w-[1280px] shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-                {selected.render()}
-              </div>
+              <div className="w-full shadow-[0_8px_24px_rgba(0,0,0,0.18)]">{selected.render()}</div>
             </div>
           </div>
         </div>
