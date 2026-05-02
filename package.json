@@ -9,6 +9,7 @@
     "check": "bun run scripts/check.ts",
     "check:vp": "vp check",
     "check:knip": "knip",
+    "check:tsc": "tsc --noEmit",
     "test": "vp test",
     "graphql:schema": "mkdir -p graphql && curl -fsSL https://docs.github.com/public/fpt/schema.docs.graphql -o graphql/github.schema.graphql",
     "graphql:codegen": "graphql-codegen --config codegen.ts",
