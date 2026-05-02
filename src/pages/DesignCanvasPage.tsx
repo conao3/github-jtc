@@ -16,6 +16,7 @@ import {
   ARTBOARD_CARD_CLASS,
   ARTBOARD_FRAME_CLASS,
   BUTTON_BASE_CLASS,
+  BUTTON_DEFAULT_CLASS,
   BUTTON_MD_CLASS,
   BUTTON_PRIMARY_CLASS,
   CANVAS_BG_CLASS,
@@ -204,7 +205,7 @@ export default function DesignCanvasPage(): JSX.Element {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+              className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
               onClick={() => setZoom((value) => Math.max(0.18, value - 0.02))}
             >
               －
@@ -214,14 +215,14 @@ export default function DesignCanvasPage(): JSX.Element {
             </span>
             <button
               type="button"
-              className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+              className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
               onClick={() => setZoom((value) => Math.min(0.34, value + 0.02))}
             >
               ＋
             </button>
             <button
               type="button"
-              className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+              className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
               onClick={() => setZoom(0.24)}
             >
               リセット
@@ -265,7 +266,7 @@ export default function DesignCanvasPage(): JSX.Element {
                         </Link>
                         <button
                           type="button"
-                          className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+                          className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
                           onClick={() => setSelectedId(artboard.id)}
                         >
                           拡大
@@ -313,7 +314,7 @@ export default function DesignCanvasPage(): JSX.Element {
               <div className="flex gap-1.5">
                 <button
                   type="button"
-                  className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+                  className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
                   onClick={() =>
                     setSelectedId(
                       artboardOrder[(selectedIndex - 1 + artboardOrder.length) % artboardOrder.length]?.id ??
@@ -325,7 +326,7 @@ export default function DesignCanvasPage(): JSX.Element {
                 </button>
                 <button
                   type="button"
-                  className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+                  className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
                   onClick={() =>
                     setSelectedId(artboardOrder[(selectedIndex + 1) % artboardOrder.length]?.id ?? null)
                   }
@@ -340,7 +341,7 @@ export default function DesignCanvasPage(): JSX.Element {
                 </Link>
                 <button
                   type="button"
-                  className={clsx(BUTTON_BASE_CLASS, BUTTON_MD_CLASS)}
+                  className={clsx(BUTTON_BASE_CLASS, BUTTON_DEFAULT_CLASS, BUTTON_MD_CLASS)}
                   onClick={() => setSelectedId(null)}
                 >
                   閉じる

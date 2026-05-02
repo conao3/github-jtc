@@ -93,9 +93,10 @@ export const PANEL_HEADER_CLASS = clsx(
 export const PANEL_BODY_CLASS = "p-2";
 
 export const BUTTON_BASE_CLASS = clsx(
-  "inline-flex items-center justify-center border border-[#888] bg-gradient-to-b from-[#fafafa] to-[#d6d6d6]",
-  "font-bold text-[#222] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] [font:inherit]",
+  "inline-flex items-center justify-center font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] [font:inherit]",
 );
+export const BUTTON_DEFAULT_CLASS =
+  "border border-[#888] bg-gradient-to-b from-[#fafafa] to-[#d6d6d6] text-[#222]";
 export const BUTTON_PRIMARY_CLASS =
   "border-[#555] bg-gradient-to-b from-[#5a8ac4] to-[#2a5894] text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.35)]";
 export const BUTTON_DANGER_CLASS =
@@ -174,6 +175,7 @@ export function buttonClassName(options?: {
 
   return clsx(
     BUTTON_BASE_CLASS,
+    tone === "default" && BUTTON_DEFAULT_CLASS,
     size === "sm" && BUTTON_SM_CLASS,
     size === "md" && BUTTON_MD_CLASS,
     size === "lg" && BUTTON_LG_CLASS,
