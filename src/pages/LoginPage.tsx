@@ -91,17 +91,17 @@ export function LoginScreen(): JSX.Element {
         <div className="flex items-center justify-between border-b-2 border-b-[#555] bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72] px-4 py-2 text-white">
           <div>
             <div className={PRODUCT_NAME_CLASS}>
-              JTC GitHub<span className="align-super text-[10px]">®</span> Enterprise Edition 5.2.1
+              JTC GitHub<span className="align-super text-10">®</span> Enterprise Edition 5.2.1
             </div>
             <div className={PRODUCT_SUBTITLE_CLASS}>統合ソースコード管理基盤</div>
           </div>
-          <div className="text-[11px]">JTC株式会社 ／ 社内利用専用システム</div>
+          <div className="text-11">JTC株式会社 ／ 社内利用専用システム</div>
         </div>
 
         <div className="flex min-h-[560px] flex-wrap items-start justify-center gap-5 px-[30px] py-[30px]">
           <div className="mt-5 w-[380px]">
             <Panel title="ログイン" bodyClassName="p-5">
-              <div className="mb-3.5 border border-[#d4a000] bg-[#fff0c0] px-2 py-1.5 text-[11px] leading-[1.5]">
+              <div className="mb-3.5 border border-[#d4a000] bg-[#fff0c0] px-2 py-1.5 text-11">
                 本システムは社内利用者のみ使用可能です。不正アクセスは情報セキュリティ規程に基づき処分の対象となります。
               </div>
 
@@ -112,7 +112,7 @@ export function LoginScreen(): JSX.Element {
                   void form.handleSubmit();
                 }}
               >
-                <table className="w-full border-collapse text-[12px]">
+                <table className="w-full border-collapse text-xs">
                   <tbody>
                     <tr>
                       <td className="w-[120px] px-1.5 py-2 text-right font-bold">
@@ -218,7 +218,7 @@ export function LoginScreen(): JSX.Element {
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={2} className="px-1.5 py-2 text-[11px]">
+                      <td colSpan={2} className="px-1.5 py-2 text-11">
                         <form.Field
                           name="consentAccepted"
                           validators={zodValidators(loginFieldValidators.consentAccepted)}
@@ -264,7 +264,7 @@ export function LoginScreen(): JSX.Element {
                 </table>
               </form>
 
-              <div className="mt-3.5 border-t border-t-dotted border-t-[#888] pt-2 text-[11px] leading-[1.6]">
+              <div className="mt-3.5 border-t border-t-dotted border-t-[#888] pt-2 text-11">
                 <div>
                   ▶ <span className={TEXT_LINK_CLASS}>パスワードを忘れた方はこちら</span>
                 </div>
@@ -283,7 +283,7 @@ export function LoginScreen(): JSX.Element {
 
           <div className="mt-5 w-[360px]">
             <Panel title="お知らせ">
-              <div className="text-[11px] leading-[1.6]">
+              <div className="text-11">
                 <div className="font-bold text-[#c8001a]">【重要】R8/05/15 22:00 メンテナンス予定</div>
                 <div>5月15日(金) 22:00～翌2:00、本番DB定期メンテナンスを実施します。</div>
                 <div className="mt-1.5 font-bold text-[#c8001a]">【障害】社内認証基盤 接続障害</div>
@@ -297,15 +297,15 @@ export function LoginScreen(): JSX.Element {
             </Panel>
 
             <Panel title="推奨環境">
-              <div className="text-[11px] leading-[1.7]">
+              <div className="text-11">
                 <div>● Microsoft Edge（IEモード）</div>
                 <div>● Internet Explorer 11</div>
                 <div>● Google Chrome（最新版）</div>
-                <div className="text-[10px] text-[#555]">
+                <div className="text-10 text-[#555]">
                   ※ 上記以外のブラウザでは正常に動作しない場合があります。
                 </div>
-                <div className="text-[10px] text-[#555]">※ 画面解像度：1280×800以上</div>
-                <div className="text-[10px] text-[#555]">※ JavaScript／Cookieを有効にしてください。</div>
+                <div className="text-10 text-[#555]">※ 画面解像度：1280×800以上</div>
+                <div className="text-10 text-[#555]">※ JavaScript／Cookieを有効にしてください。</div>
               </div>
             </Panel>
 
@@ -314,9 +314,9 @@ export function LoginScreen(): JSX.Element {
                 <div className={CONTACT_BOX_TITLE_CLASS}>▶ お問い合わせ先</div>
                 <span className={clsx("font-bold", MONO_CLASS)}>内線：9999</span>
                 <br />
-                <span className="text-[10px]">外線：03-1234-5678</span>
+                <span className="text-10">外線：03-1234-5678</span>
                 <br />
-                <span className="text-[10px]">対応時間：平日 9:00～17:30</span>
+                <span className="text-10">対応時間：平日 9:00～17:30</span>
               </div>
             </Panel>
           </div>
@@ -340,11 +340,11 @@ export function LoginScreen(): JSX.Element {
       >
         <Modal className="w-full max-w-[560px] border border-[#666] bg-[#f4f6fa] shadow-[0_18px_40px_rgba(0,0,0,0.35)] outline-none">
           <Dialog className="outline-none">
-            <div className="border-b border-b-[#7c8b9d] bg-gradient-to-b from-[#e8edf4] to-[#c7d1df] px-3 py-2 text-[12px] font-bold text-[#10233f]">
+            <div className="border-b border-b-[#7c8b9d] bg-gradient-to-b from-[#e8edf4] to-[#c7d1df] px-3 py-2 text-xs font-bold text-[#10233f]">
               ログイン方式切替のお知らせ
             </div>
-            <div className="space-y-3 p-4 text-[12px] leading-[1.7] text-[#222]">
-              <div className="border border-[#c8001a] bg-[#fff0c0] px-3 py-2 text-[11px] text-[#8e0014]">
+            <div className="space-y-3 p-4 text-xs text-[#222]">
+              <div className="border border-[#c8001a] bg-[#fff0c0] px-3 py-2 text-11 text-[#8e0014]">
                 現在、社内統合認証基盤が障害中のため、通常の「ログイン」はご利用いただけません。
               </div>
               <div>
@@ -354,7 +354,7 @@ export function LoginScreen(): JSX.Element {
                 <span className={clsx("px-1", MONO_CLASS)}>{redirectTo}</span>
                 に戻ります。
               </div>
-              <div className="border border-[#c5c5c5] bg-white px-3 py-2 text-[11px]">
+              <div className="border border-[#c5c5c5] bg-white px-3 py-2 text-11">
                 <div>
                   GitHub client_id：
                   {githubConfig.clientId.length > 0 ? (
@@ -375,7 +375,7 @@ export function LoginScreen(): JSX.Element {
                 </div>
               </div>
               {githubError === null ? null : (
-                <div className="border border-[#b64242] bg-[#ffe0e0] px-3 py-2 text-[11px] text-[#8e0014]">
+                <div className="border border-[#b64242] bg-[#ffe0e0] px-3 py-2 text-11 text-[#8e0014]">
                   {githubError}
                 </div>
               )}

@@ -75,15 +75,15 @@ export function IssueDetailScreen({
             <div className="text-center">
               <div
                 className={clsx(
-                  "mx-auto my-1 flex h-16 w-16 items-center justify-center border border-[#555] bg-gradient-to-br from-[#c5cdd9] to-[#8a96a8] text-[28px] text-white",
+                  "mx-auto my-1 flex h-16 w-16 items-center justify-center border border-[#555] bg-gradient-to-br from-[#c5cdd9] to-[#8a96a8] text-28 text-white",
                   MONO_CLASS,
                 )}
               >
                 山田
               </div>
               <div className="font-bold">山田 太郎</div>
-              <div className="text-[10px] text-[#555]">基盤開発二課</div>
-              <div className={clsx("text-[10px]", MONO_CLASS)}>yamada.taro</div>
+              <div className="text-10 text-[#555]">基盤開発二課</div>
+              <div className={clsx("text-10", MONO_CLASS)}>yamada.taro</div>
               <div className="mt-1">
                 <button type="button" className={buttonClassName({ size: "sm" })}>
                   プロフィール
@@ -97,7 +97,7 @@ export function IssueDetailScreen({
               {statusHistory.map(({ label, note, muted }) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span className={muted ? "text-[#888]" : undefined}>{label}</span>
-                  <span className={muted ? "text-[10px] text-[#888]" : "text-[10px]"}>{note}</span>
+                  <span className={muted ? "text-10 text-[#888]" : "text-10"}>{note}</span>
                 </li>
               ))}
             </ul>

@@ -155,7 +155,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
                     />
                     {label}
                   </span>
-                  <span className={clsx("text-[10px]", MONO_CLASS)}>{value}</span>
+                  <span className={clsx("text-10", MONO_CLASS)}>{value}</span>
                 </li>
               ))}
             </ul>
@@ -315,10 +315,10 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
       <Panel title="レビューコメント（時系列）" action={<span className={MUTED_CLASS}>3件</span>}>
         <div className="space-y-1.5 bg-[#f4f6fa] p-0.5">
           {comments.map(([author, date, tone, label, body]) => (
-            <div key={`${author}:${date}`} className="border border-[#c5c5c5] bg-white p-2 text-[11px]">
+            <div key={`${author}:${date}`} className="border border-[#c5c5c5] bg-white p-2 text-11">
               <div className="mb-1 font-bold text-[#16386b]">
                 ● {author}
-                <span className={clsx("ml-2 text-[10px] font-normal text-[#555]", MONO_CLASS)}>{date}</span>
+                <span className={clsx("ml-2 text-10 font-normal text-[#555]", MONO_CLASS)}>{date}</span>
                 <span className="ml-2">
                   <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
                 </span>
@@ -326,7 +326,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
               <div>{body}</div>
             </div>
           ))}
-          <div className="border border-dashed border-[#c89400] bg-[#fffce8] p-2 text-[11px]">
+          <div className="border border-dashed border-[#c89400] bg-[#fffce8] p-2 text-11">
             <div className="mb-1 font-bold">＋ 新規コメント</div>
             <textarea
               className="h-[50px] w-full border border-[#888] px-1.5 py-1"
@@ -347,7 +347,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
 
       <Panel title="承認・差戻し操作">
         <div className="p-3 text-center">
-          <div className="mb-2 text-[10px] text-[#555]">
+          <div className="mb-2 text-10 text-[#555]">
             ※承認ボタンの押下は取り消しできません。内容を十分にご確認のうえ操作してください。
           </div>
           <button type="button" className={buttonClassName({ tone: "primary", size: "lg" })}>

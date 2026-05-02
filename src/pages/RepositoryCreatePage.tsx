@@ -126,34 +126,34 @@ export function RepositoryCreateScreen(): JSX.Element {
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
                   申請者情報
                 </span>
-                <span className="text-[10px]">完了</span>
+                <span className="text-10">完了</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#f5d949]" />
                   基本情報
                 </span>
-                <span className="text-[10px]">7/9</span>
+                <span className="text-10">7/9</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
                   担当者設定
                 </span>
-                <span className="text-[10px]">完了</span>
+                <span className="text-10">完了</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#c8001a]" />
                   書類添付
                 </span>
-                <span className="text-[10px]">1/3</span>
+                <span className="text-10">1/3</span>
               </li>
             </ul>
           </Panel>
 
           <Panel title="参考資料">
-            <div className="space-y-1.5 text-[11px] leading-[1.6]">
+            <div className="space-y-1.5 text-11">
               <div>
                 📄 <span className={TEXT_LINK_CLASS}>リポジトリ登録規程.pdf</span>
               </div>
@@ -241,7 +241,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                           onBlur={field.handleBlur}
                           onChange={(event) => field.handleChange(event.target.value)}
                         />
-                        <span className="ml-2 text-[10px] text-[#555]">
+                        <span className="ml-2 text-10 text-[#555]">
                           ※半角英小文字・数字・ハイフンのみ。3～40文字。
                         </span>
                         <FormErrorList errors={field.state.meta.errors} />
@@ -281,7 +281,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               <tr>
                 <th>管理ID</th>
                 <td className={MONO_CLASS}>
-                  PRJ-2025-XXXXX <span className="text-[10px] text-[#555]">（自動採番）</span>
+                  PRJ-2025-XXXXX <span className="text-10 text-[#555]">（自動採番）</span>
                 </td>
                 <th>
                   登録区分<span className="font-bold text-[#c8001a]">★</span>
@@ -400,9 +400,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                             {systemClassification}
                           </label>
                         ))}
-                        <span className="ml-2 text-[10px] text-[#555]">
-                          ※重要システムは別途承認会議が必要
-                        </span>
+                        <span className="ml-2 text-10 text-[#555]">※重要システムは別途承認会議が必要</span>
                         <FormErrorList errors={field.state.meta.errors} />
                       </>
                     )}
@@ -486,7 +484,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                             {ossPresence}
                           </label>
                         ))}
-                        <span className="ml-2 text-[10px] text-[#555]">※有りの場合 OSS 管理票を別途提出</span>
+                        <span className="ml-2 text-10 text-[#555]">※有りの場合 OSS 管理票を別途提出</span>
                         <FormErrorList errors={field.state.meta.errors} />
                       </>
                     )}
@@ -677,7 +675,7 @@ export function RepositoryCreateScreen(): JSX.Element {
         </Panel>
 
         <div className="mb-1 border border-[#c5c5c5] bg-white px-2 py-3 text-center">
-          <div className="mb-2 text-[10px] text-[#555]">
+          <div className="mb-2 text-10 text-[#555]">
             ※申請内容は登録後の修正が困難です。十分にご確認のうえ申請してください。
           </div>
           <button type="button" className={buttonClassName()}>

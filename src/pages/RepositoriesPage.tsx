@@ -381,7 +381,7 @@ export function RepositoriesScreen(): JSX.Element {
                       <b>{name}</b>
                     </Link>
                     <br />
-                    <span className={clsx("text-[10px]", MUTED_CLASS, MONO_CLASS)}>
+                    <span className={clsx("text-10", MUTED_CLASS, MONO_CLASS)}>
                       {id} ／ {description}
                     </span>
                   </td>

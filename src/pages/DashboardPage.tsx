@@ -175,10 +175,7 @@ function NoticeTag({ label }: { label: string }): JSX.Element {
 
   return (
     <span
-      className={clsx(
-        "inline-flex min-w-[46px] justify-center border px-1 py-px text-[10px] font-bold",
-        tone,
-      )}
+      className={clsx("inline-flex min-w-[46px] justify-center border px-1 py-px text-10 font-bold", tone)}
     >
       {label}
     </span>

@@ -141,10 +141,7 @@ function SideEntry({ entry, active }: { entry: NavEntry; active: boolean }): JSX
   const content = (
     <>
       <span
-        className={clsx(
-          "absolute left-[14px] top-[3px]",
-          active ? "text-[8px] text-[#c8001a]" : "text-[#888]",
-        )}
+        className={clsx("absolute left-[14px] top-[3px]", active ? "text-8 text-[#c8001a]" : "text-[#888]")}
       >
         {active ? "▶" : "・"}
       </span>
@@ -197,7 +194,7 @@ export function JtcChrome({
         <header className={HEADER_ROW_CLASS}>
           <div className={LOGO_CELL_CLASS}>
             <div className={PRODUCT_NAME_CLASS}>
-              JTC GitHub<span className="align-super text-[10px]">®</span>
+              JTC GitHub<span className="align-super text-10">®</span>
             </div>
             <div className={PRODUCT_EDITION_CLASS}>Enterprise Edition 5.2.1</div>
             <div className={PRODUCT_SUBTITLE_CLASS}>統合ソースコード管理基盤</div>
@@ -312,7 +309,7 @@ export function JtcChrome({
                   className={clsx(MENU_ITEM_CLASS, item.label === activeTopMenu && MENU_ITEM_ACTIVE_CLASS)}
                 >
                   {item.label}
-                  <span className="text-[8px]">▼</span>
+                  <span className="text-8">▼</span>
                 </span>
               ) : (
                 <Link
@@ -321,14 +318,14 @@ export function JtcChrome({
                   className={clsx(MENU_ITEM_CLASS, item.label === activeTopMenu && MENU_ITEM_ACTIVE_CLASS)}
                 >
                   {item.label}
-                  <span className="text-[8px]">▼</span>
+                  <span className="text-8">▼</span>
                 </Link>
               ),
             )}
           </div>
         </nav>
 
-        <div className="grid grid-cols-[280px_minmax(0,1fr)] border-b border-b-[#aab] bg-gradient-to-b from-white to-[#dde3ec] text-[11px]">
+        <div className="grid grid-cols-[280px_minmax(0,1fr)] border-b border-b-[#aab] bg-gradient-to-b from-white to-[#dde3ec] text-11">
           <div className={SCREEN_ID_CELL_CLASS}>
             画面ID：<span className={MONO_CLASS}>{screenId}</span>
           </div>
@@ -363,7 +360,7 @@ export function JtcChrome({
                 className="border-b border-b-dotted border-b-[#999]"
               >
                 <summary className={SIDE_GROUP_SUMMARY_CLASS}>
-                  <span className="absolute left-1.5 text-[8px]">▼</span>
+                  <span className="absolute left-1.5 text-8">▼</span>
                   {group.title}
                 </summary>
                 <ul className={SIDE_GROUP_LIST_CLASS}>
@@ -381,7 +378,7 @@ export function JtcChrome({
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
                   <b>全体：</b>正常稼働中
                 </div>
-                <div className="mt-1 space-y-0.5 text-[10px]">
+                <div className="mt-1 space-y-0.5 text-10">
                   <div>
                     <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
                     Web/API
@@ -400,7 +397,7 @@ export function JtcChrome({
                   </div>
                 </div>
                 <div className="mt-1 text-right">
-                  <span className={clsx(TEXT_LINK_CLASS, "text-[10px]")}>▶ 詳細はこちら</span>
+                  <span className={clsx(TEXT_LINK_CLASS, "text-10")}>▶ 詳細はこちら</span>
                 </div>
               </div>
             </div>
@@ -438,15 +435,15 @@ export function HelpDeskPanel(): JSX.Element {
       <br />
       <span className={clsx("font-bold", MONO_CLASS)}>内線：9999</span>
       <br />
-      <span className={clsx("text-[10px]", MONO_CLASS)}>外線：03-1234-5678</span>
+      <span className={clsx("text-10", MONO_CLASS)}>外線：03-1234-5678</span>
       <br />
-      <span className="text-[10px]">
+      <span className="text-10">
         Mail：<span className={TEXT_LINK_CLASS}>helpdesk@jtc-github.example.co.jp</span>
       </span>
       <br />
-      <span className="text-[10px]">対応時間：平日 9:00～17:30</span>
+      <span className="text-10">対応時間：平日 9:00～17:30</span>
       <br />
-      <span className={clsx("text-[10px]", MUTED_CLASS)}>（土日祝・年末年始は除く）</span>
+      <span className={clsx("text-10", MUTED_CLASS)}>（土日祝・年末年始は除く）</span>
     </div>
   );
 }

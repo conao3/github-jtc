@@ -62,14 +62,14 @@ export function ProfileScreen(): JSX.Element {
           </Panel>
 
           <Panel title="緊急連絡先">
-            <div className="text-[11px]">
+            <div className="text-11">
               <div className="font-bold">所属長：佐藤 太一郎</div>
-              <div className={clsx("text-[10px]", MONO_CLASS)}>内線：1020</div>
-              <div className={clsx("text-[10px]", MONO_CLASS)}>携帯：090-XXXX-XXXX</div>
+              <div className={clsx("text-10", MONO_CLASS)}>内線：1020</div>
+              <div className={clsx("text-10", MONO_CLASS)}>携帯：090-XXXX-XXXX</div>
               <div className="mt-2 border-t border-t-dotted border-t-[#999] pt-2">
                 <div className="font-bold">ヘルプデスク</div>
-                <div className={clsx("text-[10px]", MONO_CLASS)}>内線：9999</div>
-                <div className="text-[10px]">対応：平日 9:00-17:30</div>
+                <div className={clsx("text-10", MONO_CLASS)}>内線：9999</div>
+                <div className="text-10">対応：平日 9:00-17:30</div>
               </div>
             </div>
           </Panel>
@@ -104,13 +104,13 @@ export function ProfileScreen(): JSX.Element {
           <div className="text-center">
             <div
               className={clsx(
-                "mx-auto flex h-[130px] w-[100px] items-center justify-center border-2 border-[#555] bg-gradient-to-br from-[#c5cdd9] to-[#8a96a8] text-[40px] text-white",
+                "mx-auto flex h-[130px] w-[100px] items-center justify-center border-2 border-[#555] bg-gradient-to-br from-[#c5cdd9] to-[#8a96a8] text-40 text-white",
                 MONO_CLASS,
               )}
             >
               山田
             </div>
-            <div className="mt-1 text-[10px] text-[#555]">
+            <div className="mt-1 text-10 text-[#555]">
               証明写真
               <br />
               （R7/04/01撮影）

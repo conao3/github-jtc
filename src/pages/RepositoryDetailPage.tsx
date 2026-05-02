@@ -95,7 +95,7 @@ export function RepositoryDetailScreen({
           </Panel>
 
           <Panel title="関連ドキュメント">
-            <div className="space-y-1.5 text-[11px]">
+            <div className="space-y-1.5 text-11">
               <div>
                 📄 <span className={TEXT_LINK_CLASS}>基本設計書_v1.3.xlsx</span>
               </div>
@@ -132,8 +132,7 @@ export function RepositoryDetailScreen({
                 リポジトリ名<span className="font-bold text-[#c8001a]">※</span>
               </th>
               <td className={MONO_CLASS}>
-                <b>{repoId}</b>{" "}
-                <span className="text-[10px] text-[#555]">（決済システム基盤ソースコード）</span>
+                <b>{repoId}</b> <span className="text-10 text-[#555]">（決済システム基盤ソースコード）</span>
               </td>
               <th>管理ID</th>
               <td className={MONO_CLASS}>PRJ-2025-00125</td>
@@ -212,7 +211,7 @@ export function RepositoryDetailScreen({
             <option>更新日時順</option>
             <option>サイズ順</option>
           </select>
-          <span className="text-[10px] text-[#555]">
+          <span className="text-10 text-[#555]">
             ※一度にアップロードできるファイルサイズは100MBまでです。
           </span>
         </div>
@@ -310,9 +309,9 @@ export function RepositoryDetailScreen({
       </Panel>
 
       <Panel title="README.docx プレビュー">
-        <div className={clsx("min-h-[120px] bg-[#f8f5e8] p-3 text-[11px]", MONO_CLASS)}>
-          <div className="text-center text-[14px] font-bold">決済システム基盤 ソースコード管理リポジトリ</div>
-          <div className="mb-2 text-right text-[10px]">令和8年4月25日 第3.2版</div>
+        <div className={clsx("min-h-[120px] bg-[#f8f5e8] p-3 text-11", MONO_CLASS)}>
+          <div className="text-center text-sm font-bold">決済システム基盤 ソースコード管理リポジトリ</div>
+          <div className="mb-2 text-right text-10">令和8年4月25日 第3.2版</div>
           <div className="mb-1 border-b-2 border-b-black pb-0.5 font-bold">1．本リポジトリの目的</div>
           <div>
             本リポジトリは、決済システム基盤に係るソースコード及び関連ドキュメントを一元管理することを目的とする。

@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+@theme {
+  --text-8: 0.5rem;
+  --text-10: 0.625rem;
+  --text-11: 0.6875rem;
+  --text-13: 0.8125rem;
+  --text-28: 1.75rem;
+  --text-40: 2.5rem;
+}

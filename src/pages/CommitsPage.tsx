@@ -167,7 +167,7 @@ export function CommitsScreen(): JSX.Element {
               ].map(([tag, date]) => (
                 <li key={tag} className={TODO_LIST_ITEM_CLASS}>
                   <span className={MONO_CLASS}>{tag}</span>
-                  <span className={clsx("text-[10px]", MONO_CLASS)}>{date}</span>
+                  <span className={clsx("text-10", MONO_CLASS)}>{date}</span>
                 </li>
               ))}
             </ul>
@@ -251,13 +251,13 @@ export function CommitsScreen(): JSX.Element {
                 <td className={clsx("text-center", MONO_CLASS)}>{branch}</td>
                 <td className={clsx("text-center", MONO_CLASS)}>{author}</td>
                 <td className={clsx("text-center", MONO_CLASS)}>{date}</td>
-                <td className={clsx("text-center text-[10px]", MONO_CLASS)}>
+                <td className={clsx("text-center text-10", MONO_CLASS)}>
                   <span className="text-[#1a7f3c]">+{add}</span> /{" "}
                   <span className="text-[#c8001a]">-{del}</span> ({files}f)
                 </td>
                 <td className="text-center">
                   {related ? (
-                    <span className={clsx(TEXT_LINK_CLASS, MONO_CLASS, "text-[10px]")}>{related}</span>
+                    <span className={clsx(TEXT_LINK_CLASS, MONO_CLASS, "text-10")}>{related}</span>
                   ) : (
                     "－"
                   )}
@@ -286,7 +286,7 @@ export function CommitsScreen(): JSX.Element {
       </Panel>
 
       <Panel title="日別コミット数（直近30日）">
-        <div className={clsx("p-2 text-[10px]", MONO_CLASS)}>
+        <div className={clsx("p-2 text-10", MONO_CLASS)}>
           <div className="flex h-[100px] items-end gap-0.5 border-b border-b-[#888] border-l border-l-[#888] px-1">
             {commitBars.map((value, index) => (
               <div
