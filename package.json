@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "check": "vp check",
+    "check": "bun run scripts/check.ts",
+    "check:vp": "vp check",
+    "check:knip": "knip --config knip.json",
     "test": "vp test",
     "graphql:schema": "mkdir -p graphql && curl -fsSL https://docs.github.com/public/fpt/schema.docs.graphql -o graphql/github.schema.graphql",
     "graphql:codegen": "graphql-codegen --config codegen.ts",
@@ -31,10 +33,12 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^7.0.0",
     "@graphql-codegen/client-preset": "^6.0.0",
+    "@graphql-typed-document-node/core": "^3.2.0",
     "@types/bun": "1.3.13",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
+    "knip": "^6.11.0",
     "typescript": "6.0.3",
     "vite": "8.0.10",
     "vite-plus": "0.1.20"

@@ -66,7 +66,7 @@
             GIO_MODULE_PATH = pkgs.lib.optionalString pkgs.stdenv.isLinux "${pkgs.glib-networking}/lib/gio/modules";
 
             shellHook = ''
-              export PATH="$PWD/node_modules/.bin:$PATH"
+              export PATH="$PWD/bin:$PWD/node_modules/.bin:$PATH"
             '';
           };
 

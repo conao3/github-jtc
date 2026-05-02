@@ -52,8 +52,6 @@ export const MENU_ITEM_CLASS = clsx(
 export const MENU_ITEM_ACTIVE_CLASS =
   "bg-gradient-to-b from-[#ffd968] to-[#d99a00] text-[#2a1500] [text-shadow:none]";
 
-export const BREADCRUMB_ROW_CLASS =
-  "grid grid-cols-[280px_minmax(0,1fr)] border-b border-b-[#aab] bg-gradient-to-b from-white to-[#dde3ec] text-[11px]";
 export const SCREEN_ID_CELL_CLASS = "bg-[#f0f3f7] px-2.5 py-[3px] text-[#555] border-r border-r-[#aab]";
 export const BREADCRUMBS_CLASS = "flex flex-wrap items-center px-2.5 py-[3px]";
 
@@ -106,24 +104,6 @@ export const BUTTON_MD_CLASS = "min-h-[24px] px-3 py-1";
 export const BUTTON_SM_CLASS = "min-h-[20px] px-2 py-0.5 text-[10px]";
 export const BUTTON_LG_CLASS = "min-h-[32px] px-6 py-1.5 text-[13px]";
 
-export const INPUT_CLASS = clsx(
-  "min-h-[22px] border border-[#888] bg-white px-1.5 py-0.5 text-[11px] [font:inherit]",
-  "shadow-[inset_0_1px_1px_rgba(0,0,0,0.08)] outline-none",
-);
-export const SELECT_CLASS = clsx(INPUT_CLASS, "pr-6");
-export const TEXTAREA_CLASS = clsx(INPUT_CLASS, "min-h-[60px] w-full resize-y");
-export const FAKE_INPUT_CLASS =
-  "inline-flex min-h-[22px] min-w-[96px] items-center border border-[#888] bg-white px-1.5 py-0.5";
-export const POPOVER_CLASS = "border border-[#888] bg-white shadow-[0_8px_18px_rgba(0,0,0,0.22)]";
-export const LISTBOX_CLASS = "max-h-72 overflow-auto p-1";
-export const LISTBOX_ITEM_CLASS =
-  "cursor-default px-2 py-1.5 data-[focused]:bg-[#dce7f3] data-[selected]:bg-[#b9cee2]";
-
-export const SEARCH_FORM_CLASS =
-  "flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5";
-export const SEARCH_FORM_STACK_CLASS = "flex flex-col gap-1";
-export const SEARCH_ROW_CLASS = "flex flex-wrap items-center gap-2";
-
 export const TABLE_CLASS = clsx(
   "w-full border-collapse text-[11px]",
   "[&_td]:border [&_td]:border-[#c5c5c5] [&_td]:px-1.5 [&_td]:py-1 [&_td]:align-top",
@@ -131,12 +111,6 @@ export const TABLE_CLASS = clsx(
   "[&_thead_th]:bg-gradient-to-b [&_thead_th]:from-[#d8dde6] [&_thead_th]:to-[#c5cdd9]",
   "[&_tbody_tr:nth-child(even)]:bg-[#f4f6fa] [&_tbody_tr:hover]:bg-[#fff7d0]",
 );
-export const KV_TABLE_CLASS = clsx(
-  TABLE_CLASS,
-  "[&_tbody_th]:w-[120px] [&_tbody_th]:bg-gradient-to-b [&_tbody_th]:from-[#edf1f5] [&_tbody_th]:to-[#d7dfe8]",
-);
-export const TABLE_COMPACT_CLASS = clsx(TABLE_CLASS, "[&_td]:py-0.5 [&_th]:py-0.5");
-
 export const TABS_ROW_CLASS = "flex flex-wrap gap-1 border-b border-b-[#c5c5c5] bg-[#eef2f6] px-2 pt-1";
 export const TAB_CLASS = "border border-b-0 border-[#999] bg-[#e0e6ef] px-2.5 py-1 text-[11px] font-bold";
 export const TAB_ACTIVE_CLASS = "bg-white";

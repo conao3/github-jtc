@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["electrobun.config.ts", "src/bun/index.ts"],
+  "ignore": [
+    ".direnv/**",
+    "src/gql/graphql.ts",
+    "src/gql/fragment-masking.ts",
+    "src/gql/gql.ts",
+    "src/gql/index.ts"
+  ],
+  "ignoreExportsUsedInFile": true
+}

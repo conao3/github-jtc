@@ -33,14 +33,6 @@ interface PendingGitHubLogin {
   readonly redirectTo: string;
 }
 
-interface PasswordLoginInput {
-  readonly userId: string;
-  readonly password: string;
-  readonly otp: string;
-  readonly office: string;
-  readonly consentAccepted: boolean;
-}
-
 interface GitHubCallbackInput {
   readonly code: string;
   readonly returnedState: string;
@@ -194,23 +186,6 @@ export function normalizeRedirectTo(value: string | null | undefined): string {
   return value;
 }
 
-function buildSessionFromJtcLogin(input: PasswordLoginInput): AuthSession {
-  const userId = input.userId.trim();
-  const displayName = userId === "yamada.taro" ? "山田 太郎" : userId;
-
-  return {
-    provider: "jtc",
-    lastLoginAt: new Date().toISOString(),
-    user: {
-      login: userId,
-      displayName,
-      department: `${input.office} ／ 第一システム事業本部 デジタル基盤統括部`,
-      role: "開発者（一般）",
-      providerLabel: "JTC 社内認証",
-    },
-  };
-}
-
 async function loadAuthSession(): Promise<AuthSession | null> {
   const stored = getStoredSession();
 
@@ -247,26 +222,6 @@ async function loadAuthSession(): Promise<AuthSession | null> {
     clearStoredSession();
     return null;
   }
-}
-
-async function loginWithPassword(input: PasswordLoginInput): Promise<AuthSession> {
-  if (input.userId.trim().length === 0) {
-    throw new Error("ユーザーIDを入力してください。");
-  }
-
-  if (input.password.trim().length === 0) {
-    throw new Error("パスワードを入力してください。");
-  }
-
-  if (input.otp.trim().length === 0) {
-    throw new Error("ワンタイムパスワードを入力してください。");
-  }
-
-  if (!input.consentAccepted) {
-    throw new Error("情報セキュリティ規程への同意が必要です。");
-  }
-
-  return storeSession(buildSessionFromJtcLogin(input));
 }
 
 async function parseJsonResponse(response: Response): Promise<Record<string, unknown> | null> {
@@ -403,17 +358,6 @@ export function useAuthSession() {
   return useQuery({
     queryKey: AUTH_QUERY_KEY,
     queryFn: loadAuthSession,
-  });
-}
-
-export function usePasswordLoginMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: loginWithPassword,
-    onSuccess: (session) => {
-      queryClient.setQueryData(AUTH_QUERY_KEY, session);
-    },
   });
 }
 
