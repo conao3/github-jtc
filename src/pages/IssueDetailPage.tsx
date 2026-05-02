@@ -4,6 +4,7 @@ import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { JtcTabs } from "../app/components/JtcTabs.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import { BULLET_LIST_CLASS, COMPACT_TABLE_CLASS, TABLE_CLASS } from "../app/styles.ts";
 import { getIssueById, getRepositoryById } from "../data/mockData.ts";
 
 export default function IssueDetailPage(): JSX.Element {
@@ -43,7 +44,7 @@ export default function IssueDetailPage(): JSX.Element {
       />
 
       <Panel title="課題基本情報">
-        <table className="jtc-table jtc-table-compact">
+        <table className={COMPACT_TABLE_CLASS}>
           <tbody>
             <tr>
               <th>対象リポジトリ</th>
@@ -79,7 +80,7 @@ export default function IssueDetailPage(): JSX.Element {
             id: "history",
             label: "対応履歴",
             content: (
-              <table className="jtc-table">
+              <table className={TABLE_CLASS}>
                 <thead>
                   <tr>
                     <th>日時</th>
@@ -103,7 +104,7 @@ export default function IssueDetailPage(): JSX.Element {
             id: "policy",
             label: "処置方針",
             content: (
-              <ul className="jtc-bullet-list">
+              <ul className={BULLET_LIST_CLASS}>
                 <li>再現条件と業務影響を整理し、承認系・監査系のどちらに属するかを先に確定します。</li>
                 <li>影響が帳票出力に及ぶ場合は、構成管理室への事前相談を必須とします。</li>
                 <li>改修時は関連 PR に Issue 番号を付与し、監査証跡との紐付けを保持します。</li>

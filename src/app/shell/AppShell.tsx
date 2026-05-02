@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { Dialog, DialogTrigger, Input, Label, Modal, ModalOverlay, SearchField } from "react-aria-components";
@@ -9,6 +10,29 @@ import { JtcSelect } from "../components/JtcSelect.tsx";
 import { Panel } from "../components/Panel.tsx";
 import { StatusBadge } from "../components/StatusBadge.tsx";
 import { type ColorTheme, useUiPreferences } from "../state.tsx";
+import {
+  APP_CHROME_CLASS,
+  BRAND_BAR_CLASS,
+  BRAND_TITLE_CLASS,
+  CONTENT_GRID_CLASS,
+  DIALOG_CLASS,
+  DIALOG_OVERLAY_CLASS,
+  FIELD_LABEL_CLASS,
+  FONT_SCALE_CLASS,
+  FOOTER_CLASS,
+  FRAME_CLASS,
+  MAIN_MENU_CLASS,
+  MAIN_MENU_LINK_CLASS,
+  MINI_LIST_CLASS,
+  PANEL_HEADER_CLASS,
+  RAIL_COLUMN_CLASS,
+  SEARCH_FIELD_CLASS,
+  SEARCH_INPUT_CLASS,
+  SIDE_NAV_CLASS,
+  SIDE_NAV_LINK_CLASS,
+  THEME_CLASS,
+  TOP_STATUS_CLASS,
+} from "../styles.ts";
 
 interface NavigationItem {
   readonly label: string;
@@ -65,9 +89,9 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="jtc-shell">
-      <div className="jtc-frame">
-        <header className="jtc-top-status">
+    <div className={clsx(APP_CHROME_CLASS, FONT_SCALE_CLASS[fontScale])}>
+      <div className={FRAME_CLASS}>
+        <header className={TOP_STATUS_CLASS}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold">統合ソースコード管理システム</span>
             <StatusBadge tone="ok">稼働中</StatusBadge>
@@ -81,12 +105,12 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
           </div>
         </header>
 
-        <div className="jtc-brandbar">
+        <div className={clsx(BRAND_BAR_CLASS, THEME_CLASS[theme].brand)}>
           <div className="flex min-w-0 flex-col">
             <div className="text-xs font-bold tracking-[0.28em] text-white/75">
               JTC CORPORATE ENGINEERING PORTAL
             </div>
-            <div className="jtc-brand-title">JTC GitHub</div>
+            <div className={BRAND_TITLE_CLASS}>JTC GitHub</div>
             <div className="text-xs text-white/80">
               情報共有・変更申請・課題管理・監査証跡を一元管理する社内専用ポータル
             </div>
@@ -97,11 +121,11 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
               aria-label="横断検索"
               value={searchQuery}
               onChange={setSearchQuery}
-              className="jtc-searchfield"
+              className={SEARCH_FIELD_CLASS}
             >
-              <Label className="jtc-field-label">横断検索</Label>
-              <div className="flex items-center gap-2">
-                <Input className="jtc-input jtc-search-input" />
+              <Label className={FIELD_LABEL_CLASS}>横断検索</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input className={SEARCH_INPUT_CLASS} />
                 <JtcButton>検索</JtcButton>
               </div>
             </SearchField>
@@ -117,8 +141,8 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
                   { id: "brown", label: "茶系" },
                 ]}
               />
-              <div className="jtc-font-switcher">
-                <span className="jtc-field-label">文字サイズ</span>
+              <div className="flex items-center gap-2">
+                <span className={FIELD_LABEL_CLASS}>文字サイズ</span>
                 <div className="flex gap-1">
                   <JtcButton
                     tone={fontScale === "small" ? "primary" : "default"}
@@ -142,11 +166,11 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
               </div>
               <DialogTrigger>
                 <JtcButton>ご利用上の注意</JtcButton>
-                <ModalOverlay className="jtc-modal-overlay">
-                  <Modal className="jtc-modal">
+                <ModalOverlay className={DIALOG_OVERLAY_CLASS}>
+                  <Modal className={DIALOG_CLASS}>
                     <Dialog>
-                      <div className="jtc-panel-header">
-                        <h2>ご利用上の注意</h2>
+                      <div className={PANEL_HEADER_CLASS}>
+                        <h2 className="m-0 text-[1rem]">ご利用上の注意</h2>
                       </div>
                       <div className="space-y-3 p-4 text-sm leading-6">
                         <p>
@@ -174,15 +198,16 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
           </div>
         </div>
 
-        <nav className="jtc-mainmenu" aria-label="横断メニュー">
+        <nav className={MAIN_MENU_CLASS} aria-label="横断メニュー">
           {topMenu.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                isActive || isActivePath(pathname, item.path)
-                  ? "jtc-mainmenu-link active"
-                  : "jtc-mainmenu-link"
+                clsx(
+                  MAIN_MENU_LINK_CLASS,
+                  (isActive || isActivePath(pathname, item.path)) && THEME_CLASS[theme].mainNavActive,
+                )
               }
             >
               {item.label}
@@ -190,19 +215,21 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
           ))}
         </nav>
 
-        <div className="jtc-content-grid">
-          <aside className="jtc-side-column">
+        <div className={CONTENT_GRID_CLASS}>
+          <aside className={RAIL_COLUMN_CLASS}>
             {sideMenuSections.map((section) => (
               <Panel key={section.title} title={section.title}>
-                <ul className="jtc-side-nav">
+                <ul className={SIDE_NAV_CLASS}>
                   {section.items.map((item) => (
                     <li key={`${section.title}:${item.path}`}>
                       <NavLink
                         to={item.path}
                         className={({ isActive }) =>
-                          isActive || isActivePath(pathname, item.path)
-                            ? "jtc-side-nav-link active"
-                            : "jtc-side-nav-link"
+                          clsx(
+                            SIDE_NAV_LINK_CLASS,
+                            (isActive || isActivePath(pathname, item.path)) &&
+                              THEME_CLASS[theme].sideNavActive,
+                          )
                         }
                       >
                         {item.label}
@@ -216,9 +243,9 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
 
           <main className="min-w-0">{children}</main>
 
-          <aside className="jtc-right-column">
+          <aside className={RAIL_COLUMN_CLASS}>
             <Panel title="お知らせ" action={<StatusBadge tone="warn">必読</StatusBadge>}>
-              <ul className="jtc-mini-list">
+              <ul className={MINI_LIST_CLASS}>
                 {systemNotices.map((notice) => (
                   <li key={notice.title}>
                     <div className="flex items-center gap-2">
@@ -232,7 +259,7 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
             </Panel>
 
             <Panel title="本日のToDo">
-              <ul className="jtc-mini-list">
+              <ul className={MINI_LIST_CLASS}>
                 {todoItems.map((item) => (
                   <li key={item.title}>
                     <div className="flex items-center gap-2">
@@ -258,7 +285,7 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
           </aside>
         </div>
 
-        <footer className="jtc-footer">
+        <footer className={FOOTER_CLASS}>
           <span>推奨環境: Microsoft Edge 最新版 / 画面解像度 1366x768 以上</span>
           <span>帳票出力時は社内標準 PDF ビューアをご利用ください。</span>
           <span>Copyright (C) JTC Information Systems Department. All Rights Reserved.</span>

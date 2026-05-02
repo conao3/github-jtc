@@ -6,6 +6,7 @@
       "name": "github-jtc",
       "dependencies": {
         "@tailwindcss/vite": "4.2.4",
+        "clsx": "2.1.1",
         "electrobun": "1.16.0",
         "react": "19.2.5",
         "react-aria-components": "1.17.0",

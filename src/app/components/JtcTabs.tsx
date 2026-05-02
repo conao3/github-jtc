@@ -1,4 +1,9 @@
-import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
+import clsx from "clsx";
+import { useState } from "react";
+import { Tab, TabList, Tabs } from "react-aria-components";
+
+import { useUiPreferences } from "../state.tsx";
+import { PANEL_CLASS, TAB_CLASS, TAB_LIST_CLASS, THEME_CLASS } from "../styles.ts";
 
 export interface TabDefinition {
   readonly id: string;
@@ -12,20 +17,25 @@ interface JtcTabsProps {
 }
 
 export function JtcTabs({ label, tabs }: JtcTabsProps): JSX.Element {
+  const { theme } = useUiPreferences();
+  const [selectedKey, setSelectedKey] = useState(tabs[0]?.id ?? "");
+  const selectedTab = tabs.find((tab) => tab.id === selectedKey) ?? tabs[0];
+
   return (
-    <Tabs aria-label={label} className="flex flex-col gap-2">
-      <TabList className="jtc-tab-list">
-        {tabs.map((tab) => (
-          <Tab key={tab.id} id={tab.id} className="jtc-tab">
-            {tab.label}
-          </Tab>
-        ))}
+    <Tabs
+      aria-label={label}
+      selectedKey={selectedKey}
+      onSelectionChange={(key) => {
+        if (typeof key === "string") {
+          setSelectedKey(key);
+        }
+      }}
+      className="flex flex-col gap-2"
+    >
+      <TabList items={tabs} className={TAB_LIST_CLASS}>
+        {(tab) => <Tab className={clsx(TAB_CLASS, THEME_CLASS[theme].tabActive)}>{tab.label}</Tab>}
       </TabList>
-      {tabs.map((tab) => (
-        <TabPanel key={tab.id} id={tab.id} className="jtc-panel p-3">
-          {tab.content}
-        </TabPanel>
-      ))}
+      <div className={clsx(PANEL_CLASS, "p-3")}>{selectedTab?.content}</div>
     </Tabs>
   );
 }

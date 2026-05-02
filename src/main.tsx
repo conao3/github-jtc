@@ -5,9 +5,9 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./app/App.tsx";
 import "./index.css";
 
-const rootElement = document.getElementById("root");
+const rootElement = document.body.firstElementChild;
 
-if (rootElement === null) {
+if (!(rootElement instanceof HTMLElement)) {
   throw new Error("Root element was not found");
 }
 

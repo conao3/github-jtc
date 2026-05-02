@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { startTransition, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -6,10 +7,21 @@ import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { JtcTabs } from "../app/components/JtcTabs.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import { useUiPreferences } from "../app/state.tsx";
+import {
+  CODE_VIEW_CLASS,
+  COMPACT_TABLE_CLASS,
+  FILE_LIST_CLASS,
+  FILE_ROW_CLASS,
+  TABLE_CLASS,
+  TEXT_LINK_CLASS,
+  THEME_CLASS,
+} from "../app/styles.ts";
 import { commits, getRepositoryById, pullRequests } from "../data/mockData.ts";
 
 export default function RepositoryDetailPage(): JSX.Element {
   const { repoId } = useParams();
+  const { theme } = useUiPreferences();
   const repository = repoId === undefined ? undefined : getRepositoryById(repoId);
   const [selectedBranch, setSelectedBranch] = useState(repository?.defaultBranch ?? "main");
   const [selectedFilePath, setSelectedFilePath] = useState(repository?.files[0]?.path ?? "");
@@ -48,7 +60,7 @@ export default function RepositoryDetailPage(): JSX.Element {
 
       <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
         <Panel title="管理台帳">
-          <table className="jtc-table jtc-table-compact">
+          <table className={COMPACT_TABLE_CLASS}>
             <tbody>
               <tr>
                 <th>担当部門</th>
@@ -84,7 +96,7 @@ export default function RepositoryDetailPage(): JSX.Element {
                 id: "prs",
                 label: "変更申請",
                 content: (
-                  <table className="jtc-table">
+                  <table className={TABLE_CLASS}>
                     <thead>
                       <tr>
                         <th>申請番号</th>
@@ -97,7 +109,9 @@ export default function RepositoryDetailPage(): JSX.Element {
                       {relatedPullRequests.map((pullRequest) => (
                         <tr key={pullRequest.id}>
                           <td>
-                            <Link to={`/pull-requests/${pullRequest.id}`}>{pullRequest.id}</Link>
+                            <Link to={`/pull-requests/${pullRequest.id}`} className={TEXT_LINK_CLASS}>
+                              {pullRequest.id}
+                            </Link>
                           </td>
                           <td>{pullRequest.title}</td>
                           <td>{pullRequest.status}</td>
@@ -112,7 +126,7 @@ export default function RepositoryDetailPage(): JSX.Element {
                 id: "commits",
                 label: "コミット履歴",
                 content: (
-                  <table className="jtc-table">
+                  <table className={TABLE_CLASS}>
                     <thead>
                       <tr>
                         <th>SHA</th>
@@ -155,12 +169,15 @@ export default function RepositoryDetailPage(): JSX.Element {
             />
           }
         >
-          <ul className="jtc-file-list">
+          <ul className={FILE_LIST_CLASS}>
             {repository.files.map((file) => (
               <li key={file.path}>
                 <button
                   type="button"
-                  className={file.path === selectedFile.path ? "jtc-file-row active" : "jtc-file-row"}
+                  className={clsx(
+                    FILE_ROW_CLASS,
+                    file.path === selectedFile.path && THEME_CLASS[theme].fileActive,
+                  )}
                   onClick={() => {
                     startTransition(() => {
                       setSelectedFilePath(file.path);
@@ -182,7 +199,7 @@ export default function RepositoryDetailPage(): JSX.Element {
             <span>更新: {selectedFile.updatedAt}</span>
             <span>閲覧ブランチ: {selectedBranch}</span>
           </div>
-          <pre className="jtc-code-view">{selectedFile.preview}</pre>
+          <pre className={CODE_VIEW_CLASS}>{selectedFile.preview}</pre>
         </Panel>
       </div>
     </div>

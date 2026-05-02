@@ -5,6 +5,14 @@ import { JtcSelect } from "../app/components/JtcSelect.tsx";
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import {
+  FIELD_LABEL_CLASS,
+  FIELD_STACK_CLASS,
+  FILTER_GRID_CLASS,
+  FILTER_INPUT_CLASS,
+  TABLE_CLASS,
+  TEXT_LINK_CLASS,
+} from "../app/styles.ts";
 import { repositories } from "../data/mockData.ts";
 
 export default function RepositoriesPage(): JSX.Element {
@@ -33,13 +41,13 @@ export default function RepositoriesPage(): JSX.Element {
       />
 
       <Panel title="検索条件">
-        <div className="jtc-filter-grid">
-          <label className="jtc-field">
-            <span className="jtc-field-label">キーワード</span>
+        <div className={FILTER_GRID_CLASS}>
+          <label className={FIELD_STACK_CLASS}>
+            <span className={FIELD_LABEL_CLASS}>キーワード</span>
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              className="jtc-input"
+              className={FILTER_INPUT_CLASS}
               placeholder="名称・説明文"
             />
           </label>
@@ -68,7 +76,7 @@ export default function RepositoriesPage(): JSX.Element {
       </Panel>
 
       <Panel title={`検索結果 ${String(filteredRepositories.length)} 件`}>
-        <table className="jtc-table">
+        <table className={TABLE_CLASS}>
           <thead>
             <tr>
               <th>リポジトリ名</th>
@@ -85,7 +93,9 @@ export default function RepositoriesPage(): JSX.Element {
             {filteredRepositories.map((repository) => (
               <tr key={repository.id}>
                 <td>
-                  <Link to={`/repositories/${repository.id}`}>{repository.name}</Link>
+                  <Link to={`/repositories/${repository.id}`} className={TEXT_LINK_CLASS}>
+                    {repository.name}
+                  </Link>
                   <div className="text-[11px] text-slate-600">{repository.description}</div>
                 </td>
                 <td>{repository.team}</td>

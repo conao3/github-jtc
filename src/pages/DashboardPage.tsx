@@ -1,11 +1,25 @@
+import clsx from "clsx";
 import { Link } from "react-router-dom";
 
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import { useUiPreferences } from "../app/state.tsx";
+import {
+  BULLET_LIST_CLASS,
+  KPI_CARD_CLASS,
+  KPI_GRID_CLASS,
+  KPI_LABEL_CLASS,
+  KPI_NOTE_CLASS,
+  TABLE_CLASS,
+  TEXT_LINK_CLASS,
+  THEME_CLASS,
+} from "../app/styles.ts";
 import { commits, dashboardMetrics, pullRequests, repositories } from "../data/mockData.ts";
 
 export default function DashboardPage(): JSX.Element {
+  const { theme } = useUiPreferences();
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -14,19 +28,21 @@ export default function DashboardPage(): JSX.Element {
         breadcrumbs={[{ label: "ポータル" }, { label: "ダッシュボード" }]}
       />
 
-      <section className="jtc-kpi-grid">
+      <section className={KPI_GRID_CLASS}>
         {dashboardMetrics.map((metric) => (
-          <div key={metric.label} className="jtc-kpi-card">
-            <div className="jtc-kpi-label">{metric.label}</div>
-            <div className="jtc-kpi-value">{metric.value}</div>
-            <div className="jtc-kpi-note">{metric.note}</div>
+          <div key={metric.label} className={KPI_CARD_CLASS}>
+            <div className={KPI_LABEL_CLASS}>{metric.label}</div>
+            <div className={clsx("mt-1 text-[1.95rem] font-bold", THEME_CLASS[theme].kpiValue)}>
+              {metric.value}
+            </div>
+            <div className={clsx("mt-1 text-[12px]", KPI_NOTE_CLASS)}>{metric.note}</div>
           </div>
         ))}
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Panel title="承認待ちプルリクエスト">
-          <table className="jtc-table">
+          <table className={TABLE_CLASS}>
             <thead>
               <tr>
                 <th>申請番号</th>
@@ -40,7 +56,9 @@ export default function DashboardPage(): JSX.Element {
               {pullRequests.map((item) => (
                 <tr key={item.id}>
                   <td>
-                    <Link to={`/pull-requests/${item.id}`}>{item.id}</Link>
+                    <Link to={`/pull-requests/${item.id}`} className={TEXT_LINK_CLASS}>
+                      {item.id}
+                    </Link>
                   </td>
                   <td>{item.title}</td>
                   <td>
@@ -59,7 +77,7 @@ export default function DashboardPage(): JSX.Element {
         </Panel>
 
         <Panel title="重点管理リポジトリ">
-          <table className="jtc-table">
+          <table className={TABLE_CLASS}>
             <thead>
               <tr>
                 <th>リポジトリ</th>
@@ -73,7 +91,9 @@ export default function DashboardPage(): JSX.Element {
               {repositories.map((repository) => (
                 <tr key={repository.id}>
                   <td>
-                    <Link to={`/repositories/${repository.id}`}>{repository.name}</Link>
+                    <Link to={`/repositories/${repository.id}`} className={TEXT_LINK_CLASS}>
+                      {repository.name}
+                    </Link>
                   </td>
                   <td>{repository.team}</td>
                   <td>{repository.openPrs}</td>
@@ -88,7 +108,7 @@ export default function DashboardPage(): JSX.Element {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel title="本日対応予定コミット">
-          <table className="jtc-table">
+          <table className={TABLE_CLASS}>
             <thead>
               <tr>
                 <th>SHA</th>
@@ -117,7 +137,7 @@ export default function DashboardPage(): JSX.Element {
         </Panel>
 
         <Panel title="運用メモ">
-          <ul className="jtc-bullet-list">
+          <ul className={BULLET_LIST_CLASS}>
             <li>レビュー会は毎日 16:00 開始です。高優先度 PR は 15:30 までに申請してください。</li>
             <li>月次監査提出期間のため、コミットメッセージには必ずチケット番号を付与してください。</li>
             <li>社内配布対象ブランチは `release` を基準とし、直接 push は原則禁止です。</li>

@@ -4,6 +4,7 @@ import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { JtcTabs } from "../app/components/JtcTabs.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import { BULLET_LIST_CLASS, COMPACT_TABLE_CLASS, TABLE_CLASS } from "../app/styles.ts";
 import { getPullRequestById, getRepositoryById } from "../data/mockData.ts";
 
 export default function PullRequestDetailPage(): JSX.Element {
@@ -45,7 +46,7 @@ export default function PullRequestDetailPage(): JSX.Element {
       />
 
       <Panel title="申請概要">
-        <table className="jtc-table jtc-table-compact">
+        <table className={COMPACT_TABLE_CLASS}>
           <tbody>
             <tr>
               <th>件名</th>
@@ -77,7 +78,7 @@ export default function PullRequestDetailPage(): JSX.Element {
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title="承認フロー">
-          <table className="jtc-table">
+          <table className={TABLE_CLASS}>
             <thead>
               <tr>
                 <th>工程</th>
@@ -118,7 +119,7 @@ export default function PullRequestDetailPage(): JSX.Element {
               id: "points",
               label: "審査観点",
               content: (
-                <ul className="jtc-bullet-list">
+                <ul className={BULLET_LIST_CLASS}>
                   {pullRequest.reviewPoints.map((point) => (
                     <li key={point}>{point}</li>
                   ))}
@@ -129,7 +130,7 @@ export default function PullRequestDetailPage(): JSX.Element {
               id: "diff",
               label: "変更対象",
               content: (
-                <table className="jtc-table">
+                <table className={TABLE_CLASS}>
                   <thead>
                     <tr>
                       <th>区分</th>

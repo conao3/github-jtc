@@ -1,5 +1,6 @@
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { BULLET_LIST_CLASS, COMPACT_TABLE_CLASS, TABLE_CLASS } from "../app/styles.ts";
 import { profile } from "../data/mockData.ts";
 
 export default function ProfilePage(): JSX.Element {
@@ -13,7 +14,7 @@ export default function ProfilePage(): JSX.Element {
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Panel title="利用者基本情報">
-          <table className="jtc-table jtc-table-compact">
+          <table className={COMPACT_TABLE_CLASS}>
             <tbody>
               <tr>
                 <th>利用者ID</th>
@@ -44,7 +45,7 @@ export default function ProfilePage(): JSX.Element {
         </Panel>
 
         <Panel title="付与権限一覧">
-          <table className="jtc-table">
+          <table className={TABLE_CLASS}>
             <thead>
               <tr>
                 <th>権限領域</th>
@@ -64,7 +65,7 @@ export default function ProfilePage(): JSX.Element {
       </div>
 
       <Panel title="個人設定メモ">
-        <ul className="jtc-bullet-list">
+        <ul className={BULLET_LIST_CLASS}>
           <li>文字サイズは画面右上の切替から設定できます。</li>
           <li>承認待ち通知は 08:30 / 12:00 / 16:00 の 1 日 3 回で配信されます。</li>
           <li>監査 CSV は所属部門配下のみ出力可能です。</li>

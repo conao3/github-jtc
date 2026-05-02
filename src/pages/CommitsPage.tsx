@@ -4,6 +4,7 @@ import { JtcSelect } from "../app/components/JtcSelect.tsx";
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import { FILTER_GRID_CLASS, TABLE_CLASS } from "../app/styles.ts";
 import { commits } from "../data/mockData.ts";
 
 export default function CommitsPage(): JSX.Element {
@@ -20,7 +21,7 @@ export default function CommitsPage(): JSX.Element {
       />
 
       <Panel title="集計条件">
-        <div className="jtc-filter-grid">
+        <div className={FILTER_GRID_CLASS}>
           <JtcSelect
             label="リスク区分"
             selectedKey={risk}
@@ -36,7 +37,7 @@ export default function CommitsPage(): JSX.Element {
       </Panel>
 
       <Panel title={`監査対象コミット ${String(filteredCommits.length)} 件`}>
-        <table className="jtc-table">
+        <table className={TABLE_CLASS}>
           <thead>
             <tr>
               <th>SHA</th>

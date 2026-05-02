@@ -1,4 +1,4 @@
-import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
+import { createContext, type PropsWithChildren, useContext, useState } from "react";
 
 export type ColorTheme = "navy" | "green" | "brown";
 export type FontScale = "small" | "medium" | "large";
@@ -15,14 +15,6 @@ const UiPreferencesContext = createContext<UiPreferences | null>(null);
 export function UiPreferencesProvider({ children }: PropsWithChildren): JSX.Element {
   const [theme, setTheme] = useState<ColorTheme>("navy");
   const [fontScale, setFontScale] = useState<FontScale>("medium");
-
-  useEffect(() => {
-    document.documentElement.dataset["theme"] = theme;
-  }, [theme]);
-
-  useEffect(() => {
-    document.documentElement.dataset["fontScale"] = fontScale;
-  }, [fontScale]);
 
   return (
     <UiPreferencesContext.Provider

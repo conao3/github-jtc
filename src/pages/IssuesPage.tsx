@@ -5,6 +5,14 @@ import { JtcSelect } from "../app/components/JtcSelect.tsx";
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import {
+  FIELD_LABEL_CLASS,
+  FIELD_STACK_CLASS,
+  FILTER_GRID_CLASS,
+  FILTER_INPUT_CLASS,
+  TABLE_CLASS,
+  TEXT_LINK_CLASS,
+} from "../app/styles.ts";
 import { issues } from "../data/mockData.ts";
 
 export default function IssuesPage(): JSX.Element {
@@ -32,11 +40,11 @@ export default function IssuesPage(): JSX.Element {
       />
 
       <Panel title="照会条件">
-        <div className="jtc-filter-grid">
-          <label className="jtc-field">
-            <span className="jtc-field-label">課題番号/件名/区分</span>
+        <div className={FILTER_GRID_CLASS}>
+          <label className={FIELD_STACK_CLASS}>
+            <span className={FIELD_LABEL_CLASS}>課題番号/件名/区分</span>
             <input
-              className="jtc-input"
+              className={FILTER_INPUT_CLASS}
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="ISS-1182 / 表示不具合"
@@ -58,7 +66,7 @@ export default function IssuesPage(): JSX.Element {
       </Panel>
 
       <Panel title={`該当課題 ${String(filteredIssues.length)} 件`}>
-        <table className="jtc-table">
+        <table className={TABLE_CLASS}>
           <thead>
             <tr>
               <th>課題番号</th>
@@ -74,7 +82,9 @@ export default function IssuesPage(): JSX.Element {
             {filteredIssues.map((issue) => (
               <tr key={issue.id}>
                 <td>
-                  <Link to={`/issues/${issue.id}`}>{issue.id}</Link>
+                  <Link to={`/issues/${issue.id}`} className={TEXT_LINK_CLASS}>
+                    {issue.id}
+                  </Link>
                 </td>
                 <td>{issue.title}</td>
                 <td>{issue.category}</td>

@@ -5,6 +5,14 @@ import { JtcSelect } from "../app/components/JtcSelect.tsx";
 import { PageHeader } from "../app/components/PageHeader.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { StatusBadge } from "../app/components/StatusBadge.tsx";
+import {
+  FIELD_LABEL_CLASS,
+  FIELD_STACK_CLASS,
+  FILTER_GRID_CLASS,
+  FILTER_INPUT_CLASS,
+  TABLE_CLASS,
+  TEXT_LINK_CLASS,
+} from "../app/styles.ts";
 import { pullRequests } from "../data/mockData.ts";
 
 export default function PullRequestsPage(): JSX.Element {
@@ -31,11 +39,11 @@ export default function PullRequestsPage(): JSX.Element {
       />
 
       <Panel title="照会条件">
-        <div className="jtc-filter-grid">
-          <label className="jtc-field">
-            <span className="jtc-field-label">申請番号/件名</span>
+        <div className={FILTER_GRID_CLASS}>
+          <label className={FIELD_STACK_CLASS}>
+            <span className={FIELD_LABEL_CLASS}>申請番号/件名</span>
             <input
-              className="jtc-input"
+              className={FILTER_INPUT_CLASS}
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="PR-24051 / 申請件名"
@@ -56,7 +64,7 @@ export default function PullRequestsPage(): JSX.Element {
       </Panel>
 
       <Panel title={`対象申請 ${String(filteredItems.length)} 件`}>
-        <table className="jtc-table">
+        <table className={TABLE_CLASS}>
           <thead>
             <tr>
               <th>申請番号</th>
@@ -72,7 +80,9 @@ export default function PullRequestsPage(): JSX.Element {
             {filteredItems.map((item) => (
               <tr key={item.id}>
                 <td>
-                  <Link to={`/pull-requests/${item.id}`}>{item.id}</Link>
+                  <Link to={`/pull-requests/${item.id}`} className={TEXT_LINK_CLASS}>
+                    {item.id}
+                  </Link>
                 </td>
                 <td>{item.title}</td>
                 <td>{item.author}</td>
