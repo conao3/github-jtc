@@ -2,8 +2,7 @@ import clsx from "clsx";
 import { useState } from "react";
 import { Tab, TabList, Tabs } from "react-aria-components";
 
-import { useUiPreferences } from "../state.tsx";
-import { PANEL_CLASS, TAB_CLASS, TAB_LIST_CLASS, THEME_CLASS } from "../styles.ts";
+import { PANEL_CLASS, TAB_ACTIVE_CLASS, TAB_CLASS, TABS_ROW_CLASS } from "../styles.ts";
 
 export interface TabDefinition {
   readonly id: string;
@@ -17,7 +16,6 @@ interface JtcTabsProps {
 }
 
 export function JtcTabs({ label, tabs }: JtcTabsProps): JSX.Element {
-  const { theme } = useUiPreferences();
   const [selectedKey, setSelectedKey] = useState(tabs[0]?.id ?? "");
   const selectedTab = tabs.find((tab) => tab.id === selectedKey) ?? tabs[0];
 
@@ -32,8 +30,12 @@ export function JtcTabs({ label, tabs }: JtcTabsProps): JSX.Element {
       }}
       className="flex flex-col gap-2"
     >
-      <TabList items={tabs} className={TAB_LIST_CLASS}>
-        {(tab) => <Tab className={clsx(TAB_CLASS, THEME_CLASS[theme].tabActive)}>{tab.label}</Tab>}
+      <TabList items={tabs} className={TABS_ROW_CLASS}>
+        {(tab) => (
+          <Tab className={({ isSelected }) => clsx(TAB_CLASS, isSelected && TAB_ACTIVE_CLASS)}>
+            {tab.label}
+          </Tab>
+        )}
       </TabList>
       <div className={clsx(PANEL_CLASS, "p-3")}>{selectedTab?.content}</div>
     </Tabs>

@@ -1,13 +1,6 @@
 import { Link } from "react-router-dom";
 
-import {
-  BREADCRUMBS_CLASS,
-  PAGE_ACTIONS_CLASS,
-  PAGE_HEADER_CLASS,
-  PAGE_SUMMARY_CLASS,
-  PAGE_TITLE_CLASS,
-  TEXT_LINK_CLASS,
-} from "../styles.ts";
+import { BREADCRUMBS_CLASS, TEXT_LINK_CLASS } from "../styles.ts";
 
 interface BreadcrumbItem {
   readonly label: string;
@@ -23,7 +16,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, summary, breadcrumbs, actions }: PageHeaderProps): JSX.Element {
   return (
-    <header className={PAGE_HEADER_CLASS}>
+    <header className="flex flex-wrap items-start justify-between gap-3 border border-[#999] bg-white p-3">
       <div className="flex flex-col gap-2">
         <nav aria-label="パンくず">
           <ol className={BREADCRUMBS_CLASS}>
@@ -42,11 +35,11 @@ export function PageHeader({ title, summary, breadcrumbs, actions }: PageHeaderP
           </ol>
         </nav>
         <div className="flex flex-col gap-1">
-          <h1 className={PAGE_TITLE_CLASS}>{title}</h1>
-          <p className={PAGE_SUMMARY_CLASS}>{summary}</p>
+          <h1 className="m-0 text-[18px] font-bold text-[#16386b]">{title}</h1>
+          <p className="m-0 text-[11px] text-[#555]">{summary}</p>
         </div>
       </div>
-      {actions === undefined ? null : <div className={PAGE_ACTIONS_CLASS}>{actions}</div>}
+      {actions === undefined ? null : <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }

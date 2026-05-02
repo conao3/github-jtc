@@ -1,14 +1,7 @@
 import clsx from "clsx";
 import { Button, Label, ListBox, ListBoxItem, Popover, Select, SelectValue } from "react-aria-components";
 
-import {
-  FIELD_LABEL_CLASS,
-  LISTBOX_CLASS,
-  LISTBOX_ITEM_CLASS,
-  POPOVER_CLASS,
-  SELECT_BUTTON_CLASS,
-  SELECT_ROOT_CLASS,
-} from "../styles.ts";
+import { INPUT_CLASS, LISTBOX_CLASS, LISTBOX_ITEM_CLASS, POPOVER_CLASS } from "../styles.ts";
 
 export interface SelectOption {
   readonly id: string;
@@ -39,10 +32,12 @@ export function JtcSelect({
           onSelectionChange(key);
         }
       }}
-      className={SELECT_ROOT_CLASS}
+      className="flex min-w-[12rem] flex-col gap-1"
     >
-      <Label className={FIELD_LABEL_CLASS}>{label}</Label>
-      <Button className={SELECT_BUTTON_CLASS}>
+      <Label className="text-[11px] font-bold text-[#222]">{label}</Label>
+      <Button
+        className={clsx(INPUT_CLASS, "flex min-h-[22px] items-center justify-between gap-3 px-2 text-left")}
+      >
         <SelectValue />
         <span aria-hidden="true">▼</span>
       </Button>

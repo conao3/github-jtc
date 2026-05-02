@@ -1,22 +1,23 @@
 import clsx from "clsx";
 import type { PropsWithChildren } from "react";
 
-import { PANEL_CLASS, PANEL_HEADER_CLASS, PANEL_TITLE_CLASS } from "../styles.ts";
+import { PANEL_BODY_CLASS, PANEL_CLASS, PANEL_HEADER_CLASS } from "../styles.ts";
 
 interface PanelProps extends PropsWithChildren {
   readonly title: string;
   readonly action?: JSX.Element;
   readonly className?: string;
+  readonly bodyClassName?: string;
 }
 
-export function Panel({ title, action, className, children }: PanelProps): JSX.Element {
+export function Panel({ title, action, className, bodyClassName, children }: PanelProps): JSX.Element {
   return (
     <section className={clsx(PANEL_CLASS, className)}>
       <header className={PANEL_HEADER_CLASS}>
-        <h2 className={PANEL_TITLE_CLASS}>{title}</h2>
+        <h2 className="m-0 text-[11px] font-bold text-[#10233f]">{title}</h2>
         {action}
       </header>
-      <div className="p-3">{children}</div>
+      <div className={clsx(PANEL_BODY_CLASS, bodyClassName)}>{children}</div>
     </section>
   );
 }

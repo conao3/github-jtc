@@ -1,27 +1,29 @@
-import clsx from "clsx";
 import { Button, type ButtonProps } from "react-aria-components";
 
-import { useUiPreferences } from "../state.tsx";
-import { BUTTON_BASE_CLASS, BUTTON_DANGER_CLASS, THEME_CLASS } from "../styles.ts";
+import { buttonClassName } from "../styles.ts";
 
 type Tone = "default" | "primary" | "danger";
+type Size = "sm" | "md" | "lg";
 
 interface JtcButtonProps extends ButtonProps {
   readonly tone?: Tone;
+  readonly size?: Size;
 }
 
-export function JtcButton({ tone = "default", className, ...props }: JtcButtonProps): JSX.Element {
-  const { theme } = useUiPreferences();
-
+export function JtcButton({
+  tone = "default",
+  size = "md",
+  className,
+  ...props
+}: JtcButtonProps): JSX.Element {
   return (
     <Button
       {...props}
-      className={clsx(
-        BUTTON_BASE_CLASS,
-        tone === "primary" && THEME_CLASS[theme].primaryButton,
-        tone === "danger" && BUTTON_DANGER_CLASS,
-        className,
-      )}
+      className={buttonClassName({
+        tone,
+        size,
+        className: typeof className === "string" ? className : undefined,
+      })}
     />
   );
 }

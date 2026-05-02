@@ -1,193 +1,257 @@
 import clsx from "clsx";
 
-import type { ColorTheme, FontScale } from "./state.tsx";
+import type { FontScale } from "./state.tsx";
 
 export const FONT_FAMILY_CLASS =
-  "font-['MS_Gothic','MS_PGothic','Hiragino_Kaku_Gothic_ProN','Yu_Gothic_UI','Noto_Sans_JP',sans-serif]";
+  "font-['MS_PGothic','MS_Gothic','Hiragino_Kaku_Gothic_Pro','Meiryo','Osaka',sans-serif]";
+export const MONO_CLASS = "font-['MS_Gothic','Osaka-mono',monospace]";
+export const MUTED_CLASS = "text-[#555]";
+export const TEXT_LINK_CLASS =
+  "text-[#0033aa] underline underline-offset-2 visited:text-[#5a2a8a] hover:bg-[#ffefa0]";
 
 export const FONT_SCALE_CLASS: Record<FontScale, string> = {
-  small: "text-[12px] leading-[1.35]",
-  medium: "text-[14px] leading-[1.45]",
-  large: "text-[16px] leading-[1.55]",
+  small: "text-[11px] leading-[1.35]",
+  medium: "text-[12px] leading-[1.4]",
+  large: "text-[13px] leading-[1.45]",
 };
 
-export const THEME_CLASS: Record<
-  ColorTheme,
-  {
-    readonly brand: string;
-    readonly mainNavActive: string;
-    readonly sideNavActive: string;
-    readonly primaryButton: string;
-    readonly tabActive: string;
-    readonly fileActive: string;
-    readonly kpiValue: string;
-  }
-> = {
-  navy: {
-    brand: "border-b-2 border-b-[#081425] bg-gradient-to-b from-[#10243f] to-[#33577f]",
-    mainNavActive: "bg-gradient-to-b from-[#28568a] to-[#12365a] text-white",
-    sideNavActive: "border-[#3f6186] bg-gradient-to-b from-[#dbe8f4] to-[#a8c1db] font-bold",
-    primaryButton: "border-[#1a4672] bg-gradient-to-b from-[#376da6] to-[#174067] text-white",
-    tabActive:
-      "data-[selected]:bg-gradient-to-b data-[selected]:from-[#2f608f] data-[selected]:to-[#163b61] data-[selected]:text-white",
-    fileActive: "border-[#3c6287] bg-gradient-to-b from-[#dce9f6] to-[#b7cee4]",
-    kpiValue: "text-[#10243f]",
-  },
-  green: {
-    brand: "border-b-2 border-b-[#0f2516] bg-gradient-to-b from-[#1d3b27] to-[#4e7655]",
-    mainNavActive: "bg-gradient-to-b from-[#407657] to-[#1f492f] text-white",
-    sideNavActive: "border-[#44684f] bg-gradient-to-b from-[#dcecd9] to-[#b4d0b3] font-bold",
-    primaryButton: "border-[#2c5d3c] bg-gradient-to-b from-[#4f8a60] to-[#285036] text-white",
-    tabActive:
-      "data-[selected]:bg-gradient-to-b data-[selected]:from-[#477f5a] data-[selected]:to-[#245036] data-[selected]:text-white",
-    fileActive: "border-[#4f765a] bg-gradient-to-b from-[#dcebdf] to-[#bdd7c2]",
-    kpiValue: "text-[#1d3b27]",
-  },
-  brown: {
-    brand: "border-b-2 border-b-[#2d170b] bg-gradient-to-b from-[#4f311d] to-[#8b6244]",
-    mainNavActive: "bg-gradient-to-b from-[#8f653f] to-[#5d3821] text-white",
-    sideNavActive: "border-[#7b5638] bg-gradient-to-b from-[#f1e2d6] to-[#d9bea7] font-bold",
-    primaryButton: "border-[#7b4f2e] bg-gradient-to-b from-[#aa7950] to-[#6d4325] text-white",
-    tabActive:
-      "data-[selected]:bg-gradient-to-b data-[selected]:from-[#9a7148] data-[selected]:to-[#6b4225] data-[selected]:text-white",
-    fileActive: "border-[#886245] bg-gradient-to-b from-[#f2e4d6] to-[#d9c2ad]",
-    kpiValue: "text-[#4f311d]",
-  },
-};
+export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "min-h-screen bg-[#e6e9ef] p-3 text-[#222]");
+export const APP_FRAME_CLASS = "mx-auto w-[1280px] border border-[#888] bg-[#e6e9ef]";
 
-export const APP_CHROME_CLASS = clsx(
-  FONT_FAMILY_CLASS,
-  "min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0)),linear-gradient(90deg,rgba(16,36,63,0.06)_0,rgba(16,36,63,0.06)_1px,transparent_1px,transparent_24px),linear-gradient(#c8ced5,#b9c2cb)] p-3 text-[#17202d]",
+export const HEADER_ROW_CLASS = clsx(
+  "grid min-h-[54px] grid-cols-[280px_minmax(0,1fr)_auto] items-center border-b border-b-[#888]",
+  "bg-gradient-to-b from-white to-[#e8edf3] pr-2",
 );
-
-export const FRAME_CLASS = clsx(
-  "border border-[#445063]",
-  "bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0.25))]",
-  "shadow-[0_14px_32px_rgba(17,26,39,0.16)]",
+export const LOGO_CELL_CLASS = clsx(
+  "flex h-[54px] flex-col justify-center border-r border-r-[#1a3e72] px-2.5 py-1.5 text-white",
+  "bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72]",
 );
-
-export const TOP_STATUS_CLASS = clsx(
-  "flex flex-wrap items-center justify-between gap-3 border-b border-[#d7dde5]",
-  "bg-gradient-to-b from-[#f5f6f9] to-[#dde4eb] px-2.5 py-1.5 text-[12px]",
+export const PRODUCT_NAME_CLASS =
+  "text-[18px] font-bold tracking-[0.5px] text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.4)]";
+export const PRODUCT_EDITION_CLASS = "mt-px text-[10px] text-[#d8e2f0]";
+export const PRODUCT_SUBTITLE_CLASS =
+  "mt-0.5 border-t border-dotted border-t-[#aac4e6] pt-0.5 text-[11px] font-bold text-white";
+export const USER_INFO_CELL_CLASS = "px-2 text-[11px]";
+export const USER_INFO_TABLE_CLASS = clsx(
+  "border-collapse [&_td]:align-top [&_td]:pr-1.5 [&_td]:pb-px",
+  "[&_td_.lbl]:text-[#555] [&_td_.val]:font-bold",
 );
+export const HEADER_ACTIONS_CLASS = "flex items-center gap-1 text-[11px]";
+export const FONT_SWITCHER_CLASS = "mr-1.5 inline-flex items-center gap-1";
 
-export const BRAND_BAR_CLASS = "flex flex-wrap justify-between gap-4 px-4 py-3.5";
-export const BRAND_TITLE_CLASS =
-  "mt-1 text-[2rem] font-bold tracking-[0.03em] text-white [text-shadow:0_1px_0_rgba(0,0,0,0.45)]";
-
-export const MAIN_MENU_CLASS =
-  "flex overflow-x-auto border-b border-[#445063] bg-gradient-to-b from-[#f0f3f7] to-[#d7dde4]";
-export const MAIN_MENU_LINK_CLASS = clsx(
-  "inline-flex min-w-44 items-center justify-center border-r border-[#a8b1bc]",
-  "bg-gradient-to-b from-[#f9fbfd] to-[#d7dee7] px-3 py-2.5 font-bold text-[#203249]",
+export const MENU_BAR_CLASS =
+  "grid grid-cols-[280px_minmax(0,1fr)] border-b-2 border-b-[#555] border-t border-t-white bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72]";
+export const MENU_BAR_LEFT_CLASS =
+  "border-r border-r-black bg-gradient-to-b from-[#16386b] to-[#0e2547] px-3 py-1.5 text-[12px] font-bold text-white";
+export const MENU_ITEMS_ROW_CLASS = "flex";
+export const MENU_ITEM_CLASS = clsx(
+  "inline-flex items-center gap-1 border-l border-l-[rgba(0,0,0,0.2)] border-r border-r-[rgba(255,255,255,0.25)]",
+  "px-[18px] py-1.5 text-[12px] font-bold text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.4)]",
+  "hover:bg-gradient-to-b hover:from-[#5a8ac4] hover:to-[#2a5894]",
 );
+export const MENU_ITEM_ACTIVE_CLASS =
+  "bg-gradient-to-b from-[#ffd968] to-[#d99a00] text-[#2a1500] [text-shadow:none]";
 
-export const CONTENT_GRID_CLASS = "grid gap-3.5 p-3.5 xl:grid-cols-[16rem_minmax(0,1fr)_18rem]";
-export const RAIL_COLUMN_CLASS = "flex flex-col gap-3";
+export const BREADCRUMB_ROW_CLASS =
+  "grid grid-cols-[280px_minmax(0,1fr)] border-b border-b-[#aab] bg-gradient-to-b from-white to-[#dde3ec] text-[11px]";
+export const SCREEN_ID_CELL_CLASS = "bg-[#f0f3f7] px-2.5 py-[3px] text-[#555] border-r border-r-[#aab]";
+export const BREADCRUMBS_CLASS = "flex flex-wrap items-center px-2.5 py-[3px]";
 
-export const PANEL_CLASS = clsx(
-  "overflow-hidden border border-[#8892a0]",
-  "bg-gradient-to-b from-white to-[#fbfbfc]",
-  "shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]",
-);
+export const BODY_GRID_CLASS = "grid grid-cols-[180px_minmax(0,1fr)_240px]";
+export const SIDE_MENU_CLASS =
+  "border-r border-r-[#aab] bg-gradient-to-r from-[#f0f3f7] to-[#e2e8f0] pb-2 text-[11px]";
+export const SIDE_MENU_TITLE_CLASS =
+  "bg-gradient-to-b from-[#1f4f8a] to-[#16386b] px-2 py-1 text-[11px] font-bold text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.4)]";
+export const SIDE_GROUP_SUMMARY_CLASS =
+  "relative list-none cursor-pointer bg-gradient-to-b from-[#e9eef5] to-[#d4dbe4] px-2 py-1 pl-[18px] text-[11px] font-bold text-[#16386b]";
+export const SIDE_GROUP_LIST_CLASS = "m-0 list-none bg-white px-0 py-0.5";
+export const SIDE_GROUP_ITEM_CLASS =
+  "relative border-b border-b-dotted border-b-[#ddd] px-2 py-0.5 pl-[26px]";
+export const SIDE_GROUP_ITEM_ACTIVE_CLASS = "bg-[#fff7c0] font-bold";
+export const STATUS_BOX_CLASS = "mx-1.5 mt-2 border border-[#999] bg-white";
+export const STATUS_BOX_TITLE_CLASS =
+  "bg-gradient-to-b from-[#f9fbfd] to-[#d9e0ea] px-2 py-1 text-[11px] font-bold";
+export const STATUS_BOX_BODY_CLASS = "px-2 py-1.5 text-[10px]";
+export const IE_NOTICE_CLASS =
+  "mx-1.5 mt-2 border border-[#c8001a] bg-[#fff0c0] px-2 py-1 text-[10px] text-[#8e0014]";
 
-export const PANEL_HEADER_CLASS = clsx(
-  "flex items-center justify-between gap-3 border-b border-[#b6bec8]",
-  "bg-gradient-to-b from-[#e5eaef] to-[#cfd8e1] px-2.5 py-2",
-);
-export const PANEL_TITLE_CLASS = "m-0 text-[1rem]";
-
-export const PAGE_HEADER_CLASS =
-  "flex flex-wrap items-start justify-between gap-3 border border-[#8892a0] bg-gradient-to-b from-white to-[#eef3f8] p-3";
-export const PAGE_TITLE_CLASS = "m-0 text-[1.45rem] tracking-[0.02em]";
-export const PAGE_SUMMARY_CLASS = "m-0 text-[0.95rem] text-[#4f5b6e]";
-export const PAGE_ACTIONS_CLASS = "flex flex-wrap items-center gap-2";
-
-export const BREADCRUMBS_CLASS = "m-0 flex flex-wrap items-center gap-1.5 p-0 text-[12px] text-[#4f5b6e]";
-export const TEXT_LINK_CLASS = "text-[#0c4170] underline-offset-2 hover:underline";
-
-export const SIDE_NAV_CLASS = "m-0 list-none space-y-1.5 p-0";
-export const SIDE_NAV_LINK_CLASS = clsx(
-  "block border border-[#c6ced8] bg-gradient-to-b from-[#fdfefe] to-[#e7edf3] px-2.5 py-2",
-  "text-[#17202d]",
-);
-
-export const MINI_LIST_CLASS = "m-0 list-none space-y-2.5 p-0 text-[13px]";
-export const BULLET_LIST_CLASS = "space-y-2 pl-[18px]";
-
-export const FIELD_STACK_CLASS = "flex flex-col gap-1";
-export const FIELD_LABEL_CLASS = "text-[12px] font-bold text-[#17202d]";
-export const INPUT_CLASS = clsx(
-  "min-h-[34px] border border-[#717f91] bg-gradient-to-b from-white to-[#eef2f6] px-2 py-1.5",
-  "shadow-[inset_1px_1px_1px_rgba(0,0,0,0.06)] outline-none [font:inherit]",
-);
-export const FILTER_GRID_CLASS = "grid gap-3 md:grid-cols-3";
-export const SEARCH_FIELD_CLASS = "flex min-w-[min(100%,26rem)] flex-col gap-1";
-export const SEARCH_INPUT_CLASS = clsx(INPUT_CLASS, "min-w-[20rem]");
-export const FILTER_INPUT_CLASS = clsx(INPUT_CLASS, "w-full");
-
-export const BUTTON_BASE_CLASS = clsx(
-  "inline-flex min-h-[34px] items-center justify-center gap-1.5 border px-3 py-1.5 font-bold",
-  "bg-gradient-to-b from-[#fffef7] to-[#dce3ec] text-[#17202d] shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]",
-  "[font:inherit]",
-);
-export const BUTTON_DANGER_CLASS = "border-[#7f1621] bg-gradient-to-b from-[#cf4652] to-[#971923] text-white";
-
-export const SELECT_ROOT_CLASS = "flex min-w-[12rem] flex-col gap-1";
-export const SELECT_BUTTON_CLASS = clsx(
-  INPUT_CLASS,
-  "flex items-center justify-between gap-3 px-2 text-left [font:inherit]",
-);
-export const POPOVER_CLASS = "border border-[#717f91] bg-white shadow-[0_8px_18px_rgba(17,26,39,0.22)]";
-export const LISTBOX_CLASS = "max-h-72 overflow-auto p-1";
-export const LISTBOX_ITEM_CLASS =
-  "cursor-default rounded-none px-2 py-1.5 data-[focused]:bg-[#dce7f3] data-[selected]:bg-[#b9cee2]";
-
-export const TABLE_CLASS = clsx(
-  "w-full border-collapse text-[0.92rem]",
-  "[&_td]:align-top [&_td]:border [&_td]:border-[#bcc5cf] [&_td]:px-2 [&_td]:py-[7px]",
-  "[&_th]:align-top [&_th]:border [&_th]:border-[#bcc5cf] [&_th]:px-2 [&_th]:py-[7px] [&_th]:text-left",
-  "[&_thead_th]:bg-gradient-to-b [&_thead_th]:from-[#edf1f5] [&_thead_th]:to-[#d7dfe8]",
-  "[&_tbody_th]:bg-gradient-to-b [&_tbody_th]:from-[#edf1f5] [&_tbody_th]:to-[#d7dfe8]",
-);
-export const COMPACT_TABLE_CLASS = clsx(
-  TABLE_CLASS,
-  "[&_td]:px-1.5 [&_td]:py-1.5 [&_th]:px-1.5 [&_th]:py-1.5",
-);
-
-export const KPI_GRID_CLASS = "grid gap-3 md:grid-cols-2 xl:grid-cols-4";
-export const KPI_CARD_CLASS =
-  "border border-[#7d8a9c] bg-gradient-to-b from-[#fffdf1] to-[#eceef3] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]";
-export const KPI_LABEL_CLASS = "text-[12px] font-bold tracking-[0.08em] text-[#4f5b6e]";
-export const KPI_NOTE_CLASS = "text-[12px] text-[#59677b]";
-
-export const FILE_LIST_CLASS = "m-0 list-none space-y-1.5 p-0";
-export const FILE_ROW_CLASS = clsx(
-  "flex w-full justify-between gap-2 border border-[#cad1db]",
-  "bg-gradient-to-b from-[#fcfcfd] to-[#edf1f5] px-2 py-2 text-left",
-  "[font:inherit]",
-);
-export const CODE_VIEW_CLASS = clsx(
-  "mt-3 overflow-auto border border-[#b5c0cb] bg-[#f8fafc] p-3 text-[12px] leading-[1.7]",
-  "font-['MS_Gothic','MS_PGothic','Cascadia_Mono',monospace]",
-);
-
-export const TAB_LIST_CLASS = "flex flex-wrap gap-1";
-export const TAB_CLASS = clsx(
-  "border border-[#758392] bg-gradient-to-b from-[#f8fbfd] to-[#d7dee7] px-3 py-2",
-  "[font:inherit]",
-);
-export const TAB_PANEL_CLASS = clsx(PANEL_CLASS, "p-3");
-
-export const DIALOG_OVERLAY_CLASS =
-  "fixed inset-0 flex items-center justify-center bg-[rgba(12,22,34,0.42)] p-5";
-export const DIALOG_CLASS =
-  "w-full max-w-[42rem] overflow-hidden border border-[#445063] bg-gradient-to-b from-white to-[#eef3f7] shadow-[0_18px_34px_rgba(17,26,39,0.28)]";
+export const MAIN_COL_CLASS = "min-w-0 bg-[#f7f8fb] p-2";
+export const RIGHT_COL_CLASS = "border-l border-l-[#aab] bg-[#eef2f6] p-2";
 
 export const FOOTER_CLASS = clsx(
-  "flex flex-wrap justify-between gap-x-4 gap-y-2 border-t border-[#445063]",
-  "bg-gradient-to-b from-[#e6ebf0] to-[#d0d8e1] px-3 py-2 text-[12px]",
+  "grid grid-cols-[1fr_auto_auto] items-center gap-2 border-t border-t-[#aab]",
+  "bg-gradient-to-b from-[#f8fafc] to-[#dce3ec] px-2.5 py-1.5 text-[10px] text-[#555]",
 );
 
+export const WARN_LINE_CLASS =
+  "mb-2 border border-[#d4a000] bg-[#fff0c0] px-2.5 py-1.5 text-[11px] leading-[1.5]";
+
+export const PANEL_CLASS =
+  "mb-2 overflow-hidden border border-[#999] bg-white shadow-[0_1px_0_rgba(0,0,0,0.05)]";
+export const PANEL_HEADER_CLASS = clsx(
+  "flex items-center justify-between gap-2 border-b border-b-[#7c8b9d]",
+  "bg-gradient-to-b from-[#e8edf4] to-[#c7d1df] px-2 py-1 text-[11px] font-bold text-[#10233f]",
+);
+export const PANEL_BODY_CLASS = "p-2";
+
+export const BUTTON_BASE_CLASS = clsx(
+  "inline-flex items-center justify-center border border-[#888] bg-gradient-to-b from-[#fafafa] to-[#d6d6d6]",
+  "font-bold text-[#222] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] [font:inherit]",
+);
+export const BUTTON_PRIMARY_CLASS =
+  "border-[#555] bg-gradient-to-b from-[#5a8ac4] to-[#2a5894] text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.35)]";
+export const BUTTON_DANGER_CLASS =
+  "border-[#7b2d2d] bg-gradient-to-b from-[#e07474] to-[#b64242] text-white [text-shadow:1px_1px_0_rgba(0,0,0,0.3)]";
+export const BUTTON_MD_CLASS = "min-h-[24px] px-3 py-1";
+export const BUTTON_SM_CLASS = "min-h-[20px] px-2 py-0.5 text-[10px]";
+export const BUTTON_LG_CLASS = "min-h-[32px] px-6 py-1.5 text-[13px]";
+
+export const INPUT_CLASS = clsx(
+  "min-h-[22px] border border-[#888] bg-white px-1.5 py-0.5 text-[11px] [font:inherit]",
+  "shadow-[inset_0_1px_1px_rgba(0,0,0,0.08)] outline-none",
+);
+export const SELECT_CLASS = clsx(INPUT_CLASS, "pr-6");
+export const TEXTAREA_CLASS = clsx(INPUT_CLASS, "min-h-[60px] w-full resize-y");
+export const FAKE_INPUT_CLASS =
+  "inline-flex min-h-[22px] min-w-[96px] items-center border border-[#888] bg-white px-1.5 py-0.5";
+export const POPOVER_CLASS = "border border-[#888] bg-white shadow-[0_8px_18px_rgba(0,0,0,0.22)]";
+export const LISTBOX_CLASS = "max-h-72 overflow-auto p-1";
+export const LISTBOX_ITEM_CLASS =
+  "cursor-default px-2 py-1.5 data-[focused]:bg-[#dce7f3] data-[selected]:bg-[#b9cee2]";
+
+export const SEARCH_FORM_CLASS =
+  "flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5";
+export const SEARCH_FORM_STACK_CLASS = "flex flex-col gap-1";
+export const SEARCH_ROW_CLASS = "flex flex-wrap items-center gap-2";
+
+export const TABLE_CLASS = clsx(
+  "w-full border-collapse text-[11px]",
+  "[&_td]:border [&_td]:border-[#c5c5c5] [&_td]:px-1.5 [&_td]:py-1 [&_td]:align-top",
+  "[&_th]:border [&_th]:border-[#999] [&_th]:px-1.5 [&_th]:py-1 [&_th]:align-middle [&_th]:text-left",
+  "[&_thead_th]:bg-gradient-to-b [&_thead_th]:from-[#d8dde6] [&_thead_th]:to-[#c5cdd9]",
+  "[&_tbody_tr:nth-child(even)]:bg-[#f4f6fa] [&_tbody_tr:hover]:bg-[#fff7d0]",
+);
+export const KV_TABLE_CLASS = clsx(
+  TABLE_CLASS,
+  "[&_tbody_th]:w-[120px] [&_tbody_th]:bg-gradient-to-b [&_tbody_th]:from-[#edf1f5] [&_tbody_th]:to-[#d7dfe8]",
+);
+export const TABLE_COMPACT_CLASS = clsx(TABLE_CLASS, "[&_td]:py-0.5 [&_th]:py-0.5");
+
+export const TABS_ROW_CLASS = "flex flex-wrap gap-1 border-b border-b-[#c5c5c5] bg-[#eef2f6] px-2 pt-1";
+export const TAB_CLASS = "border border-b-0 border-[#999] bg-[#e0e6ef] px-2.5 py-1 text-[11px] font-bold";
+export const TAB_ACTIVE_CLASS = "bg-white";
+export const TAB_BADGE_CLASS =
+  "ml-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-[#c8001a] px-1 text-[10px] text-white";
+
+export const KPI_ROW_CLASS = "grid grid-cols-4 gap-2 p-2";
+export const KPI_CARD_CLASS =
+  "border border-[#aab] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]";
+export const KPI_LABEL_CLASS = "text-[11px] font-bold text-[#444]";
+export const KPI_VALUE_CLASS = "mt-1 text-[28px] font-bold text-[#16386b]";
+export const KPI_UNIT_CLASS = "ml-1 text-[12px]";
+export const KPI_DELTA_CLASS = "mt-1 text-[10px]";
+
+export const STATUS_TAG_BASE_CLASS =
+  "inline-flex min-w-[52px] items-center justify-center border px-1.5 py-px text-[10px] font-bold";
+export const PRIORITY_TAG_BASE_CLASS =
+  "inline-flex min-w-[22px] items-center justify-center border px-1 py-px text-[10px] font-bold";
+
+export const FLOW_WRAP_CLASS = "flex flex-wrap gap-2 p-2";
+export const FLOW_STEP_BASE_CLASS =
+  "relative min-h-[124px] flex-1 basis-[152px] border p-2 text-[11px] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]";
+export const FLOW_STEP_DONE_CLASS = "border-[#7aa07f] bg-gradient-to-b from-[#ecf8ee] to-[#d8ebdc]";
+export const FLOW_STEP_CURRENT_CLASS = "border-[#d4a000] bg-gradient-to-b from-[#fff7cc] to-[#ffe59c]";
+export const FLOW_STEP_FUTURE_CLASS = "border-[#aab] bg-gradient-to-b from-[#f8fafc] to-[#e1e6ee]";
+export const FLOW_STEP_NO_CLASS = "text-[10px] font-bold text-[#555]";
+export const FLOW_STEP_NAME_CLASS = "mt-1 font-bold text-[#16386b]";
+export const FLOW_STEP_META_CLASS = "mt-1 leading-[1.5]";
+
+export const TODO_LIST_CLASS = "m-0 list-none p-0";
+export const TODO_LIST_ITEM_CLASS =
+  "flex items-center justify-between gap-2 border-b border-b-dotted border-b-[#bbb] px-1.5 py-1 text-[11px]";
+export const SHORTCUT_GRID_CLASS = "grid grid-cols-3 gap-1.5 p-2";
+export const SHORTCUT_CLASS =
+  "flex min-h-[54px] flex-col items-center justify-center gap-1 border border-[#9aa7b8] bg-gradient-to-b from-white to-[#dbe4f1] px-1 py-1 text-center text-[10px] font-bold";
+export const SHORTCUT_ICON_CLASS =
+  "flex h-6 w-6 items-center justify-center rounded-sm border border-[#6c7c90] bg-gradient-to-b from-[#fdfefe] to-[#d7e1ef] text-[11px]";
+export const CONTACT_BOX_CLASS = "border border-[#c5c5c5] bg-[#fffce8] p-2 text-[11px] leading-[1.6]";
+export const CONTACT_BOX_TITLE_CLASS = "mb-1 font-bold";
+
+export const PAGER_CLASS =
+  "flex flex-wrap items-center gap-1 border-t border-t-[#c5c5c5] bg-[#f4f6fa] px-2 py-1";
+export const PAGER_LINK_CLASS = "border border-[#aaa] bg-white px-1.5 py-0.5 text-[10px]";
+export const PAGER_LINK_ACTIVE_CLASS = "bg-[#fff7c0] font-bold";
+
+export const CANVAS_BG_CLASS =
+  "min-h-screen bg-[linear-gradient(#f0eee9,#f0eee9),linear-gradient(90deg,rgba(0,0,0,0.06)_1px,transparent_1px),linear-gradient(rgba(0,0,0,0.06)_1px,transparent_1px)] bg-[length:auto,24px_24px,24px_24px] bg-[position:0_0,0_0,0_0] p-6 text-[#2a251f]";
+export const CANVAS_SECTION_CLASS =
+  "mb-8 rounded-md border border-[rgba(60,50,40,0.2)] bg-[rgba(255,255,255,0.35)] p-4";
+export const ARTBOARD_CARD_CLASS =
+  "relative rounded-md border border-[rgba(60,50,40,0.2)] bg-white/80 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)]";
+export const ARTBOARD_FRAME_CLASS =
+  "overflow-hidden rounded border border-[#9ca7b5] bg-[#e6e9ef] shadow-[0_1px_0_rgba(0,0,0,0.05)]";
+
+export function buttonClassName(options?: {
+  readonly tone?: "default" | "primary" | "danger";
+  readonly size?: "sm" | "md" | "lg";
+  readonly className?: string;
+}): string {
+  const { tone = "default", size = "md", className } = options ?? {};
+
+  return clsx(
+    BUTTON_BASE_CLASS,
+    size === "sm" && BUTTON_SM_CLASS,
+    size === "md" && BUTTON_MD_CLASS,
+    size === "lg" && BUTTON_LG_CLASS,
+    tone === "primary" && BUTTON_PRIMARY_CLASS,
+    tone === "danger" && BUTTON_DANGER_CLASS,
+    className,
+  );
+}
+
+export function statusTagClassName(
+  tone:
+    | "new"
+    | "review"
+    | "pending"
+    | "inProgress"
+    | "done"
+    | "rejected"
+    | "confirmed"
+    | "required"
+    | "warning",
+): string {
+  return clsx(
+    STATUS_TAG_BASE_CLASS,
+    tone === "new" && "border-[#49739d] bg-[#dce8f6] text-[#16386b]",
+    tone === "review" && "border-[#d4a000] bg-[#fff0c0] text-[#8a5200]",
+    tone === "pending" && "border-[#b18d24] bg-[#fff7d0] text-[#7a5e00]",
+    tone === "inProgress" && "border-[#d08200] bg-[#ffe1a8] text-[#8b4600]",
+    tone === "done" && "border-[#2a7f45] bg-[#dff3e5] text-[#176535]",
+    tone === "rejected" && "border-[#a03333] bg-[#ffdede] text-[#8e0014]",
+    tone === "confirmed" && "border-[#49739d] bg-[#e0ebf8] text-[#16386b]",
+    tone === "required" && "border-[#8f8f8f] bg-[#efefef] text-[#555]",
+    tone === "warning" && "border-[#d4a000] bg-[#fff0c0] text-[#8a5200]",
+  );
+}
+
+export function priorityTagClassName(priority: "high" | "medium" | "low"): string {
+  return clsx(
+    PRIORITY_TAG_BASE_CLASS,
+    priority === "high" && "border-[#a03333] bg-[#ffdede] text-[#8e0014]",
+    priority === "medium" && "border-[#d08200] bg-[#ffe1a8] text-[#8b4600]",
+    priority === "low" && "border-[#49739d] bg-[#dce8f6] text-[#16386b]",
+  );
+}
+
+export function flowStepClassName(state: "done" | "current" | "future"): string {
+  return clsx(
+    FLOW_STEP_BASE_CLASS,
+    state === "done" && FLOW_STEP_DONE_CLASS,
+    state === "current" && FLOW_STEP_CURRENT_CLASS,
+    state === "future" && FLOW_STEP_FUTURE_CLASS,
+  );
+}
+
 export const LOADING_CLASS =
-  "border border-[#8892a0] bg-gradient-to-b from-[#fffef7] to-[#f1f4f8] px-6 py-10 text-center font-bold";
+  "mx-auto mt-12 w-[1280px] border border-[#999] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-6 py-10 text-center font-bold";

@@ -1,108 +1,148 @@
-import { useDeferredValue, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { JtcSelect } from "../app/components/JtcSelect.tsx";
-import { PageHeader } from "../app/components/PageHeader.tsx";
+import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
+import { JtcPriorityTag, JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
-import { StatusBadge } from "../app/components/StatusBadge.tsx";
 import {
-  FIELD_LABEL_CLASS,
-  FIELD_STACK_CLASS,
-  FILTER_GRID_CLASS,
-  FILTER_INPUT_CLASS,
+  MONO_CLASS,
+  MUTED_CLASS,
   TABLE_CLASS,
   TEXT_LINK_CLASS,
+  TODO_LIST_CLASS,
+  TODO_LIST_ITEM_CLASS,
+  buttonClassName,
 } from "../app/styles.ts";
-import { issues } from "../data/mockData.ts";
 
-export default function IssuesPage(): JSX.Element {
-  const [status, setStatus] = useState("all");
-  const [keyword, setKeyword] = useState("");
-  const deferredKeyword = useDeferredValue(keyword);
+const rows = [
+  [
+    "ISS-2025-00125",
+    "決済処理においてDB接続タイムアウト時にエラーログが出力されない",
+    "不具合",
+    "対応中",
+    "高",
+    "山田 太郎",
+    "R8/05/30",
+  ],
+  ["ISS-2025-00118", "ログ出力カラムの欠落", "改善", "新規", "中", "佐藤 雄樹", "R8/06/02"],
+  ["ISS-2025-00105", "マスタ更新時のDBエラー", "不具合", "確認待ち", "低", "田中 健太", "R8/06/15"],
+] as const;
 
-  const filteredIssues = issues.filter((issue) => {
-    const matchesStatus = status === "all" || issue.status === status;
-    const matchesKeyword =
-      deferredKeyword.length === 0 ||
-      issue.title.includes(deferredKeyword) ||
-      issue.id.includes(deferredKeyword) ||
-      issue.category.includes(deferredKeyword);
-
-    return matchesStatus && matchesKeyword;
-  });
-
+export function IssuesScreen(): JSX.Element {
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="課題 / Issue 一覧"
-        summary="GitHub Issue を社内障害票・問い合わせ票の見た目に寄せて表示する PoC 画面です。"
-        breadcrumbs={[{ label: "課題管理", to: "/" }, { label: "Issue 一覧" }]}
-      />
+    <JtcChrome
+      screenId="JTC-ISS-001"
+      crumbs={[{ label: "開発管理", to: "/repositories" }, { label: "課題（Issue）一覧" }]}
+      activeTopMenu="開発管理"
+      activeSideItem="課題（Issue）一覧"
+      rightColumn={
+        <>
+          <Panel title="課題サマリ" bodyClassName="p-0">
+            <ul className={TODO_LIST_CLASS}>
+              {[
+                ["対応中", "8件"],
+                ["新規", "3件"],
+                ["確認待ち", "2件"],
+                ["期限超過", "1件"],
+              ].map(([label, value]) => (
+                <li key={label} className={TODO_LIST_ITEM_CLASS}>
+                  <span>{label}</span>
+                  <span className="font-bold text-[#16386b]">{value}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
 
-      <Panel title="照会条件">
-        <div className={FILTER_GRID_CLASS}>
-          <label className={FIELD_STACK_CLASS}>
-            <span className={FIELD_LABEL_CLASS}>課題番号/件名/区分</span>
-            <input
-              className={FILTER_INPUT_CLASS}
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder="ISS-1182 / 表示不具合"
-            />
-          </label>
-          <JtcSelect
-            label="対応状態"
-            selectedKey={status}
-            onSelectionChange={setStatus}
-            options={[
-              { id: "all", label: "すべて" },
-              { id: "未対応", label: "未対応" },
-              { id: "対応中", label: "対応中" },
-              { id: "回答待ち", label: "回答待ち" },
-              { id: "完了", label: "完了" },
-            ]}
-          />
+          <Panel title="よく使う操作">
+            <div className="flex flex-col gap-1">
+              <button type="button" className={buttonClassName({ tone: "primary" })}>
+                ＋ 課題起票
+              </button>
+              <button type="button" className={buttonClassName()}>
+                高優先度のみ表示
+              </button>
+              <button type="button" className={buttonClassName()}>
+                CSV出力
+              </button>
+            </div>
+          </Panel>
+
+          <Panel title="お問い合わせ">
+            <HelpDeskPanel />
+          </Panel>
+        </>
+      }
+    >
+      <Panel title="照会条件" bodyClassName="p-0">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5">
+          <label>課題番号/件名/区分</label>
+          <input className="border border-[#888] px-1.5 py-0.5" placeholder="ISS-2025-00125" />
+          <label>状態</label>
+          <select className="border border-[#888] px-1 py-0.5">
+            <option>──全て──</option>
+            <option>新規</option>
+            <option>対応中</option>
+            <option>確認待ち</option>
+            <option>解決</option>
+          </select>
+          <label>担当者</label>
+          <input className="border border-[#888] px-1.5 py-0.5" placeholder="山田 太郎" />
+          <button type="button" className={buttonClassName({ tone: "primary" })}>
+            検索
+          </button>
+          <button type="button" className={buttonClassName()}>
+            クリア
+          </button>
         </div>
       </Panel>
 
-      <Panel title={`該当課題 ${String(filteredIssues.length)} 件`}>
+      <Panel title="課題一覧" action={<span className={MUTED_CLASS}>該当 3件</span>} bodyClassName="p-0">
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th>課題番号</th>
+              <th className="w-[120px]">課題番号</th>
               <th>件名</th>
-              <th>区分</th>
-              <th>状態</th>
-              <th>担当者</th>
-              <th>優先</th>
-              <th>期限</th>
+              <th className="w-[80px]">区分</th>
+              <th className="w-[90px]">状態</th>
+              <th className="w-[60px]">優先</th>
+              <th className="w-[90px]">担当者</th>
+              <th className="w-[100px]">期限</th>
             </tr>
           </thead>
           <tbody>
-            {filteredIssues.map((issue) => (
-              <tr key={issue.id}>
-                <td>
-                  <Link to={`/issues/${issue.id}`} className={TEXT_LINK_CLASS}>
-                    {issue.id}
+            {rows.map(([id, title, category, status, priority, assignee, due]) => (
+              <tr key={id}>
+                <td className={MONO_CLASS}>
+                  <Link to={`/issues/${id}`} className={TEXT_LINK_CLASS}>
+                    {id}
                   </Link>
                 </td>
-                <td>{issue.title}</td>
-                <td>{issue.category}</td>
-                <td>{issue.status}</td>
-                <td>{issue.assignee}</td>
-                <td>
-                  <StatusBadge
-                    tone={issue.priority === "S" ? "danger" : issue.priority === "A" ? "warn" : "ok"}
+                <td>{title}</td>
+                <td className="text-center">{category}</td>
+                <td className="text-center">
+                  <JtcStatusTag
+                    tone={status === "対応中" ? "inProgress" : status === "新規" ? "new" : "confirmed"}
                   >
-                    {issue.priority}
-                  </StatusBadge>
+                    {status}
+                  </JtcStatusTag>
                 </td>
-                <td>{issue.dueDate}</td>
+                <td className="text-center">
+                  <JtcPriorityTag
+                    priority={priority === "高" ? "high" : priority === "中" ? "medium" : "low"}
+                  >
+                    {priority}
+                  </JtcPriorityTag>
+                </td>
+                <td className="text-center">{assignee}</td>
+                <td className={MONO_CLASS}>{due}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </Panel>
-    </div>
+    </JtcChrome>
   );
+}
+
+export default function IssuesPage(): JSX.Element {
+  return <IssuesScreen />;
 }
