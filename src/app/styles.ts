@@ -15,8 +15,8 @@ export const FONT_SCALE_CLASS: Record<FontScale, string> = {
   large: "text-13",
 };
 
-export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "h-screen overflow-auto bg-[#e6e9ef] text-[#222]");
-export const APP_FRAME_CLASS = "flex min-h-full w-full flex-col border border-[#888] bg-[#e6e9ef]";
+export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "h-screen overflow-hidden bg-[#e6e9ef] text-[#222]");
+export const APP_FRAME_CLASS = "flex h-full w-full flex-col border border-[#888] bg-[#e6e9ef]";
 
 export const HEADER_ROW_CLASS = clsx(
   "grid min-h-[54px] grid-cols-[280px_minmax(0,1fr)_auto] items-center border-b border-b-[#888]",
@@ -55,7 +55,7 @@ export const MENU_ITEM_ACTIVE_CLASS =
 export const SCREEN_ID_CELL_CLASS = "bg-[#f0f3f7] px-2.5 py-[3px] text-[#555] border-r border-r-[#aab]";
 export const BREADCRUMBS_CLASS = "flex flex-wrap items-center px-2.5 py-[3px]";
 
-export const BODY_GRID_CLASS = "grid flex-1 grid-cols-[180px_minmax(0,1fr)_240px]";
+export const BODY_GRID_CLASS = "grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)_240px] overflow-auto";
 export const SIDE_MENU_CLASS =
   "border-r border-r-[#aab] bg-gradient-to-r from-[#f0f3f7] to-[#e2e8f0] pb-2 text-11";
 export const SIDE_MENU_TITLE_CLASS =
@@ -232,5 +232,5 @@ export function flowStepClassName(state: "done" | "current" | "future"): string 
 
 export const LOADING_CLASS = clsx(
   FONT_FAMILY_CLASS,
-  "flex h-screen w-full items-center justify-center overflow-auto border border-[#999] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-6 py-10 text-center font-bold text-[#222]",
+  "flex h-screen w-full items-center justify-center overflow-hidden border border-[#999] bg-gradient-to-b from-[#fffef7] to-[#eef2f7] px-6 py-10 text-center font-bold text-[#222]",
 );
