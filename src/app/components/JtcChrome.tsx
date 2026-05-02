@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import type { PropsWithChildren, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
+import { formatSessionTimestamp, useAuthSession, useLogoutMutation } from "../auth.tsx";
 import { useUiPreferences } from "../state.tsx";
 import {
   APP_FRAME_CLASS,
@@ -171,7 +172,24 @@ export function JtcChrome({
   rightColumn,
   children,
 }: JtcChromeProps): JSX.Element {
+  const navigate = useNavigate();
   const { fontScale, setFontScale } = useUiPreferences();
+  const sessionQuery = useAuthSession();
+  const logoutMutation = useLogoutMutation();
+  const session = sessionQuery.data;
+  const userLogin = session?.user.login ?? "yamada.taro";
+  const displayName = session?.user.displayName ?? "山田 太郎";
+  const department = session?.user.department ?? "第一システム事業本部 デジタル基盤統括部 基盤開発二課";
+  const role = session?.user.role ?? "開発者（一般）";
+  const providerLabel = session?.user.providerLabel ?? "JTC 社内認証";
+  const lastLoginAt = formatSessionTimestamp(session?.lastLoginAt);
+  const expiresAt =
+    session?.expiresAt === undefined ? "ブラウザセッション有効" : formatSessionTimestamp(session.expiresAt);
+
+  async function handleLogout(): Promise<void> {
+    await logoutMutation.mutateAsync();
+    void navigate("/login", { replace: true });
+  }
 
   return (
     <div className={clsx(BODY_BG_CLASS, FONT_SCALE_CLASS[fontScale])}>
@@ -191,38 +209,39 @@ export function JtcChrome({
                 <tr>
                   <td>
                     <span className="lbl">ユーザーID：</span>
-                    <span className={clsx("val", MONO_CLASS)}>yamada.taro</span>
+                    <span className={clsx("val", MONO_CLASS)}>{userLogin}</span>
                   </td>
                   <td>
                     <span className="lbl">氏名：</span>
-                    <span className="val">山田 太郎</span>
+                    <span className="val">{displayName}</span>
                   </td>
                   <td>
                     <span className="lbl">所属：</span>
-                    <span className="val">第一システム事業本部 デジタル基盤統括部 基盤開発二課</span>
+                    <span className="val">{department}</span>
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <span className="lbl">ロール：</span>
-                    <span className="val">開発者（一般）</span>
+                    <span className="val">{role}</span>
                   </td>
                   <td>
-                    <span className="lbl">権限レベル：</span>
-                    <span className="val">Lv.3</span>
+                    <span className="lbl">認証方式：</span>
+                    <span className="val">{providerLabel}</span>
                   </td>
                   <td>
                     <span className="lbl">前回ログイン：</span>
-                    <span className={clsx("val", MONO_CLASS)}>令和8年5月2日(土) 18:42:17 (JST)</span>
+                    <span className={clsx("val", MONO_CLASS)}>{lastLoginAt}</span>
                   </td>
                 </tr>
                 <tr>
                   <td colSpan={3}>
-                    <span className="lbl">パスワード有効期限：</span>
-                    <span className={clsx("val", MONO_CLASS)}>令和8年6月15日</span>
-                    <span className={clsx("ml-1", MUTED_CLASS)}>（残 44日）</span>
-                    <span className="ml-3 lbl">セッション残時間：</span>
-                    <span className={clsx("val", MONO_CLASS)}>29:42</span>
+                    <span className="lbl">セッション有効期限：</span>
+                    <span className={clsx("val", MONO_CLASS)}>{expiresAt}</span>
+                    <span className="ml-3 lbl">GitHub GraphQL：</span>
+                    <span className="val">
+                      {session?.provider === "github" ? "viewer 取得済" : "未接続（社内認証のみ）"}
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -272,8 +291,13 @@ export function JtcChrome({
             <button type="button" className={buttonClassName({ size: "sm" })}>
               お問い合わせ
             </button>
-            <button type="button" className={buttonClassName({ size: "sm", tone: "primary" })}>
-              ログアウト
+            <button
+              type="button"
+              className={buttonClassName({ size: "sm", tone: "primary" })}
+              disabled={logoutMutation.isPending}
+              onClick={() => void handleLogout()}
+            >
+              {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
             </button>
           </div>
         </header>

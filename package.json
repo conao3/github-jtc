@@ -8,15 +8,20 @@
     "build": "vp build",
     "check": "vp check",
     "test": "vp test",
+    "graphql:schema": "mkdir -p graphql && curl -fsSL https://docs.github.com/public/fpt/schema.docs.graphql -o graphql/github.schema.graphql",
+    "graphql:codegen": "graphql-codegen --config codegen.ts",
     "desktop:dev": "bun run build && electrobun dev",
     "desktop:run": "bun run build && electrobun run",
     "desktop:build": "bun run build && electrobun build",
     "desktop:build:stable": "bun run build && electrobun build --env=stable"
   },
   "dependencies": {
+    "@apollo/client": "^4.1.9",
     "@tailwindcss/vite": "4.2.4",
+    "@tanstack/react-query": "^5.100.8",
     "clsx": "2.1.1",
     "electrobun": "1.16.0",
+    "graphql": "^16.13.2",
     "react": "19.2.5",
     "react-aria-components": "1.17.0",
     "react-dom": "19.2.5",
@@ -24,6 +29,8 @@
     "tailwindcss": "4.2.4"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^7.0.0",
+    "@graphql-codegen/client-preset": "^6.0.0",
     "@types/bun": "1.3.13",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
