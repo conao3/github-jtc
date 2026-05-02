@@ -87,7 +87,7 @@ export function LoginScreen(): JSX.Element {
 
   return (
     <div className={BODY_BG_CLASS}>
-      <div className="flex min-h-screen w-full flex-col border border-[#888] bg-[#e6e9ef]">
+      <div className="flex min-h-full w-full flex-col border border-[#888] bg-[#e6e9ef]">
         <div className="flex items-center justify-between border-b-2 border-b-[#555] bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72] px-4 py-2 text-white">
           <div>
             <div className={PRODUCT_NAME_CLASS}>
