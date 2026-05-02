@@ -16,7 +16,7 @@ export const FONT_SCALE_CLASS: Record<FontScale, string> = {
 };
 
 export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "min-h-screen overflow-x-auto bg-[#e6e9ef] text-[#222]");
-export const APP_FRAME_CLASS = "min-h-screen w-full border border-[#888] bg-[#e6e9ef]";
+export const APP_FRAME_CLASS = "flex min-h-screen w-full flex-col border border-[#888] bg-[#e6e9ef]";
 
 export const HEADER_ROW_CLASS = clsx(
   "grid min-h-[54px] grid-cols-[280px_minmax(0,1fr)_auto] items-center border-b border-b-[#888]",
@@ -55,7 +55,7 @@ export const MENU_ITEM_ACTIVE_CLASS =
 export const SCREEN_ID_CELL_CLASS = "bg-[#f0f3f7] px-2.5 py-[3px] text-[#555] border-r border-r-[#aab]";
 export const BREADCRUMBS_CLASS = "flex flex-wrap items-center px-2.5 py-[3px]";
 
-export const BODY_GRID_CLASS = "grid grid-cols-[180px_minmax(0,1fr)_240px]";
+export const BODY_GRID_CLASS = "grid flex-1 grid-cols-[180px_minmax(0,1fr)_240px]";
 export const SIDE_MENU_CLASS =
   "border-r border-r-[#aab] bg-gradient-to-r from-[#f0f3f7] to-[#e2e8f0] pb-2 text-11";
 export const SIDE_MENU_TITLE_CLASS =
