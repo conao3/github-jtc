@@ -140,9 +140,7 @@ const sideGroups: NavGroup[] = [
 function SideEntry({ entry, active }: { entry: NavEntry; active: boolean }): JSX.Element {
   const content = (
     <>
-      <span
-        className={clsx("absolute left-jtc-14 top-jtc-3", active ? "text-8 text-jtc-c8001a" : "text-jtc-888")}
-      >
+      <span className={clsx("absolute left-3.5 top-1", active ? "text-xs text-red-700" : "text-slate-400")}>
         {active ? "▶" : "・"}
       </span>
       {entry.to === undefined ? (
@@ -150,7 +148,7 @@ function SideEntry({ entry, active }: { entry: NavEntry; active: boolean }): JSX
       ) : (
         <Link
           to={entry.to}
-          className={clsx(TEXT_LINK_CLASS, "no-underline", active && "font-bold text-jtc-222")}
+          className={clsx(TEXT_LINK_CLASS, "no-underline", active && "font-bold text-slate-900")}
         >
           {entry.label}
         </Link>
@@ -194,7 +192,7 @@ export function JtcChrome({
         <header className={HEADER_ROW_CLASS}>
           <div className={LOGO_CELL_CLASS}>
             <div className={PRODUCT_NAME_CLASS}>
-              JTC GitHub<span className="align-super text-10">®</span>
+              JTC GitHub<span className="align-super text-xs">®</span>
             </div>
             <div className={PRODUCT_EDITION_CLASS}>Enterprise Edition 5.2.1</div>
             <div className={PRODUCT_SUBTITLE_CLASS}>統合ソースコード管理基盤</div>
@@ -309,7 +307,7 @@ export function JtcChrome({
                   className={clsx(MENU_ITEM_CLASS, item.label === activeTopMenu && MENU_ITEM_ACTIVE_CLASS)}
                 >
                   {item.label}
-                  <span className="text-8">▼</span>
+                  <span className="text-xs">▼</span>
                 </span>
               ) : (
                 <Link
@@ -318,14 +316,14 @@ export function JtcChrome({
                   className={clsx(MENU_ITEM_CLASS, item.label === activeTopMenu && MENU_ITEM_ACTIVE_CLASS)}
                 >
                   {item.label}
-                  <span className="text-8">▼</span>
+                  <span className="text-xs">▼</span>
                 </Link>
               ),
             )}
           </div>
         </nav>
 
-        <div className="grid grid-cols-jtc-menu border-b border-b-jtc-aab bg-gradient-to-b from-white to-jtc-dde3ec text-11">
+        <div className="flex border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-200 text-xs">
           <div className={SCREEN_ID_CELL_CLASS}>
             画面ID：<span className={MONO_CLASS}>{screenId}</span>
           </div>
@@ -335,7 +333,7 @@ export function JtcChrome({
             </Link>
             {crumbs.map((crumb, index) => (
               <span key={`${crumb.label}:${index}`} className="flex items-center">
-                <span className="px-1 text-jtc-888">＞</span>
+                <span className="px-1 text-slate-400">＞</span>
                 {crumb.to === undefined || index === crumbs.length - 1 ? (
                   <span className={index === crumbs.length - 1 ? "font-bold text-black" : undefined}>
                     {crumb.label}
@@ -357,10 +355,10 @@ export function JtcChrome({
               <details
                 key={group.title}
                 open={group.defaultOpen || group.items.some((item) => item.label === activeSideItem)}
-                className="border-b border-b-dotted border-b-jtc-999"
+                className="border-b border-b-dotted border-b-slate-400"
               >
                 <summary className={SIDE_GROUP_SUMMARY_CLASS}>
-                  <span className="absolute left-1.5 text-8">▼</span>
+                  <span className="absolute left-1.5 text-xs">▼</span>
                   {group.title}
                 </summary>
                 <ul className={SIDE_GROUP_LIST_CLASS}>
@@ -375,29 +373,29 @@ export function JtcChrome({
               <div className={STATUS_BOX_TITLE_CLASS}>システム稼働状況</div>
               <div className={STATUS_BOX_BODY_CLASS}>
                 <div>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                   <b>全体：</b>正常稼働中
                 </div>
-                <div className="mt-1 space-y-0.5 text-10">
+                <div className="mt-1 space-y-0.5 text-xs">
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                     Web/API
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                     リポジトリDB
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-f5d949" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300" />
                     CIランナー <span className={MUTED_CLASS}>(縮退)</span>
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                     認証基盤
                   </div>
                 </div>
                 <div className="mt-1 text-right">
-                  <span className={clsx(TEXT_LINK_CLASS, "text-10")}>▶ 詳細はこちら</span>
+                  <span className={clsx(TEXT_LINK_CLASS, "text-xs")}>▶ 詳細はこちら</span>
                 </div>
               </div>
             </div>
@@ -435,15 +433,15 @@ export function HelpDeskPanel(): JSX.Element {
       <br />
       <span className={clsx("font-bold", MONO_CLASS)}>内線：9999</span>
       <br />
-      <span className={clsx("text-10", MONO_CLASS)}>外線：03-1234-5678</span>
+      <span className={clsx("text-xs", MONO_CLASS)}>外線：03-1234-5678</span>
       <br />
-      <span className="text-10">
+      <span className="text-xs">
         Mail：<span className={TEXT_LINK_CLASS}>helpdesk@jtc-github.example.co.jp</span>
       </span>
       <br />
-      <span className="text-10">対応時間：平日 9:00～17:30</span>
+      <span className="text-xs">対応時間：平日 9:00～17:30</span>
       <br />
-      <span className={clsx("text-10", MUTED_CLASS)}>（土日祝・年末年始は除く）</span>
+      <span className={clsx("text-xs", MUTED_CLASS)}>（土日祝・年末年始は除く）</span>
     </div>
   );
 }

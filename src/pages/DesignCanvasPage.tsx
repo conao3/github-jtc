@@ -196,8 +196,8 @@ export default function DesignCanvasPage(): JSX.Element {
       <div className="w-full">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="m-0 text-28 font-bold text-jtc-canvas-ink">JTC GitHub Design Canvas</h1>
-            <p className="m-0 mt-1 text-sm text-jtc-canvas-soft">
+            <h1 className="m-0 text-3xl font-bold text-stone-800">JTC GitHub Design Canvas</h1>
+            <p className="m-0 mt-1 text-sm text-stone-600">
               bundle で定義された 10
               画面を、実コンポーネントのまま一覧・拡大・ルート遷移できるキャンバスです。
             </p>
@@ -210,7 +210,7 @@ export default function DesignCanvasPage(): JSX.Element {
             >
               －
             </button>
-            <span className={clsx("min-w-jtc-72 text-center text-xs", MONO_CLASS)}>
+            <span className={clsx("min-w-20 text-center text-xs", MONO_CLASS)}>
               {Math.round(zoom * 100)}%
             </span>
             <button
@@ -233,8 +233,8 @@ export default function DesignCanvasPage(): JSX.Element {
         {sections.map((section) => (
           <section key={section.id} className={CANVAS_SECTION_CLASS}>
             <div className="mb-4">
-              <h2 className="m-0 text-xl font-bold text-jtc-canvas-ink">{section.title}</h2>
-              <p className="m-0 mt-1 text-13 text-jtc-canvas-muted">{section.subtitle}</p>
+              <h2 className="m-0 text-xl font-bold text-stone-800">{section.title}</h2>
+              <p className="m-0 mt-1 text-sm text-stone-500">{section.subtitle}</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -245,10 +245,8 @@ export default function DesignCanvasPage(): JSX.Element {
                   <article key={artboard.id} className={ARTBOARD_CARD_CLASS}>
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <div>
-                        <div className="text-xs font-bold text-jtc-canvas-strong">{artboard.label}</div>
-                        <div className={clsx("text-11 text-jtc-canvas-muted", MONO_CLASS)}>
-                          {artboard.route}
-                        </div>
+                        <div className="text-xs font-bold text-stone-700">{artboard.label}</div>
+                        <div className={clsx("text-xs text-stone-500", MONO_CLASS)}>{artboard.route}</div>
                       </div>
                       <div className="flex gap-1.5">
                         <Link
@@ -295,17 +293,17 @@ export default function DesignCanvasPage(): JSX.Element {
 
       {selected === null ? null : (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-jtc-overlay-72 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
           onClick={() => setSelectedId(null)}
         >
           <div
-            className="max-h-jtc-92vh w-full overflow-hidden rounded-md border border-jtc-canvas-border-strong bg-jtc-f0eee9 shadow-jtc-overlay"
+            className="max-h-screen w-full overflow-hidden rounded-md border border-stone-400 bg-stone-100 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 border-b border-b-jtc-canvas-border-soft bg-white/70 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 border-b border-b-stone-300 bg-white/70 px-4 py-3">
               <div>
-                <div className="font-bold text-jtc-canvas-ink">{selected.label}</div>
-                <div className={clsx("text-xs text-jtc-canvas-muted", MONO_CLASS)}>{selected.route}</div>
+                <div className="font-bold text-stone-800">{selected.label}</div>
+                <div className={clsx("text-xs text-stone-500", MONO_CLASS)}>{selected.route}</div>
               </div>
               <div className="flex gap-1.5">
                 <button
@@ -345,8 +343,8 @@ export default function DesignCanvasPage(): JSX.Element {
               </div>
             </div>
 
-            <div className="max-h-jtc-preview overflow-auto bg-jtc-d8ddd9 p-4">
-              <div className="w-full shadow-jtc-preview">{selected.render()}</div>
+            <div className="max-h-screen overflow-auto bg-slate-300 p-4">
+              <div className="w-full shadow-xl">{selected.render()}</div>
             </div>
           </div>
         </div>

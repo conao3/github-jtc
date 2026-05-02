@@ -99,7 +99,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
                 <tr>
                   <th>承認期限</th>
                   <td className={MONO_CLASS}>
-                    <b className="text-jtc-c8001a">R8/05/03 18:00</b>
+                    <b className="text-red-700">R8/05/03 18:00</b>
                   </td>
                 </tr>
                 <tr>
@@ -151,11 +151,11 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>
                     <span
-                      className={`mr-1 inline-block h-2 w-2 rounded-full ${color === "yellow" ? "bg-jtc-f5d949" : "bg-jtc-1a7f3c"}`}
+                      className={`mr-1 inline-block h-2 w-2 rounded-full ${color === "yellow" ? "bg-amber-300" : "bg-green-700"}`}
                     />
                     {label}
                   </span>
-                  <span className={clsx("text-10", MONO_CLASS)}>{value}</span>
+                  <span className={clsx("text-xs", MONO_CLASS)}>{value}</span>
                 </li>
               ))}
             </ul>
@@ -181,7 +181,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
           <tbody>
             <tr>
               <th>
-                件名<span className="font-bold text-jtc-c8001a">※</span>
+                件名<span className="font-bold text-red-700">※</span>
               </th>
               <td colSpan={3}>
                 <b>決済処理の例外ハンドリング追加対応（IS-2025-00125 起票分）</b>
@@ -281,13 +281,13 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-jtc-24"> </th>
+              <th className="w-6"> </th>
               <th>ファイルパス</th>
-              <th className="w-jtc-70">追加</th>
-              <th className="w-jtc-70">削除</th>
-              <th className="w-jtc-80">差分</th>
-              <th className="w-jtc-110">レビュー状態</th>
-              <th className="w-jtc-80">操作</th>
+              <th className="w-20">追加</th>
+              <th className="w-20">削除</th>
+              <th className="w-20">差分</th>
+              <th className="w-28">レビュー状態</th>
+              <th className="w-20">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -295,8 +295,8 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
               <tr key={path}>
                 <td className="text-center">📄</td>
                 <td className={MONO_CLASS}>{path}</td>
-                <td className="text-right text-jtc-1a7f3c">{add}</td>
-                <td className="text-right text-jtc-c8001a">{del}</td>
+                <td className="text-right text-green-700">{add}</td>
+                <td className="text-right text-red-700">{del}</td>
                 <td className="text-center">{bar}</td>
                 <td className="text-center">
                   <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
@@ -313,12 +313,12 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
       </Panel>
 
       <Panel title="レビューコメント（時系列）" action={<span className={MUTED_CLASS}>3件</span>}>
-        <div className="space-y-1.5 bg-jtc-f4f6fa p-0.5">
+        <div className="space-y-1.5 bg-slate-50 p-0.5">
           {comments.map(([author, date, tone, label, body]) => (
-            <div key={`${author}:${date}`} className="border border-jtc-c5c5c5 bg-white p-2 text-11">
-              <div className="mb-1 font-bold text-jtc-16386b">
+            <div key={`${author}:${date}`} className="border border-slate-300 bg-white p-2 text-xs">
+              <div className="mb-1 font-bold text-blue-900">
                 ● {author}
-                <span className={clsx("ml-2 text-10 font-normal text-jtc-555", MONO_CLASS)}>{date}</span>
+                <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>{date}</span>
                 <span className="ml-2">
                   <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
                 </span>
@@ -326,10 +326,10 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
               <div>{body}</div>
             </div>
           ))}
-          <div className="border border-dashed border-jtc-c89400 bg-jtc-fffce8 p-2 text-11">
+          <div className="border border-dashed border-amber-500 bg-amber-50 p-2 text-xs">
             <div className="mb-1 font-bold">＋ 新規コメント</div>
             <textarea
-              className="h-jtc-50 w-full border border-jtc-888 px-1.5 py-1"
+              className="h-12 w-full border border-slate-400 px-1.5 py-1"
               placeholder="コメントを入力してください（マークダウン記法対応）"
             />
             <div className="mt-1 text-right">
@@ -347,7 +347,7 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
 
       <Panel title="承認・差戻し操作">
         <div className="p-3 text-center">
-          <div className="mb-2 text-10 text-jtc-555">
+          <div className="mb-2 text-xs text-slate-600">
             ※承認ボタンの押下は取り消しできません。内容を十分にご確認のうえ操作してください。
           </div>
           <button type="button" className={buttonClassName({ tone: "primary", size: "lg" })}>

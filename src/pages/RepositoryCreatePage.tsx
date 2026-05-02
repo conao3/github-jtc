@@ -123,37 +123,37 @@ export function RepositoryCreateScreen(): JSX.Element {
             <ul className={TODO_LIST_CLASS}>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                   申請者情報
                 </span>
-                <span className="text-10">完了</span>
+                <span className="text-xs">完了</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-f5d949" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300" />
                   基本情報
                 </span>
-                <span className="text-10">7/9</span>
+                <span className="text-xs">7/9</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-700" />
                   担当者設定
                 </span>
-                <span className="text-10">完了</span>
+                <span className="text-xs">完了</span>
               </li>
               <li className={TODO_LIST_ITEM_CLASS}>
                 <span>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-c8001a" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-red-700" />
                   書類添付
                 </span>
-                <span className="text-10">1/3</span>
+                <span className="text-xs">1/3</span>
               </li>
             </ul>
           </Panel>
 
           <Panel title="参考資料">
-            <div className="space-y-1.5 text-11">
+            <div className="space-y-1.5 text-xs">
               <div>
                 📄 <span className={TEXT_LINK_CLASS}>リポジトリ登録規程.pdf</span>
               </div>
@@ -187,7 +187,7 @@ export function RepositoryCreateScreen(): JSX.Element {
       >
         <div className={WARN_LINE_CLASS}>
           <b>申請にあたっての注意事項：</b>本申請は「リポジトリ登録規程 第3条」に基づくものです。
-          <span className="font-bold text-jtc-c8001a">★</span>
+          <span className="font-bold text-red-700">★</span>
           付項目は必須入力です。記載不備がある場合は差戻しとなりますのでご注意ください。詳細は
           <span className={TEXT_LINK_CLASS}>リポジトリ登録手順書.pdf</span>
           をご確認ください。
@@ -221,7 +221,7 @@ export function RepositoryCreateScreen(): JSX.Element {
             <tbody>
               <tr>
                 <th>
-                  リポジトリ名<span className="font-bold text-jtc-c8001a">★</span>
+                  リポジトリ名<span className="font-bold text-red-700">★</span>
                 </th>
                 <td colSpan={3}>
                   <form.Field
@@ -233,7 +233,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <input
                           name={field.name}
                           className={clsx(
-                            "w-jtc-280 border border-jtc-888 px-1.5 py-0.5",
+                            "w-72 border border-slate-400 px-1.5 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           placeholder="例：payment-system-core"
@@ -241,7 +241,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                           onBlur={field.handleBlur}
                           onChange={(event) => field.handleChange(event.target.value)}
                         />
-                        <span className="ml-2 text-10 text-jtc-555">
+                        <span className="ml-2 text-xs text-slate-600">
                           ※半角英小文字・数字・ハイフンのみ。3～40文字。
                         </span>
                         <FormErrorList errors={field.state.meta.errors} />
@@ -252,7 +252,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  表示名（日本語）<span className="font-bold text-jtc-c8001a">★</span>
+                  表示名（日本語）<span className="font-bold text-red-700">★</span>
                 </th>
                 <td colSpan={3}>
                   <form.Field
@@ -264,7 +264,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <input
                           name={field.name}
                           className={clsx(
-                            "w-jtc-380 border border-jtc-888 px-1.5 py-0.5",
+                            "w-96 border border-slate-400 px-1.5 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           placeholder="例：決済システム基盤ソースコード"
@@ -281,10 +281,10 @@ export function RepositoryCreateScreen(): JSX.Element {
               <tr>
                 <th>管理ID</th>
                 <td className={MONO_CLASS}>
-                  PRJ-2025-XXXXX <span className="text-10 text-jtc-555">（自動採番）</span>
+                  PRJ-2025-XXXXX <span className="text-xs text-slate-600">（自動採番）</span>
                 </td>
                 <th>
-                  登録区分<span className="font-bold text-jtc-c8001a">★</span>
+                  登録区分<span className="font-bold text-red-700">★</span>
                 </th>
                 <td>
                   <form.Field
@@ -313,7 +313,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  事業領域<span className="font-bold text-jtc-c8001a">★</span>
+                  事業領域<span className="font-bold text-red-700">★</span>
                 </th>
                 <td>
                   <form.Field
@@ -325,7 +325,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <select
                           name={field.name}
                           className={clsx(
-                            "border border-jtc-888 px-1 py-0.5",
+                            "border border-slate-400 px-1 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           value={field.state.value}
@@ -345,7 +345,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                   </form.Field>
                 </td>
                 <th>
-                  主要言語<span className="font-bold text-jtc-c8001a">★</span>
+                  主要言語<span className="font-bold text-red-700">★</span>
                 </th>
                 <td>
                   <form.Field
@@ -357,7 +357,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <select
                           name={field.name}
                           className={clsx(
-                            "border border-jtc-888 px-1 py-0.5",
+                            "border border-slate-400 px-1 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           value={field.state.value}
@@ -379,7 +379,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  システム分類<span className="font-bold text-jtc-c8001a">★</span>
+                  システム分類<span className="font-bold text-red-700">★</span>
                 </th>
                 <td colSpan={3}>
                   <form.Field
@@ -400,7 +400,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                             {systemClassification}
                           </label>
                         ))}
-                        <span className="ml-2 text-10 text-jtc-555">※重要システムは別途承認会議が必要</span>
+                        <span className="ml-2 text-xs text-slate-600">※重要システムは別途承認会議が必要</span>
                         <FormErrorList errors={field.state.meta.errors} />
                       </>
                     )}
@@ -409,7 +409,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  機密区分<span className="font-bold text-jtc-c8001a">★</span>
+                  機密区分<span className="font-bold text-red-700">★</span>
                 </th>
                 <td colSpan={3}>
                   <form.Field
@@ -438,7 +438,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  個人情報を含む<span className="font-bold text-jtc-c8001a">★</span>
+                  個人情報を含む<span className="font-bold text-red-700">★</span>
                 </th>
                 <td>
                   <form.Field
@@ -484,7 +484,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                             {ossPresence}
                           </label>
                         ))}
-                        <span className="ml-2 text-10 text-jtc-555">※有りの場合 OSS 管理票を別途提出</span>
+                        <span className="ml-2 text-xs text-slate-600">※有りの場合 OSS 管理票を別途提出</span>
                         <FormErrorList errors={field.state.meta.errors} />
                       </>
                     )}
@@ -493,7 +493,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               </tr>
               <tr>
                 <th>
-                  説明<span className="font-bold text-jtc-c8001a">★</span>
+                  説明<span className="font-bold text-red-700">★</span>
                 </th>
                 <td colSpan={3}>
                   <form.Field
@@ -505,7 +505,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <textarea
                           name={field.name}
                           className={clsx(
-                            "h-jtc-60 w-full border border-jtc-888 px-1.5 py-0.5",
+                            "h-16 w-full border border-slate-400 px-1.5 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           placeholder="リポジトリの目的・取扱範囲を記載してください（200文字以上推奨）"
@@ -531,7 +531,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <input
                           name={field.name}
                           className={clsx(
-                            "w-jtc-100 border border-jtc-888 px-1.5 py-0.5",
+                            "w-24 border border-slate-400 px-1.5 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           placeholder="R8/12/01"
@@ -555,7 +555,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                         <select
                           name={field.name}
                           className={clsx(
-                            "border border-jtc-888 px-1 py-0.5",
+                            "border border-slate-400 px-1 py-0.5",
                             field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                           )}
                           value={field.state.value}
@@ -586,13 +586,13 @@ export function RepositoryCreateScreen(): JSX.Element {
           <table className={TABLE_CLASS}>
             <thead>
               <tr>
-                <th className="w-jtc-40">No</th>
-                <th className="w-jtc-100">区分</th>
-                <th className="w-jtc-130">ユーザーID</th>
+                <th className="w-10">No</th>
+                <th className="w-24">区分</th>
+                <th className="w-32">ユーザーID</th>
                 <th>氏名</th>
-                <th className="w-jtc-100">所属</th>
-                <th className="w-jtc-80">必須</th>
-                <th className="w-jtc-60">操作</th>
+                <th className="w-24">所属</th>
+                <th className="w-20">必須</th>
+                <th className="w-16">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -615,7 +615,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               ))}
             </tbody>
           </table>
-          <div className="border-t border-t-jtc-c5c5c5 bg-jtc-f4f6fa px-1.5 py-1 text-right">
+          <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-right">
             <button type="button" className={buttonClassName()}>
               ＋ 担当者追加
             </button>
@@ -626,12 +626,12 @@ export function RepositoryCreateScreen(): JSX.Element {
           <table className={TABLE_CLASS}>
             <thead>
               <tr>
-                <th className="w-jtc-40">No</th>
-                <th className="w-jtc-200">書類種別</th>
+                <th className="w-10">No</th>
+                <th className="w-52">書類種別</th>
                 <th>ファイル名</th>
-                <th className="w-jtc-80">必須</th>
-                <th className="w-jtc-80">状態</th>
-                <th className="w-jtc-80">操作</th>
+                <th className="w-20">必須</th>
+                <th className="w-20">状態</th>
+                <th className="w-20">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -674,8 +674,8 @@ export function RepositoryCreateScreen(): JSX.Element {
           </div>
         </Panel>
 
-        <div className="mb-1 border border-jtc-c5c5c5 bg-white px-2 py-3 text-center">
-          <div className="mb-2 text-10 text-jtc-555">
+        <div className="mb-1 border border-slate-300 bg-white px-2 py-3 text-center">
+          <div className="mb-2 text-xs text-slate-600">
             ※申請内容は登録後の修正が困難です。十分にご確認のうえ申請してください。
           </div>
           <button type="button" className={buttonClassName()}>

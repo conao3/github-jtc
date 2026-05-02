@@ -136,7 +136,7 @@ export function CommitsScreen(): JSX.Element {
               <thead>
                 <tr>
                   <th>作成者</th>
-                  <th className="w-jtc-50">件数</th>
+                  <th className="w-12">件数</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +167,7 @@ export function CommitsScreen(): JSX.Element {
               ].map(([tag, date]) => (
                 <li key={tag} className={TODO_LIST_ITEM_CLASS}>
                   <span className={MONO_CLASS}>{tag}</span>
-                  <span className={clsx("text-10", MONO_CLASS)}>{date}</span>
+                  <span className={clsx("text-xs", MONO_CLASS)}>{date}</span>
                 </li>
               ))}
             </ul>
@@ -180,15 +180,15 @@ export function CommitsScreen(): JSX.Element {
       }
     >
       <Panel title="検索条件" bodyClassName="p-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
           <label>リポジトリ：</label>
-          <select className="border border-jtc-888 px-1 py-0.5">
+          <select className="border border-slate-400 px-1 py-0.5">
             <option>payment-system-core</option>
             <option>auth-gateway</option>
             <option>kanjokei-batch</option>
           </select>
           <label>ブランチ：</label>
-          <select className="border border-jtc-888 px-1 py-0.5">
+          <select className="border border-slate-400 px-1 py-0.5">
             <option>──全て──</option>
             <option>main</option>
             <option>develop</option>
@@ -196,12 +196,12 @@ export function CommitsScreen(): JSX.Element {
             <option>feat/oidc</option>
           </select>
           <label>作成者：</label>
-          <input className="w-jtc-110 border border-jtc-888 px-1.5 py-0.5" placeholder="ユーザーID" />
+          <input className="w-28 border border-slate-400 px-1.5 py-0.5" placeholder="ユーザーID" />
           <label>期間：</label>
-          <input className="w-jtc-80 border border-jtc-888 px-1.5 py-0.5" placeholder="R8/04/01" /> ～
-          <input className="w-jtc-80 border border-jtc-888 px-1.5 py-0.5" placeholder="R8/05/03" />
+          <input className="w-20 border border-slate-400 px-1.5 py-0.5" placeholder="R8/04/01" /> ～
+          <input className="w-20 border border-slate-400 px-1.5 py-0.5" placeholder="R8/05/03" />
           <label>キーワード：</label>
-          <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="コミットメッセージ" />
+          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="コミットメッセージ" />
           <button type="button" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
@@ -222,15 +222,15 @@ export function CommitsScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-jtc-24"> </th>
-              <th className="w-jtc-90">コミットID</th>
+              <th className="w-6"> </th>
+              <th className="w-24">コミットID</th>
               <th>コミットメッセージ</th>
-              <th className="w-jtc-100">ブランチ</th>
-              <th className="w-jtc-80">作成者</th>
-              <th className="w-jtc-110">日時</th>
-              <th className="w-jtc-110">変更</th>
-              <th className="w-jtc-80">関連</th>
-              <th className="w-jtc-100">操作</th>
+              <th className="w-24">ブランチ</th>
+              <th className="w-20">作成者</th>
+              <th className="w-28">日時</th>
+              <th className="w-28">変更</th>
+              <th className="w-20">関連</th>
+              <th className="w-24">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -240,7 +240,7 @@ export function CommitsScreen(): JSX.Element {
                   <span
                     className={clsx(
                       "inline-block h-2 w-2 rounded-full",
-                      related === "merge" ? "bg-jtc-6a0099" : "bg-jtc-16386b",
+                      related === "merge" ? "bg-violet-700" : "bg-blue-900",
                     )}
                   />
                 </td>
@@ -251,13 +251,13 @@ export function CommitsScreen(): JSX.Element {
                 <td className={clsx("text-center", MONO_CLASS)}>{branch}</td>
                 <td className={clsx("text-center", MONO_CLASS)}>{author}</td>
                 <td className={clsx("text-center", MONO_CLASS)}>{date}</td>
-                <td className={clsx("text-center text-10", MONO_CLASS)}>
-                  <span className="text-jtc-1a7f3c">+{add}</span> /{" "}
-                  <span className="text-jtc-c8001a">-{del}</span> ({files}f)
+                <td className={clsx("text-center text-xs", MONO_CLASS)}>
+                  <span className="text-green-700">+{add}</span> /{" "}
+                  <span className="text-red-700">-{del}</span> ({files}f)
                 </td>
                 <td className="text-center">
                   {related ? (
-                    <span className={clsx(TEXT_LINK_CLASS, MONO_CLASS, "text-10")}>{related}</span>
+                    <span className={clsx(TEXT_LINK_CLASS, MONO_CLASS, "text-xs")}>{related}</span>
                   ) : (
                     "－"
                   )}
@@ -286,18 +286,18 @@ export function CommitsScreen(): JSX.Element {
       </Panel>
 
       <Panel title="日別コミット数（直近30日）">
-        <div className={clsx("p-2 text-10", MONO_CLASS)}>
-          <div className="flex h-jtc-100 items-end gap-0.5 border-b border-b-jtc-888 border-l border-l-jtc-888 px-1">
+        <div className={clsx("p-2 text-xs", MONO_CLASS)}>
+          <div className="flex h-24 items-end gap-0.5 border-b border-b-slate-400 border-l border-l-slate-400 px-1">
             {commitBars.map((value, index) => (
               <div
                 key={`${value}:${index}`}
-                className="flex-1 border border-jtc-0e2547 bg-gradient-to-t from-jtc-16386b to-jtc-4a78b3"
+                className="flex-1 border border-blue-900 bg-gradient-to-t from-blue-900 to-blue-500"
                 style={{ height: `${value * 6}px` }}
                 title={`${value}件`}
               />
             ))}
           </div>
-          <div className="mt-1 flex justify-between text-jtc-888">
+          <div className="mt-1 flex justify-between text-slate-400">
             <span>4/04</span>
             <span>4/11</span>
             <span>4/18</span>

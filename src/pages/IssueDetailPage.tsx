@@ -75,15 +75,15 @@ export function IssueDetailScreen({
             <div className="text-center">
               <div
                 className={clsx(
-                  "mx-auto my-1 flex h-16 w-16 items-center justify-center border border-jtc-555 bg-gradient-to-br from-jtc-c5cdd9 to-jtc-8a96a8 text-28 text-white",
+                  "mx-auto my-1 flex h-16 w-16 items-center justify-center border border-slate-600 bg-gradient-to-br from-slate-300 to-slate-400 text-3xl text-white",
                   MONO_CLASS,
                 )}
               >
                 山田
               </div>
               <div className="font-bold">山田 太郎</div>
-              <div className="text-10 text-jtc-555">基盤開発二課</div>
-              <div className={clsx("text-10", MONO_CLASS)}>yamada.taro</div>
+              <div className="text-xs text-slate-600">基盤開発二課</div>
+              <div className={clsx("text-xs", MONO_CLASS)}>yamada.taro</div>
               <div className="mt-1">
                 <button type="button" className={buttonClassName({ size: "sm" })}>
                   プロフィール
@@ -96,8 +96,8 @@ export function IssueDetailScreen({
             <ul className={TODO_LIST_CLASS}>
               {statusHistory.map(({ label, note, muted }) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
-                  <span className={muted ? "text-jtc-888" : undefined}>{label}</span>
-                  <span className={muted ? "text-10 text-jtc-888" : "text-10"}>{note}</span>
+                  <span className={muted ? "text-slate-400" : undefined}>{label}</span>
+                  <span className={muted ? "text-xs text-slate-400" : "text-xs"}>{note}</span>
                 </li>
               ))}
             </ul>
@@ -130,7 +130,7 @@ export function IssueDetailScreen({
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>対応期限注意：</b>本課題の対応期限は<b className="text-jtc-c8001a">令和8年5月30日</b>
+        <b>対応期限注意：</b>本課題の対応期限は<b className="text-red-700">令和8年5月30日</b>
         です。残日数27日。期限超過時は週次の課題進捗会議にて報告対象となります。
       </div>
 
@@ -143,7 +143,7 @@ export function IssueDetailScreen({
           <tbody>
             <tr>
               <th>
-                件名<span className="font-bold text-jtc-c8001a">※</span>
+                件名<span className="font-bold text-red-700">※</span>
               </th>
               <td colSpan={3}>
                 <b>決済処理においてDB接続タイムアウト時にエラーログが出力されない事象について</b>
@@ -190,7 +190,7 @@ export function IssueDetailScreen({
               <td className={MONO_CLASS}>令和8年4月28日</td>
               <th>対応期限</th>
               <td className={MONO_CLASS}>
-                <b className="text-jtc-c8001a">令和8年5月30日</b>
+                <b className="text-red-700">令和8年5月30日</b>
               </td>
             </tr>
             <tr>
@@ -237,10 +237,10 @@ export function IssueDetailScreen({
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-jtc-40">No</th>
-              <th className="w-jtc-110">日時</th>
-              <th className="w-jtc-100">対応者</th>
-              <th className="w-jtc-90">区分</th>
+              <th className="w-10">No</th>
+              <th className="w-28">日時</th>
+              <th className="w-24">対応者</th>
+              <th className="w-24">区分</th>
               <th>内容</th>
             </tr>
           </thead>
@@ -258,7 +258,7 @@ export function IssueDetailScreen({
             ))}
           </tbody>
         </table>
-        <div className="border-t border-t-jtc-c5c5c5 bg-jtc-f4f6fa px-1.5 py-1 text-right">
+        <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-right">
           <button type="button" className={buttonClassName()}>
             ＋ 進捗を追加
           </button>
@@ -273,10 +273,10 @@ export function IssueDetailScreen({
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-jtc-120">種別</th>
+              <th className="w-32">種別</th>
               <th>ID／件名</th>
-              <th className="w-jtc-120">状態</th>
-              <th className="w-jtc-100">担当</th>
+              <th className="w-32">状態</th>
+              <th className="w-24">担当</th>
             </tr>
           </thead>
           <tbody>

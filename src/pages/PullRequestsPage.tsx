@@ -64,7 +64,7 @@ export function PullRequestsScreen(): JSX.Element {
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
-                  <span className="font-bold text-jtc-16386b">{value}</span>
+                  <span className="font-bold text-blue-900">{value}</span>
                 </li>
               ))}
             </ul>
@@ -91,11 +91,11 @@ export function PullRequestsScreen(): JSX.Element {
       }
     >
       <Panel title="照会条件" bodyClassName="p-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
           <label>申請番号/件名</label>
-          <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="PR-2025-00089" />
+          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="PR-2025-00089" />
           <label>状態</label>
-          <select className="border border-jtc-888 px-1 py-0.5">
+          <select className="border border-slate-400 px-1 py-0.5">
             <option>──全て──</option>
             <option>承認待ち</option>
             <option>レビュー中</option>
@@ -103,7 +103,7 @@ export function PullRequestsScreen(): JSX.Element {
             <option>承認済</option>
           </select>
           <label>申請者</label>
-          <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="山田 太郎" />
+          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="山田 太郎" />
           <button type="button" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
@@ -117,13 +117,13 @@ export function PullRequestsScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-jtc-120">申請番号</th>
+              <th className="w-32">申請番号</th>
               <th>件名</th>
-              <th className="w-jtc-90">申請者</th>
-              <th className="w-jtc-60">優先</th>
-              <th className="w-jtc-90">状態</th>
-              <th className="w-jtc-120">提出日時</th>
-              <th className="w-jtc-150">変更</th>
+              <th className="w-24">申請者</th>
+              <th className="w-16">優先</th>
+              <th className="w-24">状態</th>
+              <th className="w-32">提出日時</th>
+              <th className="w-40">変更</th>
             </tr>
           </thead>
           <tbody>
