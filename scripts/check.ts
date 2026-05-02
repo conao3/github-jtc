@@ -4,7 +4,7 @@ const vitePlusBinary = new URL("../node_modules/vite-plus/bin/vp", import.meta.u
 
 const commands: ReadonlyArray<{ readonly name: string; readonly cmd: string[] }> = [
   { name: "vp", cmd: [vitePlusBinary, "check"] },
-  { name: "knip", cmd: ["knip", "--config", "knip.json"] },
+  { name: "knip", cmd: ["knip"] },
 ];
 
 const children = commands.map(({ name, cmd }) => ({

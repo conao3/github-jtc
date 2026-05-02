@@ -8,7 +8,7 @@
     "build": "vp build",
     "check": "bun run scripts/check.ts",
     "check:vp": "vp check",
-    "check:knip": "knip --config knip.json",
+    "check:knip": "knip",
     "test": "vp test",
     "graphql:schema": "mkdir -p graphql && curl -fsSL https://docs.github.com/public/fpt/schema.docs.graphql -o graphql/github.schema.graphql",
     "graphql:codegen": "graphql-codegen --config codegen.ts",
