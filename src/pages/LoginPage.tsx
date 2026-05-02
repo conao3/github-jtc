@@ -1,7 +1,9 @@
 import clsx from "clsx";
+import { useForm } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 
 import {
   beginGitHubAppLogin,
@@ -9,12 +11,15 @@ import {
   normalizeRedirectTo,
   useAuthSession,
 } from "../app/auth.tsx";
+import { FormErrorList } from "../app/components/FormErrorList.tsx";
+import { zodValidators } from "../app/formValidation.ts";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   BODY_BG_CLASS,
   CONTACT_BOX_CLASS,
   CONTACT_BOX_TITLE_CLASS,
   FOOTER_CLASS,
+  FORM_CONTROL_INVALID_CLASS,
   MONO_CLASS,
   PRODUCT_NAME_CLASS,
   PRODUCT_SUBTITLE_CLASS,
@@ -22,13 +27,23 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-interface LoginFormState {
-  readonly userId: string;
-  readonly password: string;
-  readonly otp: string;
-  readonly office: string;
-  readonly consentAccepted: boolean;
-}
+const loginFieldValidators = {
+  userId: z.string().min(1, "ユーザーIDを入力してください。"),
+  password: z.string().min(1, "パスワードを入力してください。"),
+  otp: z.string().regex(/^\d{6}$/, "ワンタイムパスワードは6桁の数字で入力してください。"),
+  office: z.string().min(1, "所属事業所を選択してください。"),
+  consentAccepted: z.boolean().refine((value) => value, {
+    message: "利用規約および情報セキュリティ規程への同意が必要です。",
+  }),
+} as const;
+
+type LoginFormState = {
+  userId: string;
+  password: string;
+  otp: string;
+  office: string;
+  consentAccepted: boolean;
+};
 
 const initialFormState: LoginFormState = {
   userId: "",
@@ -42,23 +57,23 @@ export function LoginScreen(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionQuery = useAuthSession();
-  const [form, setForm] = useState<LoginFormState>(initialFormState);
   const [isOutageDialogOpen, setIsOutageDialogOpen] = useState(false);
   const [githubError, setGitHubError] = useState<string | null>(null);
   const redirectTo = normalizeRedirectTo(searchParams.get("redirectTo"));
   const githubConfig = getGitHubAuthConfig();
+  const form = useForm({
+    defaultValues: initialFormState,
+    onSubmit: async () => {
+      setGitHubError(null);
+      setIsOutageDialogOpen(true);
+    },
+  });
 
   useEffect(() => {
     if (sessionQuery.data !== undefined && sessionQuery.data !== null) {
       void navigate(redirectTo, { replace: true });
     }
   }, [navigate, redirectTo, sessionQuery.data]);
-
-  function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    setGitHubError(null);
-    setIsOutageDialogOpen(true);
-  }
 
   async function handleGitHubLogin(): Promise<void> {
     setGitHubError(null);
@@ -90,7 +105,13 @@ export function LoginScreen(): JSX.Element {
                 本システムは社内利用者のみ使用可能です。不正アクセスは情報セキュリティ規程に基づき処分の対象となります。
               </div>
 
-              <form onSubmit={handleLoginSubmit}>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void form.handleSubmit();
+                }}
+              >
                 <table className="w-full border-collapse text-[12px]">
                   <tbody>
                     <tr>
@@ -98,14 +119,24 @@ export function LoginScreen(): JSX.Element {
                         ユーザーID<span className="text-[#c8001a]">※</span>
                       </td>
                       <td className="px-1.5 py-2">
-                        <input
-                          className="w-full border border-[#888] px-1 py-[3px]"
-                          placeholder="例：yamada.taro"
-                          value={form.userId}
-                          onChange={(event) =>
-                            setForm((current) => ({ ...current, userId: event.target.value }))
-                          }
-                        />
+                        <form.Field name="userId" validators={zodValidators(loginFieldValidators.userId)}>
+                          {(field) => (
+                            <>
+                              <input
+                                name={field.name}
+                                className={clsx(
+                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
+                                )}
+                                placeholder="例：yamada.taro"
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                              />
+                              <FormErrorList errors={field.state.meta.errors} />
+                            </>
+                          )}
+                        </form.Field>
                       </td>
                     </tr>
                     <tr>
@@ -113,14 +144,24 @@ export function LoginScreen(): JSX.Element {
                         パスワード<span className="text-[#c8001a]">※</span>
                       </td>
                       <td className="px-1.5 py-2">
-                        <input
-                          type="password"
-                          className="w-full border border-[#888] px-1 py-[3px]"
-                          value={form.password}
-                          onChange={(event) =>
-                            setForm((current) => ({ ...current, password: event.target.value }))
-                          }
-                        />
+                        <form.Field name="password" validators={zodValidators(loginFieldValidators.password)}>
+                          {(field) => (
+                            <>
+                              <input
+                                name={field.name}
+                                type="password"
+                                className={clsx(
+                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
+                                )}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                              />
+                              <FormErrorList errors={field.state.meta.errors} />
+                            </>
+                          )}
+                        </form.Field>
                       </td>
                     </tr>
                     <tr>
@@ -128,46 +169,77 @@ export function LoginScreen(): JSX.Element {
                         ワンタイムパスワード<span className="text-[#c8001a]">※</span>
                       </td>
                       <td className="px-1.5 py-2">
-                        <input
-                          className={clsx("w-full border border-[#888] px-1 py-[3px]", MONO_CLASS)}
-                          placeholder="6桁の数字"
-                          value={form.otp}
-                          onChange={(event) =>
-                            setForm((current) => ({ ...current, otp: event.target.value }))
-                          }
-                        />
+                        <form.Field name="otp" validators={zodValidators(loginFieldValidators.otp)}>
+                          {(field) => (
+                            <>
+                              <input
+                                name={field.name}
+                                className={clsx(
+                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  MONO_CLASS,
+                                  field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
+                                )}
+                                placeholder="6桁の数字"
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                              />
+                              <FormErrorList errors={field.state.meta.errors} />
+                            </>
+                          )}
+                        </form.Field>
                       </td>
                     </tr>
                     <tr>
                       <td className="px-1.5 py-2 text-right font-bold">所属事業所</td>
                       <td className="px-1.5 py-2">
-                        <select
-                          className="w-full border border-[#888] px-1 py-[2px]"
-                          value={form.office}
-                          onChange={(event) =>
-                            setForm((current) => ({ ...current, office: event.target.value }))
-                          }
-                        >
-                          <option>東京本社</option>
-                          <option>大阪支社</option>
-                          <option>名古屋支社</option>
-                          <option>福岡支社</option>
-                        </select>
+                        <form.Field name="office" validators={zodValidators(loginFieldValidators.office)}>
+                          {(field) => (
+                            <>
+                              <select
+                                name={field.name}
+                                className={clsx(
+                                  "w-full border border-[#888] px-1 py-[2px]",
+                                  field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
+                                )}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                              >
+                                <option>東京本社</option>
+                                <option>大阪支社</option>
+                                <option>名古屋支社</option>
+                                <option>福岡支社</option>
+                              </select>
+                              <FormErrorList errors={field.state.meta.errors} />
+                            </>
+                          )}
+                        </form.Field>
                       </td>
                     </tr>
                     <tr>
                       <td colSpan={2} className="px-1.5 py-2 text-[11px]">
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={form.consentAccepted}
-                            onChange={(event) =>
-                              setForm((current) => ({ ...current, consentAccepted: event.target.checked }))
-                            }
-                          />{" "}
-                          利用規約および
-                          <span className={TEXT_LINK_CLASS}>情報セキュリティ規程</span>に同意します
-                        </label>
+                        <form.Field
+                          name="consentAccepted"
+                          validators={zodValidators(loginFieldValidators.consentAccepted)}
+                        >
+                          {(field) => (
+                            <>
+                              <label>
+                                <input
+                                  name={field.name}
+                                  type="checkbox"
+                                  checked={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => field.handleChange(event.target.checked)}
+                                />{" "}
+                                利用規約および
+                                <span className={TEXT_LINK_CLASS}>情報セキュリティ規程</span>に同意します
+                              </label>
+                              <FormErrorList errors={field.state.meta.errors} />
+                            </>
+                          )}
+                        </form.Field>
                       </td>
                     </tr>
                     <tr>
@@ -181,7 +253,7 @@ export function LoginScreen(): JSX.Element {
                           className={buttonClassName({ size: "lg" })}
                           onClick={() => {
                             setGitHubError(null);
-                            setForm(initialFormState);
+                            form.reset();
                           }}
                         >
                           クリア

@@ -104,6 +104,8 @@ export const BUTTON_DANGER_CLASS =
 export const BUTTON_MD_CLASS = "min-h-[24px] px-3 py-1";
 export const BUTTON_SM_CLASS = "min-h-[20px] px-2 py-0.5 text-[10px]";
 export const BUTTON_LG_CLASS = "min-h-[32px] px-6 py-1.5 text-[13px]";
+export const FORM_CONTROL_INVALID_CLASS = "border-[#c8001a] bg-[#fff7f7]";
+export const FORM_ERROR_LIST_CLASS = "mt-1 space-y-0.5 text-[10px] leading-[1.4] text-[#8e0014]";
 
 export const TABLE_CLASS = clsx(
   "w-full border-collapse text-[11px]",
