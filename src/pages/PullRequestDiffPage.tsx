@@ -68,7 +68,7 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
         <>
           <Panel title="変更ファイル" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
-              <li className={clsx(TODO_LIST_ITEM_CLASS, "bg-[#fff5b8] font-bold")}>
+              <li className={clsx(TODO_LIST_ITEM_CLASS, "bg-jtc-fff5b8 font-bold")}>
                 <span>📄 PaymentService.java</span>
                 <span className={clsx("text-10", MONO_CLASS)}>+76 -32</span>
               </li>
@@ -94,7 +94,7 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
                   </label>
                 </div>
               ))}
-              <div className="pt-1 text-10 text-[#555]">※全項目チェックで承認可能</div>
+              <div className="pt-1 text-10 text-jtc-555">※全項目チェックで承認可能</div>
             </div>
           </Panel>
 
@@ -109,12 +109,12 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
         action={
           <span>
             表示モード：
-            <select className="ml-1 border border-[#888] px-1 py-0.5 text-11">
+            <select className="ml-1 border border-jtc-888 px-1 py-0.5 text-11">
               <option>横並び（Side-by-Side）</option>
               <option>縦並び（Unified）</option>
             </select>
             <span className="ml-2">空白：</span>
-            <select className="ml-1 border border-[#888] px-1 py-0.5 text-11">
+            <select className="ml-1 border border-jtc-888 px-1 py-0.5 text-11">
               <option>無視する</option>
               <option>無視しない</option>
             </select>
@@ -122,9 +122,9 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
         }
         bodyClassName="p-0"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
           <label>ファイル：</label>
-          <select className="min-w-[280px] border border-[#888] px-1 py-0.5">
+          <select className="min-w-jtc-280 border border-jtc-888 px-1 py-0.5">
             <option>(1/4) src/main/java/jp/co/jtc/payment/PaymentService.java</option>
             <option>(2/4) src/main/java/jp/co/jtc/payment/PaymentException.java</option>
             <option>(3/4) src/test/java/jp/co/jtc/payment/PaymentServiceTest.java</option>
@@ -136,8 +136,8 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
           <button type="button" className={buttonClassName({ size: "sm" })}>
             次ファイル ＞
           </button>
-          <span className="text-10 text-[#555]">
-            追加：<b className="text-[#1a7f3c]">+76行</b> 削除：<b className="text-[#c8001a]">-32行</b>
+          <span className="text-10 text-jtc-555">
+            追加：<b className="text-jtc-1a7f3c">+76行</b> 削除：<b className="text-jtc-c8001a">-32行</b>
           </span>
           <span className="ml-auto text-11">
             <label>
@@ -150,9 +150,9 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
           </span>
         </div>
 
-        <div className="grid grid-cols-2 border-t border-t-[#aab]">
-          <div className="border-r border-r-[#aab]">
-            <div className="border-b border-b-[#aab] bg-gradient-to-b from-[#f0d8d8] to-[#e0b8b8] px-2 py-1 text-11 font-bold">
+        <div className="grid grid-cols-2 border-t border-t-jtc-aab">
+          <div className="border-r border-r-jtc-aab">
+            <div className="border-b border-b-jtc-aab bg-gradient-to-b from-jtc-f0d8d8 to-jtc-e0b8b8 px-2 py-1 text-11 font-bold">
               変更前（develop @ 7e2d9f88）
             </div>
             <table className={clsx("w-full border-collapse text-11", MONO_CLASS)}>
@@ -160,8 +160,8 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
                 {oldLines.map(([line, content]) => {
                   const removed = [44, 47, 48].includes(line);
                   return (
-                    <tr key={line} className={removed ? "bg-[#ffe0e0]" : "bg-white"}>
-                      <td className="w-[40px] border-r border-r-[#ddd] px-1.5 py-px text-right text-[#888]">
+                    <tr key={line} className={removed ? "bg-jtc-ffe0e0" : "bg-white"}>
+                      <td className="w-jtc-40 border-r border-r-jtc-ddd px-1.5 py-px text-right text-jtc-888">
                         {line}
                       </td>
                       <td className="whitespace-pre px-2 py-px">
@@ -175,7 +175,7 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
             </table>
           </div>
           <div>
-            <div className="border-b border-b-[#aab] bg-gradient-to-b from-[#d8eed8] to-[#b8d8b8] px-2 py-1 text-11 font-bold">
+            <div className="border-b border-b-jtc-aab bg-gradient-to-b from-jtc-d8eed8 to-jtc-b8d8b8 px-2 py-1 text-11 font-bold">
               変更後（feat/IS-2025-00125 @ a4f3c1b2）
             </div>
             <table className={clsx("w-full border-collapse text-11", MONO_CLASS)}>
@@ -183,8 +183,8 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
                 {newLines.map(([line, content]) => {
                   const added = [41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52].includes(line);
                   return (
-                    <tr key={line} className={added ? "bg-[#d8f0d8]" : "bg-white"}>
-                      <td className="w-[40px] border-r border-r-[#ddd] px-1.5 py-px text-right text-[#888]">
+                    <tr key={line} className={added ? "bg-jtc-d8f0d8" : "bg-white"}>
+                      <td className="w-jtc-40 border-r border-r-jtc-ddd px-1.5 py-px text-right text-jtc-888">
                         {line}
                       </td>
                       <td className="whitespace-pre px-2 py-px">
@@ -199,12 +199,14 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
           </div>
         </div>
 
-        <div className="border-t border-t-[#aab] bg-[#f4f6fa] p-2">
+        <div className="border-t border-t-jtc-aab bg-jtc-f4f6fa p-2">
           <div className="mb-1 text-11 font-bold">■ 行コメント（45行目）</div>
-          <div className="mb-1 border border-[#c5c5c5] bg-white p-2 text-11">
-            <div className="font-bold text-[#16386b]">
+          <div className="mb-1 border border-jtc-c5c5c5 bg-white p-2 text-11">
+            <div className="font-bold text-jtc-16386b">
               ● 佐藤太一郎（課長）
-              <span className={clsx("ml-2 text-10 font-normal text-[#555]", MONO_CLASS)}>R8/05/02 10:25</span>
+              <span className={clsx("ml-2 text-10 font-normal text-jtc-555", MONO_CLASS)}>
+                R8/05/02 10:25
+              </span>
             </div>
             <div>
               ログメッセージのフォーマットですが、運用統括部の標準ログ規約（社内規程
@@ -213,10 +215,12 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
               規約上、決済処理は「[PAY-XXX]」プレフィックス＋tranId＋勘定系連携ID＋金額の順で出力してください。
             </div>
           </div>
-          <div className="mb-1 border border-[#c5c5c5] bg-white p-2 text-11">
-            <div className="font-bold text-[#16386b]">
+          <div className="mb-1 border border-jtc-c5c5c5 bg-white p-2 text-11">
+            <div className="font-bold text-jtc-16386b">
               ● 山田太郎
-              <span className={clsx("ml-2 text-10 font-normal text-[#555]", MONO_CLASS)}>R8/05/02 11:30</span>
+              <span className={clsx("ml-2 text-10 font-normal text-jtc-555", MONO_CLASS)}>
+                R8/05/02 11:30
+              </span>
               <span className="ml-2">
                 <JtcStatusTag tone="done">対応済</JtcStatusTag>
               </span>
@@ -225,9 +229,9 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
               ご指摘ありがとうございます。45行目および48行目について、ログ規約に準拠する形に修正いたしました（コミット：a4f3c1b2）。
             </div>
           </div>
-          <div className="border border-dashed border-[#c89400] bg-[#fffce8] p-2 text-11">
+          <div className="border border-dashed border-jtc-c89400 bg-jtc-fffce8 p-2 text-11">
             <textarea
-              className="h-[36px] w-full border border-[#888] px-1.5 py-1"
+              className="h-jtc-36 w-full border border-jtc-888 px-1.5 py-1"
               placeholder="行コメントを入力（マークダウン記法対応）"
             />
             <div className="mt-1 text-right">
@@ -247,12 +251,12 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[40px]">No</th>
-              <th className="w-[70px]">区分</th>
-              <th className="w-[50px]">行</th>
+              <th className="w-jtc-40">No</th>
+              <th className="w-jtc-70">区分</th>
+              <th className="w-jtc-50">行</th>
               <th>指摘内容</th>
-              <th className="w-[90px]">ルール</th>
-              <th className="w-[80px]">状態</th>
+              <th className="w-jtc-90">ルール</th>
+              <th className="w-jtc-80">状態</th>
             </tr>
           </thead>
           <tbody>

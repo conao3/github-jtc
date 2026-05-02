@@ -88,7 +88,7 @@ export function RepositoryDetailScreen({
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
-                  <span className="font-bold text-[#16386b]">{value}</span>
+                  <span className="font-bold text-jtc-16386b">{value}</span>
                 </li>
               ))}
             </ul>
@@ -129,10 +129,10 @@ export function RepositoryDetailScreen({
           <tbody>
             <tr>
               <th>
-                リポジトリ名<span className="font-bold text-[#c8001a]">※</span>
+                リポジトリ名<span className="font-bold text-jtc-c8001a">※</span>
               </th>
               <td className={MONO_CLASS}>
-                <b>{repoId}</b> <span className="text-10 text-[#555]">（決済システム基盤ソースコード）</span>
+                <b>{repoId}</b> <span className="text-10 text-jtc-555">（決済システム基盤ソースコード）</span>
               </td>
               <th>管理ID</th>
               <td className={MONO_CLASS}>PRJ-2025-00125</td>
@@ -181,7 +181,7 @@ export function RepositoryDetailScreen({
         action={
           <span>
             ブランチ：
-            <span className="inline-flex min-w-[96px] items-center border border-[#888] bg-white px-1.5 py-0.5">
+            <span className="inline-flex min-w-jtc-96 items-center border border-jtc-888 bg-white px-1.5 py-0.5">
               develop ▼
             </span>
             <span className="px-1" />
@@ -196,22 +196,22 @@ export function RepositoryDetailScreen({
         }
         bodyClassName="p-0"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
           <label>パス：</label>
           <span className={MONO_CLASS}>/</span>
           <label>表示：</label>
-          <select className="border border-[#888] px-1 py-0.5">
+          <select className="border border-jtc-888 px-1 py-0.5">
             <option>全て</option>
             <option>ディレクトリのみ</option>
             <option>ファイルのみ</option>
           </select>
           <label>並び順：</label>
-          <select className="border border-[#888] px-1 py-0.5">
+          <select className="border border-jtc-888 px-1 py-0.5">
             <option>名前順</option>
             <option>更新日時順</option>
             <option>サイズ順</option>
           </select>
-          <span className="text-10 text-[#555]">
+          <span className="text-10 text-jtc-555">
             ※一度にアップロードできるファイルサイズは100MBまでです。
           </span>
         </div>
@@ -233,15 +233,15 @@ export function RepositoryDetailScreen({
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[24px]">
+              <th className="w-jtc-24">
                 <input type="checkbox" />
               </th>
               <th>名前</th>
-              <th className="w-[80px]">サイズ</th>
-              <th className="w-[110px]">更新日時</th>
-              <th className="w-[100px]">更新者</th>
+              <th className="w-jtc-80">サイズ</th>
+              <th className="w-jtc-110">更新日時</th>
+              <th className="w-jtc-100">更新者</th>
               <th>最終コミットメッセージ</th>
-              <th className="w-[80px]">操作</th>
+              <th className="w-jtc-80">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -282,7 +282,7 @@ export function RepositoryDetailScreen({
           <span className={PAGER_LINK_CLASS}>次＞</span>
         </div>
 
-        <div className="flex items-center justify-between border-t border-t-[#c5c5c5] bg-[#f4f6fa] px-1.5 py-1">
+        <div className="flex items-center justify-between border-t border-t-jtc-c5c5c5 bg-jtc-f4f6fa px-1.5 py-1">
           <div className="flex flex-wrap gap-2">
             <button type="button" className={buttonClassName()}>
               削除
@@ -309,7 +309,7 @@ export function RepositoryDetailScreen({
       </Panel>
 
       <Panel title="README.docx プレビュー">
-        <div className={clsx("min-h-[120px] bg-[#f8f5e8] p-3 text-11", MONO_CLASS)}>
+        <div className={clsx("min-h-jtc-120 bg-jtc-f8f5e8 p-3 text-11", MONO_CLASS)}>
           <div className="text-center text-sm font-bold">決済システム基盤 ソースコード管理リポジトリ</div>
           <div className="mb-2 text-right text-10">令和8年4月25日 第3.2版</div>
           <div className="mb-1 border-b-2 border-b-black pb-0.5 font-bold">1．本リポジトリの目的</div>

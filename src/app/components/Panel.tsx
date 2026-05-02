@@ -14,7 +14,7 @@ export function Panel({ title, action, className, bodyClassName, children }: Pan
   return (
     <section className={clsx(PANEL_CLASS, className)}>
       <header className={PANEL_HEADER_CLASS}>
-        <h2 className="m-0 text-11 font-bold text-[#10233f]">{title}</h2>
+        <h2 className="m-0 text-11 font-bold text-jtc-10233f">{title}</h2>
         {action}
       </header>
       <div className={clsx(PANEL_BODY_CLASS, bodyClassName)}>{children}</div>

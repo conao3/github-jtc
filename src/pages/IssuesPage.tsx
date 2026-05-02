@@ -46,7 +46,7 @@ export function IssuesScreen(): JSX.Element {
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
-                  <span className="font-bold text-[#16386b]">{value}</span>
+                  <span className="font-bold text-jtc-16386b">{value}</span>
                 </li>
               ))}
             </ul>
@@ -73,11 +73,11 @@ export function IssuesScreen(): JSX.Element {
       }
     >
       <Panel title="照会条件" bodyClassName="p-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
           <label>課題番号/件名/区分</label>
-          <input className="border border-[#888] px-1.5 py-0.5" placeholder="ISS-2025-00125" />
+          <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="ISS-2025-00125" />
           <label>状態</label>
-          <select className="border border-[#888] px-1 py-0.5">
+          <select className="border border-jtc-888 px-1 py-0.5">
             <option>──全て──</option>
             <option>新規</option>
             <option>対応中</option>
@@ -85,7 +85,7 @@ export function IssuesScreen(): JSX.Element {
             <option>解決</option>
           </select>
           <label>担当者</label>
-          <input className="border border-[#888] px-1.5 py-0.5" placeholder="山田 太郎" />
+          <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="山田 太郎" />
           <button type="button" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
@@ -99,13 +99,13 @@ export function IssuesScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[120px]">課題番号</th>
+              <th className="w-jtc-120">課題番号</th>
               <th>件名</th>
-              <th className="w-[80px]">区分</th>
-              <th className="w-[90px]">状態</th>
-              <th className="w-[60px]">優先</th>
-              <th className="w-[90px]">担当者</th>
-              <th className="w-[100px]">期限</th>
+              <th className="w-jtc-80">区分</th>
+              <th className="w-jtc-90">状態</th>
+              <th className="w-jtc-60">優先</th>
+              <th className="w-jtc-90">担当者</th>
+              <th className="w-jtc-100">期限</th>
             </tr>
           </thead>
           <tbody>

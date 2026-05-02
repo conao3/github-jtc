@@ -141,7 +141,7 @@ function SideEntry({ entry, active }: { entry: NavEntry; active: boolean }): JSX
   const content = (
     <>
       <span
-        className={clsx("absolute left-[14px] top-[3px]", active ? "text-8 text-[#c8001a]" : "text-[#888]")}
+        className={clsx("absolute left-jtc-14 top-jtc-3", active ? "text-8 text-jtc-c8001a" : "text-jtc-888")}
       >
         {active ? "▶" : "・"}
       </span>
@@ -150,7 +150,7 @@ function SideEntry({ entry, active }: { entry: NavEntry; active: boolean }): JSX
       ) : (
         <Link
           to={entry.to}
-          className={clsx(TEXT_LINK_CLASS, "no-underline", active && "font-bold text-[#222]")}
+          className={clsx(TEXT_LINK_CLASS, "no-underline", active && "font-bold text-jtc-222")}
         >
           {entry.label}
         </Link>
@@ -325,7 +325,7 @@ export function JtcChrome({
           </div>
         </nav>
 
-        <div className="grid grid-cols-[280px_minmax(0,1fr)] border-b border-b-[#aab] bg-gradient-to-b from-white to-[#dde3ec] text-11">
+        <div className="grid grid-cols-jtc-menu border-b border-b-jtc-aab bg-gradient-to-b from-white to-jtc-dde3ec text-11">
           <div className={SCREEN_ID_CELL_CLASS}>
             画面ID：<span className={MONO_CLASS}>{screenId}</span>
           </div>
@@ -335,7 +335,7 @@ export function JtcChrome({
             </Link>
             {crumbs.map((crumb, index) => (
               <span key={`${crumb.label}:${index}`} className="flex items-center">
-                <span className="px-1 text-[#888]">＞</span>
+                <span className="px-1 text-jtc-888">＞</span>
                 {crumb.to === undefined || index === crumbs.length - 1 ? (
                   <span className={index === crumbs.length - 1 ? "font-bold text-black" : undefined}>
                     {crumb.label}
@@ -357,7 +357,7 @@ export function JtcChrome({
               <details
                 key={group.title}
                 open={group.defaultOpen || group.items.some((item) => item.label === activeSideItem)}
-                className="border-b border-b-dotted border-b-[#999]"
+                className="border-b border-b-dotted border-b-jtc-999"
               >
                 <summary className={SIDE_GROUP_SUMMARY_CLASS}>
                   <span className="absolute left-1.5 text-8">▼</span>
@@ -375,24 +375,24 @@ export function JtcChrome({
               <div className={STATUS_BOX_TITLE_CLASS}>システム稼働状況</div>
               <div className={STATUS_BOX_BODY_CLASS}>
                 <div>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
                   <b>全体：</b>正常稼働中
                 </div>
                 <div className="mt-1 space-y-0.5 text-10">
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
                     Web/API
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
                     リポジトリDB
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#f5d949]" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-f5d949" />
                     CIランナー <span className={MUTED_CLASS}>(縮退)</span>
                   </div>
                   <div>
-                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#1a7f3c]" />
+                    <span className="mr-1 inline-block h-2 w-2 rounded-full bg-jtc-1a7f3c" />
                     認証基盤
                   </div>
                 </div>

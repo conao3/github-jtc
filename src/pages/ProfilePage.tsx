@@ -66,7 +66,7 @@ export function ProfileScreen(): JSX.Element {
               <div className="font-bold">所属長：佐藤 太一郎</div>
               <div className={clsx("text-10", MONO_CLASS)}>内線：1020</div>
               <div className={clsx("text-10", MONO_CLASS)}>携帯：090-XXXX-XXXX</div>
-              <div className="mt-2 border-t border-t-dotted border-t-[#999] pt-2">
+              <div className="mt-2 border-t border-t-dotted border-t-jtc-999 pt-2">
                 <div className="font-bold">ヘルプデスク</div>
                 <div className={clsx("text-10", MONO_CLASS)}>内線：9999</div>
                 <div className="text-10">対応：平日 9:00-17:30</div>
@@ -100,17 +100,17 @@ export function ProfileScreen(): JSX.Element {
       }
     >
       <Panel title="基本情報" action={<span className={MUTED_CLASS}>最終更新：R8/04/22 10:38</span>}>
-        <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-3">
+        <div className="grid grid-cols-jtc-profile gap-3">
           <div className="text-center">
             <div
               className={clsx(
-                "mx-auto flex h-[130px] w-[100px] items-center justify-center border-2 border-[#555] bg-gradient-to-br from-[#c5cdd9] to-[#8a96a8] text-40 text-white",
+                "mx-auto flex h-jtc-130 w-jtc-100 items-center justify-center border-2 border-jtc-555 bg-gradient-to-br from-jtc-c5cdd9 to-jtc-8a96a8 text-40 text-white",
                 MONO_CLASS,
               )}
             >
               山田
             </div>
-            <div className="mt-1 text-10 text-[#555]">
+            <div className="mt-1 text-10 text-jtc-555">
               証明写真
               <br />
               （R7/04/01撮影）
@@ -124,7 +124,7 @@ export function ProfileScreen(): JSX.Element {
               <tbody>
                 <tr>
                   <th>
-                    ユーザーID<span className="font-bold text-[#c8001a]">※</span>
+                    ユーザーID<span className="font-bold text-jtc-c8001a">※</span>
                   </th>
                   <td className={MONO_CLASS}>
                     <b>yamada.taro</b>
@@ -190,13 +190,13 @@ export function ProfileScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[40px]">No</th>
+              <th className="w-jtc-40">No</th>
               <th>ロール</th>
               <th>付与範囲</th>
-              <th className="w-[100px]">付与日</th>
-              <th className="w-[100px]">有効期限</th>
-              <th className="w-[80px]">状態</th>
-              <th className="w-[80px]">付与者</th>
+              <th className="w-jtc-100">付与日</th>
+              <th className="w-jtc-100">有効期限</th>
+              <th className="w-jtc-80">状態</th>
+              <th className="w-jtc-80">付与者</th>
             </tr>
           </thead>
           <tbody>
@@ -215,7 +215,7 @@ export function ProfileScreen(): JSX.Element {
             ))}
           </tbody>
         </table>
-        <div className="border-t border-t-[#c5c5c5] bg-[#f4f6fa] px-1.5 py-1 text-right">
+        <div className="border-t border-t-jtc-c5c5c5 bg-jtc-f4f6fa px-1.5 py-1 text-right">
           <button type="button" className={buttonClassName()}>
             ＋ 権限申請
           </button>
@@ -249,12 +249,12 @@ export function ProfileScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[40px]">No</th>
+              <th className="w-jtc-40">No</th>
               <th>名称</th>
-              <th className="w-[80px]">区分</th>
-              <th className="w-[100px]">取得日</th>
-              <th className="w-[100px]">有効期限</th>
-              <th className="w-[80px]">状態</th>
+              <th className="w-jtc-80">区分</th>
+              <th className="w-jtc-100">取得日</th>
+              <th className="w-jtc-100">有効期限</th>
+              <th className="w-jtc-80">状態</th>
             </tr>
           </thead>
           <tbody>

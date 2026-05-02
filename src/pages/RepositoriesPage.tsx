@@ -236,14 +236,14 @@ export function RepositoriesScreen(): JSX.Element {
         action={<span className={TEXT_LINK_CLASS}>［検索条件を保存］</span>}
         bodyClassName="p-0"
       >
-        <div className="flex flex-col gap-1 border-b border-b-[#c5c5c5] bg-[#f4f6fa] px-2 py-1.5">
+        <div className="flex flex-col gap-1 border-b border-b-jtc-c5c5c5 bg-jtc-f4f6fa px-2 py-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <label>リポジトリ名：</label>
-            <input className="border border-[#888] px-1.5 py-0.5" />
+            <input className="border border-jtc-888 px-1.5 py-0.5" />
             <label>管理ID：</label>
-            <input className="border border-[#888] px-1.5 py-0.5" placeholder="PRJ-2025-00125" />
+            <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="PRJ-2025-00125" />
             <label>事業領域：</label>
-            <select className="border border-[#888] px-1 py-0.5">
+            <select className="border border-jtc-888 px-1 py-0.5">
               <option>──全て──</option>
               <option>金融基盤</option>
               <option>勘定系</option>
@@ -251,7 +251,7 @@ export function RepositoriesScreen(): JSX.Element {
               <option>共通基盤</option>
             </select>
             <label>主要言語：</label>
-            <select className="border border-[#888] px-1 py-0.5">
+            <select className="border border-jtc-888 px-1 py-0.5">
               <option>──全て──</option>
               <option>Java</option>
               <option>COBOL85</option>
@@ -262,9 +262,9 @@ export function RepositoriesScreen(): JSX.Element {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <label>担当者：</label>
-            <input className="border border-[#888] px-1.5 py-0.5" placeholder="山田 太郎" />
+            <input className="border border-jtc-888 px-1.5 py-0.5" placeholder="山田 太郎" />
             <label>承認状態：</label>
-            <select className="border border-[#888] px-1 py-0.5">
+            <select className="border border-jtc-888 px-1 py-0.5">
               <option>──全て──</option>
               <option>承認済</option>
               <option>承認待ち</option>
@@ -272,11 +272,11 @@ export function RepositoriesScreen(): JSX.Element {
               <option>却下</option>
             </select>
             <label>登録日（自）</label>
-            <input className="w-[90px] border border-[#888] px-1.5 py-0.5" placeholder="R8/01/01" />
+            <input className="w-jtc-90 border border-jtc-888 px-1.5 py-0.5" placeholder="R8/01/01" />
             <label>～（至）</label>
-            <input className="w-[90px] border border-[#888] px-1.5 py-0.5" placeholder="R8/12/31" />
+            <input className="w-jtc-90 border border-jtc-888 px-1.5 py-0.5" placeholder="R8/12/31" />
             <label>機密区分：</label>
-            <select className="border border-[#888] px-1 py-0.5">
+            <select className="border border-jtc-888 px-1 py-0.5">
               <option>──全て──</option>
               <option>社外秘</option>
               <option>社内秘</option>
@@ -285,7 +285,7 @@ export function RepositoriesScreen(): JSX.Element {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <label>表示件数：</label>
-            <select className="border border-[#888] px-1 py-0.5">
+            <select className="border border-jtc-888 px-1 py-0.5">
               <option>10</option>
               <option>20</option>
               <option>50</option>
@@ -315,42 +315,42 @@ export function RepositoriesScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th rowSpan={2} className="w-[24px]">
+              <th rowSpan={2} className="w-jtc-24">
                 <input type="checkbox" />
               </th>
-              <th rowSpan={2} className="w-[40px]">
+              <th rowSpan={2} className="w-jtc-40">
                 No
               </th>
               <th rowSpan={2}>リポジトリ名／管理ID／説明</th>
-              <th rowSpan={2} className="w-[80px]">
+              <th rowSpan={2} className="w-jtc-80">
                 事業領域
               </th>
-              <th rowSpan={2} className="w-[80px]">
+              <th rowSpan={2} className="w-jtc-80">
                 主要言語
               </th>
-              <th colSpan={3} className="w-[180px]">
+              <th colSpan={3} className="w-jtc-180">
                 件数
               </th>
-              <th rowSpan={2} className="w-[80px]">
+              <th rowSpan={2} className="w-jtc-80">
                 承認状態
               </th>
-              <th rowSpan={2} className="w-[90px]">
+              <th rowSpan={2} className="w-jtc-90">
                 機密区分
               </th>
-              <th rowSpan={2} className="w-[90px]">
+              <th rowSpan={2} className="w-jtc-90">
                 担当者
               </th>
-              <th rowSpan={2} className="w-[100px]">
+              <th rowSpan={2} className="w-jtc-100">
                 最終更新
               </th>
-              <th rowSpan={2} className="w-[80px]">
+              <th rowSpan={2} className="w-jtc-80">
                 操作
               </th>
             </tr>
             <tr>
-              <th className="w-[50px]">BR</th>
-              <th className="w-[50px]">PR</th>
-              <th className="w-[50px]">課題</th>
+              <th className="w-jtc-50">BR</th>
+              <th className="w-jtc-50">PR</th>
+              <th className="w-jtc-50">課題</th>
             </tr>
           </thead>
           <tbody>
@@ -417,7 +417,7 @@ export function RepositoriesScreen(): JSX.Element {
           <span className={PAGER_LINK_CLASS}>末尾≫</span>
         </div>
 
-        <div className="flex items-center justify-between border-t border-t-[#c5c5c5] bg-[#f4f6fa] px-1.5 py-1">
+        <div className="flex items-center justify-between border-t border-t-jtc-c5c5c5 bg-jtc-f4f6fa px-1.5 py-1">
           <div className="flex flex-wrap gap-2">
             <button type="button" className={buttonClassName()}>
               一括ダウンロード

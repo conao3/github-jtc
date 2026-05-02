@@ -1,10 +1,301 @@
 @import "tailwindcss";
 
 @theme {
+  --font-jtc-ui: "MS PGothic", "MS Gothic", "Hiragino Kaku Gothic Pro", "Meiryo", "Osaka", sans-serif;
+  --font-jtc-mono: "MS Gothic", "Osaka-mono", monospace;
   --text-8: 0.5rem;
   --text-10: 0.625rem;
   --text-11: 0.6875rem;
   --text-13: 0.8125rem;
   --text-28: 1.75rem;
   --text-40: 2.5rem;
+  --spacing-jtc-2: 2px;
+  --spacing-jtc-3: 3px;
+  --spacing-jtc-14: 14px;
+  --spacing-jtc-16: 16px;
+  --spacing-jtc-18: 18px;
+  --spacing-jtc-20: 20px;
+  --spacing-jtc-22: 22px;
+  --spacing-jtc-24: 24px;
+  --spacing-jtc-26: 26px;
+  --spacing-jtc-30: 30px;
+  --spacing-jtc-32: 32px;
+  --spacing-jtc-36: 36px;
+  --spacing-jtc-40: 40px;
+  --spacing-jtc-46: 46px;
+  --spacing-jtc-50: 50px;
+  --spacing-jtc-52: 52px;
+  --spacing-jtc-54: 54px;
+  --spacing-jtc-60: 60px;
+  --spacing-jtc-70: 70px;
+  --spacing-jtc-72: 72px;
+  --spacing-jtc-80: 80px;
+  --spacing-jtc-88: 88px;
+  --spacing-jtc-90: 90px;
+  --spacing-jtc-96: 96px;
+  --spacing-jtc-100: 100px;
+  --spacing-jtc-110: 110px;
+  --spacing-jtc-120: 120px;
+  --spacing-jtc-124: 124px;
+  --spacing-jtc-130: 130px;
+  --spacing-jtc-150: 150px;
+  --spacing-jtc-152: 152px;
+  --spacing-jtc-180: 180px;
+  --spacing-jtc-200: 200px;
+  --spacing-jtc-280: 280px;
+  --spacing-jtc-360: 360px;
+  --spacing-jtc-380: 380px;
+  --spacing-jtc-560: 560px;
+  --spacing-jtc-720: 720px;
+  --color-jtc-0033aa: #0033aa;
+  --color-jtc-0e2547: #0e2547;
+  --color-jtc-10233f: #10233f;
+  --color-jtc-16386b: #16386b;
+  --color-jtc-176535: #176535;
+  --color-jtc-1a3e72: #1a3e72;
+  --color-jtc-1a7f3c: #1a7f3c;
+  --color-jtc-1f4f8a: #1f4f8a;
+  --color-jtc-222: #222;
+  --color-jtc-2a1500: #2a1500;
+  --color-jtc-2a251f: #2a251f;
+  --color-jtc-2a5894: #2a5894;
+  --color-jtc-2a7f45: #2a7f45;
+  --color-jtc-3b6aa3: #3b6aa3;
+  --color-jtc-444: #444;
+  --color-jtc-49739d: #49739d;
+  --color-jtc-4a78b3: #4a78b3;
+  --color-jtc-555: #555;
+  --color-jtc-5a2a8a: #5a2a8a;
+  --color-jtc-5a8ac4: #5a8ac4;
+  --color-jtc-666: #666;
+  --color-jtc-6a0099: #6a0099;
+  --color-jtc-6c7c90: #6c7c90;
+  --color-jtc-777: #777;
+  --color-jtc-7a5e00: #7a5e00;
+  --color-jtc-7aa07f: #7aa07f;
+  --color-jtc-7b2d2d: #7b2d2d;
+  --color-jtc-7c8b9d: #7c8b9d;
+  --color-jtc-888: #888;
+  --color-jtc-8a5200: #8a5200;
+  --color-jtc-8a96a8: #8a96a8;
+  --color-jtc-8b4600: #8b4600;
+  --color-jtc-8e0014: #8e0014;
+  --color-jtc-8f8f8f: #8f8f8f;
+  --color-jtc-999: #999;
+  --color-jtc-9aa7b8: #9aa7b8;
+  --color-jtc-9ca7b5: #9ca7b5;
+  --color-jtc-a03333: #a03333;
+  --color-jtc-aaa: #aaa;
+  --color-jtc-aab: #aab;
+  --color-jtc-aac4e6: #aac4e6;
+  --color-jtc-b18d24: #b18d24;
+  --color-jtc-b64242: #b64242;
+  --color-jtc-b8d8b8: #b8d8b8;
+  --color-jtc-bbb: #bbb;
+  --color-jtc-c5c5c5: #c5c5c5;
+  --color-jtc-c5cdd9: #c5cdd9;
+  --color-jtc-c7d1df: #c7d1df;
+  --color-jtc-c8001a: #c8001a;
+  --color-jtc-c89400: #c89400;
+  --color-jtc-d08200: #d08200;
+  --color-jtc-d4a000: #d4a000;
+  --color-jtc-d4dbe4: #d4dbe4;
+  --color-jtc-d6d6d6: #d6d6d6;
+  --color-jtc-d7e1ef: #d7e1ef;
+  --color-jtc-d8ddd9: #d8ddd9;
+  --color-jtc-d8dde6: #d8dde6;
+  --color-jtc-d8e2f0: #d8e2f0;
+  --color-jtc-d8ebdc: #d8ebdc;
+  --color-jtc-d8eed8: #d8eed8;
+  --color-jtc-d8f0d8: #d8f0d8;
+  --color-jtc-d99a00: #d99a00;
+  --color-jtc-d9e0ea: #d9e0ea;
+  --color-jtc-dbe4f1: #dbe4f1;
+  --color-jtc-dce3ec: #dce3ec;
+  --color-jtc-dce8f6: #dce8f6;
+  --color-jtc-ddd: #ddd;
+  --color-jtc-dde3ec: #dde3ec;
+  --color-jtc-dff3e5: #dff3e5;
+  --color-jtc-e07474: #e07474;
+  --color-jtc-e0b8b8: #e0b8b8;
+  --color-jtc-e0e6ef: #e0e6ef;
+  --color-jtc-e0ebf8: #e0ebf8;
+  --color-jtc-e1e6ee: #e1e6ee;
+  --color-jtc-e2e8f0: #e2e8f0;
+  --color-jtc-e6e9ef: #e6e9ef;
+  --color-jtc-e8edf3: #e8edf3;
+  --color-jtc-e8edf4: #e8edf4;
+  --color-jtc-e9eef5: #e9eef5;
+  --color-jtc-ecf8ee: #ecf8ee;
+  --color-jtc-eef2f6: #eef2f6;
+  --color-jtc-eef2f7: #eef2f7;
+  --color-jtc-efefef: #efefef;
+  --color-jtc-f0d8d8: #f0d8d8;
+  --color-jtc-f0eee9: #f0eee9;
+  --color-jtc-f0f3f7: #f0f3f7;
+  --color-jtc-f4f6fa: #f4f6fa;
+  --color-jtc-f5d949: #f5d949;
+  --color-jtc-f7f8fb: #f7f8fb;
+  --color-jtc-f8f5e8: #f8f5e8;
+  --color-jtc-f8fafc: #f8fafc;
+  --color-jtc-f9fbfd: #f9fbfd;
+  --color-jtc-fafafa: #fafafa;
+  --color-jtc-fdfefe: #fdfefe;
+  --color-jtc-ffd968: #ffd968;
+  --color-jtc-ffdede: #ffdede;
+  --color-jtc-ffe0e0: #ffe0e0;
+  --color-jtc-ffe1a8: #ffe1a8;
+  --color-jtc-ffe59c: #ffe59c;
+  --color-jtc-ffefa0: #ffefa0;
+  --color-jtc-fff0c0: #fff0c0;
+  --color-jtc-fff5b8: #fff5b8;
+  --color-jtc-fff7c0: #fff7c0;
+  --color-jtc-fff7cc: #fff7cc;
+  --color-jtc-fff7d0: #fff7d0;
+  --color-jtc-fff7f7: #fff7f7;
+  --color-jtc-fffce8: #fffce8;
+  --color-jtc-fffef7: #fffef7;
+  --color-jtc-black-20: rgba(0, 0, 0, 0.2);
+  --color-jtc-white-25: rgba(255, 255, 255, 0.25);
+  --color-jtc-white-35: rgba(255, 255, 255, 0.35);
+  --color-jtc-overlay-46: rgba(0, 0, 0, 0.46);
+  --color-jtc-overlay-72: rgba(20, 16, 12, 0.72);
+  --color-jtc-canvas-ink: rgba(40, 30, 20, 0.85);
+  --color-jtc-canvas-muted: rgba(60, 50, 40, 0.6);
+  --color-jtc-canvas-soft: rgba(60, 50, 40, 0.7);
+  --color-jtc-canvas-strong: rgba(60, 50, 40, 0.82);
+  --color-jtc-canvas-border-soft: rgba(60, 50, 40, 0.18);
+  --color-jtc-canvas-border: rgba(60, 50, 40, 0.2);
+  --color-jtc-canvas-border-strong: rgba(60, 50, 40, 0.35);
+}
+
+@utility font-inherit {
+  font: inherit;
+}
+
+@utility tracking-jtc-half {
+  letter-spacing: 0.5px;
+}
+
+@utility text-shadow-jtc-40 {
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+@utility text-shadow-jtc-35 {
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+@utility text-shadow-jtc-30 {
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+@utility text-shadow-none {
+  text-shadow: none;
+}
+
+@utility shadow-jtc-line {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+@utility shadow-jtc-inset {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+@utility shadow-jtc-artboard {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+@utility shadow-jtc-preview {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+@utility shadow-jtc-modal {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+@utility shadow-jtc-overlay {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+@utility grid-cols-jtc-header {
+  grid-template-columns: 280px minmax(0, 1fr) auto;
+}
+
+@utility grid-cols-jtc-menu {
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+@utility grid-cols-jtc-body {
+  grid-template-columns: 180px minmax(0, 1fr) 240px;
+}
+
+@utility grid-cols-jtc-footer {
+  grid-template-columns: 1fr auto auto;
+}
+
+@utility grid-cols-jtc-profile {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+@utility bg-jtc-canvas-grid {
+  background-image:
+    linear-gradient(#f0eee9, #f0eee9), linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size:
+    auto,
+    24px 24px,
+    24px 24px;
+  background-position:
+    0 0,
+    0 0,
+    0 0;
+}
+
+@utility max-h-jtc-92vh {
+  max-height: 92vh;
+}
+
+@utility max-h-jtc-preview {
+  max-height: calc(92vh - 64px);
+}
+
+@utility jtc-user-info-table {
+  border-collapse: collapse;
+  & td {
+    vertical-align: top;
+    padding-right: 0.375rem;
+    padding-bottom: 1px;
+  }
+  & td .lbl {
+    color: var(--color-jtc-555);
+  }
+  & td .val {
+    font-weight: 700;
+  }
+}
+
+@utility jtc-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-11);
+  & td {
+    vertical-align: top;
+    border: 1px solid var(--color-jtc-c5c5c5);
+    padding: 0.25rem 0.375rem;
+  }
+  & th {
+    vertical-align: middle;
+    border: 1px solid var(--color-jtc-999);
+    padding: 0.25rem 0.375rem;
+    text-align: left;
+  }
+  & thead th {
+    background-image: linear-gradient(to bottom, var(--color-jtc-d8dde6), var(--color-jtc-c5cdd9));
+  }
+  & tbody tr:nth-child(even) {
+    background-color: var(--color-jtc-f4f6fa);
+  }
+  & tbody tr:hover {
+    background-color: var(--color-jtc-fff7d0);
+  }
 }

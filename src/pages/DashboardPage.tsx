@@ -166,16 +166,16 @@ const assignedIssues = [
 function NoticeTag({ label }: { label: string }): JSX.Element {
   const tone =
     label === "重要"
-      ? "border-[#a03333] bg-[#ffdede] text-[#8e0014]"
+      ? "border-jtc-a03333 bg-jtc-ffdede text-jtc-8e0014"
       : label === "障害"
-        ? "border-[#a03333] bg-[#ffe0e0] text-[#8e0014]"
+        ? "border-jtc-a03333 bg-jtc-ffe0e0 text-jtc-8e0014"
         : label === "運用"
-          ? "border-[#49739d] bg-[#dce8f6] text-[#16386b]"
-          : "border-[#888] bg-[#efefef] text-[#555]";
+          ? "border-jtc-49739d bg-jtc-dce8f6 text-jtc-16386b"
+          : "border-jtc-888 bg-jtc-efefef text-jtc-555";
 
   return (
     <span
-      className={clsx("inline-flex min-w-[46px] justify-center border px-1 py-px text-10 font-bold", tone)}
+      className={clsx("inline-flex min-w-jtc-46 justify-center border px-1 py-px text-10 font-bold", tone)}
     >
       {label}
     </span>
@@ -207,7 +207,7 @@ export function DashboardScreen(): JSX.Element {
               {todoItems.map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
-                  <span className={clsx("font-bold", value === "0 件" ? "text-[#777]" : "text-[#16386b]")}>
+                  <span className={clsx("font-bold", value === "0 件" ? "text-jtc-777" : "text-jtc-16386b")}>
                     {value}
                   </span>
                 </li>
@@ -219,11 +219,11 @@ export function DashboardScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <thead>
                 <tr>
-                  <th className="w-[88px]">課題ID</th>
+                  <th className="w-jtc-88">課題ID</th>
                   <th>件名</th>
-                  <th className="w-[46px]">状態</th>
-                  <th className="w-[30px]">優先</th>
-                  <th className="w-[46px]">期限</th>
+                  <th className="w-jtc-46">状態</th>
+                  <th className="w-jtc-30">優先</th>
+                  <th className="w-jtc-46">期限</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,12 +311,12 @@ export function DashboardScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-[60px]">種別</th>
+              <th className="w-jtc-60">種別</th>
               <th>件名</th>
-              <th className="w-[120px]">掲載日時</th>
-              <th className="w-[120px]">掲載期限</th>
-              <th className="w-[90px]">発行元</th>
-              <th className="w-[50px]">添付</th>
+              <th className="w-jtc-120">掲載日時</th>
+              <th className="w-jtc-120">掲載期限</th>
+              <th className="w-jtc-90">発行元</th>
+              <th className="w-jtc-50">添付</th>
             </tr>
           </thead>
           <tbody>
@@ -328,7 +328,7 @@ export function DashboardScreen(): JSX.Element {
                 <td>
                   {title}
                   {(kind === "重要" || title.includes("force-push")) && (
-                    <span className="ml-1 font-bold text-[#c8001a]">★</span>
+                    <span className="ml-1 font-bold text-jtc-c8001a">★</span>
                   )}
                 </td>
                 <td className={clsx("text-center", MONO_CLASS)}>{posted}</td>

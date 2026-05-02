@@ -87,8 +87,8 @@ export function LoginScreen(): JSX.Element {
 
   return (
     <div className={BODY_BG_CLASS}>
-      <div className="flex h-full w-full flex-col border border-[#888] bg-[#e6e9ef]">
-        <div className="flex items-center justify-between border-b-2 border-b-[#555] bg-gradient-to-b from-[#3b6aa3] to-[#1a3e72] px-4 py-2 text-white">
+      <div className="flex h-full w-full flex-col border border-jtc-888 bg-jtc-e6e9ef">
+        <div className="flex items-center justify-between border-b-2 border-b-jtc-555 bg-gradient-to-b from-jtc-3b6aa3 to-jtc-1a3e72 px-4 py-2 text-white">
           <div>
             <div className={PRODUCT_NAME_CLASS}>
               JTC GitHub<span className="align-super text-10">®</span> Enterprise Edition 5.2.1
@@ -98,10 +98,10 @@ export function LoginScreen(): JSX.Element {
           <div className="text-11">JTC株式会社 ／ 社内利用専用システム</div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-wrap items-start justify-center gap-5 overflow-auto px-[30px] py-[30px]">
-          <div className="mt-5 w-[380px]">
+        <div className="flex min-h-0 flex-1 flex-wrap items-start justify-center gap-5 overflow-auto px-jtc-30 py-jtc-30">
+          <div className="mt-5 w-jtc-380">
             <Panel title="ログイン" bodyClassName="p-5">
-              <div className="mb-3.5 border border-[#d4a000] bg-[#fff0c0] px-2 py-1.5 text-11">
+              <div className="mb-3.5 border border-jtc-d4a000 bg-jtc-fff0c0 px-2 py-1.5 text-11">
                 本システムは社内利用者のみ使用可能です。不正アクセスは情報セキュリティ規程に基づき処分の対象となります。
               </div>
 
@@ -115,8 +115,8 @@ export function LoginScreen(): JSX.Element {
                 <table className="w-full border-collapse text-xs">
                   <tbody>
                     <tr>
-                      <td className="w-[120px] px-1.5 py-2 text-right font-bold">
-                        ユーザーID<span className="text-[#c8001a]">※</span>
+                      <td className="w-jtc-120 px-1.5 py-2 text-right font-bold">
+                        ユーザーID<span className="text-jtc-c8001a">※</span>
                       </td>
                       <td className="px-1.5 py-2">
                         <form.Field name="userId" validators={zodValidators(loginFieldValidators.userId)}>
@@ -125,7 +125,7 @@ export function LoginScreen(): JSX.Element {
                               <input
                                 name={field.name}
                                 className={clsx(
-                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  "w-full border border-jtc-888 px-1 py-jtc-3",
                                   field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                                 )}
                                 placeholder="例：yamada.taro"
@@ -141,7 +141,7 @@ export function LoginScreen(): JSX.Element {
                     </tr>
                     <tr>
                       <td className="px-1.5 py-2 text-right font-bold">
-                        パスワード<span className="text-[#c8001a]">※</span>
+                        パスワード<span className="text-jtc-c8001a">※</span>
                       </td>
                       <td className="px-1.5 py-2">
                         <form.Field name="password" validators={zodValidators(loginFieldValidators.password)}>
@@ -151,7 +151,7 @@ export function LoginScreen(): JSX.Element {
                                 name={field.name}
                                 type="password"
                                 className={clsx(
-                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  "w-full border border-jtc-888 px-1 py-jtc-3",
                                   field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                                 )}
                                 value={field.state.value}
@@ -166,7 +166,7 @@ export function LoginScreen(): JSX.Element {
                     </tr>
                     <tr>
                       <td className="px-1.5 py-2 text-right font-bold">
-                        ワンタイムパスワード<span className="text-[#c8001a]">※</span>
+                        ワンタイムパスワード<span className="text-jtc-c8001a">※</span>
                       </td>
                       <td className="px-1.5 py-2">
                         <form.Field name="otp" validators={zodValidators(loginFieldValidators.otp)}>
@@ -175,7 +175,7 @@ export function LoginScreen(): JSX.Element {
                               <input
                                 name={field.name}
                                 className={clsx(
-                                  "w-full border border-[#888] px-1 py-[3px]",
+                                  "w-full border border-jtc-888 px-1 py-jtc-3",
                                   MONO_CLASS,
                                   field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                                 )}
@@ -199,7 +199,7 @@ export function LoginScreen(): JSX.Element {
                               <select
                                 name={field.name}
                                 className={clsx(
-                                  "w-full border border-[#888] px-1 py-[2px]",
+                                  "w-full border border-jtc-888 px-1 py-jtc-2",
                                   field.state.meta.errors.length > 0 && FORM_CONTROL_INVALID_CLASS,
                                 )}
                                 value={field.state.value}
@@ -264,7 +264,7 @@ export function LoginScreen(): JSX.Element {
                 </table>
               </form>
 
-              <div className="mt-3.5 border-t border-t-dotted border-t-[#888] pt-2 text-11">
+              <div className="mt-3.5 border-t border-t-dotted border-t-jtc-888 pt-2 text-11">
                 <div>
                   ▶ <span className={TEXT_LINK_CLASS}>パスワードを忘れた方はこちら</span>
                 </div>
@@ -281,12 +281,12 @@ export function LoginScreen(): JSX.Element {
             </Panel>
           </div>
 
-          <div className="mt-5 w-[360px]">
+          <div className="mt-5 w-jtc-360">
             <Panel title="お知らせ">
               <div className="text-11">
-                <div className="font-bold text-[#c8001a]">【重要】R8/05/15 22:00 メンテナンス予定</div>
+                <div className="font-bold text-jtc-c8001a">【重要】R8/05/15 22:00 メンテナンス予定</div>
                 <div>5月15日(金) 22:00～翌2:00、本番DB定期メンテナンスを実施します。</div>
-                <div className="mt-1.5 font-bold text-[#c8001a]">【障害】社内認証基盤 接続障害</div>
+                <div className="mt-1.5 font-bold text-jtc-c8001a">【障害】社内認証基盤 接続障害</div>
                 <div>
                   現在、社内統合認証基盤に断続的な障害が発生しています。ログインボタン押下後は案内に従い
                   GitHub ログインをご利用ください。
@@ -301,11 +301,11 @@ export function LoginScreen(): JSX.Element {
                 <div>● Microsoft Edge（IEモード）</div>
                 <div>● Internet Explorer 11</div>
                 <div>● Google Chrome（最新版）</div>
-                <div className="text-10 text-[#555]">
+                <div className="text-10 text-jtc-555">
                   ※ 上記以外のブラウザでは正常に動作しない場合があります。
                 </div>
-                <div className="text-10 text-[#555]">※ 画面解像度：1280×800以上</div>
-                <div className="text-10 text-[#555]">※ JavaScript／Cookieを有効にしてください。</div>
+                <div className="text-10 text-jtc-555">※ 画面解像度：1280×800以上</div>
+                <div className="text-10 text-jtc-555">※ JavaScript／Cookieを有効にしてください。</div>
               </div>
             </Panel>
 
@@ -336,15 +336,15 @@ export function LoginScreen(): JSX.Element {
       <ModalOverlay
         isOpen={isOutageDialogOpen}
         onOpenChange={setIsOutageDialogOpen}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.46)] p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-jtc-overlay-46 p-4"
       >
-        <Modal className="w-full max-w-[560px] border border-[#666] bg-[#f4f6fa] shadow-[0_18px_40px_rgba(0,0,0,0.35)] outline-none">
+        <Modal className="w-full max-w-jtc-560 border border-jtc-666 bg-jtc-f4f6fa shadow-jtc-modal outline-none">
           <Dialog className="outline-none">
-            <div className="border-b border-b-[#7c8b9d] bg-gradient-to-b from-[#e8edf4] to-[#c7d1df] px-3 py-2 text-xs font-bold text-[#10233f]">
+            <div className="border-b border-b-jtc-7c8b9d bg-gradient-to-b from-jtc-e8edf4 to-jtc-c7d1df px-3 py-2 text-xs font-bold text-jtc-10233f">
               ログイン方式切替のお知らせ
             </div>
-            <div className="space-y-3 p-4 text-xs text-[#222]">
-              <div className="border border-[#c8001a] bg-[#fff0c0] px-3 py-2 text-11 text-[#8e0014]">
+            <div className="space-y-3 p-4 text-xs text-jtc-222">
+              <div className="border border-jtc-c8001a bg-jtc-fff0c0 px-3 py-2 text-11 text-jtc-8e0014">
                 現在、社内統合認証基盤が障害中のため、通常の「ログイン」はご利用いただけません。
               </div>
               <div>
@@ -354,7 +354,7 @@ export function LoginScreen(): JSX.Element {
                 <span className={clsx("px-1", MONO_CLASS)}>{redirectTo}</span>
                 に戻ります。
               </div>
-              <div className="border border-[#c5c5c5] bg-white px-3 py-2 text-11">
+              <div className="border border-jtc-c5c5c5 bg-white px-3 py-2 text-11">
                 <div>
                   GitHub client_id：
                   {githubConfig.clientId.length > 0 ? (
@@ -375,11 +375,11 @@ export function LoginScreen(): JSX.Element {
                 </div>
               </div>
               {githubError === null ? null : (
-                <div className="border border-[#b64242] bg-[#ffe0e0] px-3 py-2 text-11 text-[#8e0014]">
+                <div className="border border-jtc-b64242 bg-jtc-ffe0e0 px-3 py-2 text-11 text-jtc-8e0014">
                   {githubError}
                 </div>
               )}
-              <div className="flex justify-end gap-2 border-t border-t-dotted border-t-[#999] pt-3">
+              <div className="flex justify-end gap-2 border-t border-t-dotted border-t-jtc-999 pt-3">
                 <button
                   type="button"
                   className={buttonClassName()}
