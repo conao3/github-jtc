@@ -301,7 +301,11 @@ export function DashboardScreen(): JSX.Element {
       activeSideItem="ダッシュボード"
       rightColumn={
         <>
-          <Panel title="クイックショートカット" bodyClassName="p-0">
+          <Panel
+            title="クイックショートカット"
+            action={<span className={MUTED_CLASS}>※ JTC ポータル演出用ショートカット</span>}
+            bodyClassName="p-0"
+          >
             <div className={SHORTCUT_GRID_CLASS}>
               {shortcuts.map(([icon, label]) => (
                 <div key={label} className={SHORTCUT_CLASS}>
@@ -468,7 +472,7 @@ export function DashboardScreen(): JSX.Element {
 
       <Panel
         title="お知らせ・運用連絡"
-        action={<span className={TEXT_LINK_CLASS}>お知らせ一覧へ ▶</span>}
+        action={<span className={MUTED_CLASS}>※ 社内ポータル再現用のダミー一覧</span>}
         bodyClassName="p-0"
       >
         <div className={TABS_ROW_CLASS}>
@@ -535,7 +539,7 @@ export function DashboardScreen(): JSX.Element {
 
       <Panel
         title="変更登録フロー（現在ステータス）：CHG-2025-00472 「決済例外処理の修正」"
-        action={<span className={MUTED_CLASS}>登録日：R8/04/28 ／ 期限：R8/05/10</span>}
+        action={<span className={MUTED_CLASS}>※ GitHub 非連携のダミーフロー</span>}
       >
         <div className={FLOW_WRAP_CLASS}>
           {flowSteps.map((step) => (

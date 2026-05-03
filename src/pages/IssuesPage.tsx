@@ -157,7 +157,11 @@ export function IssuesScreen(): JSX.Element {
         </>
       }
     >
-      <Panel title="照会条件" bodyClassName="p-0">
+      <Panel
+        title="照会条件"
+        action={<span className={MUTED_CLASS}>※ 絞込 UI は次工程で client-side filter に接続予定</span>}
+        bodyClassName="p-0"
+      >
         <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
           <label>Issue番号/件名</label>
           <input className="border border-slate-400 px-1.5 py-0.5" placeholder="repo #123" />

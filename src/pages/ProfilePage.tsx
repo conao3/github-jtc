@@ -66,7 +66,7 @@ export function ProfileScreen(): JSX.Element {
       activeSideItem="ユーザー管理"
       rightColumn={
         <>
-          <Panel title="操作メニュー">
+          <Panel title="操作メニュー" action={<span className={MUTED_CLASS}>※ PoC ダミー操作</span>}>
             <div className="flex flex-col gap-1">
               {["プロフィール編集", "SSH鍵管理", "アクセストークン", "通知設定", "公開プロフィール確認"].map(
                 (label) => (

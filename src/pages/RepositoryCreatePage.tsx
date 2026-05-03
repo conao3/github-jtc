@@ -190,7 +190,10 @@ export function RepositoryCreateScreen(): JSX.Element {
           <span className="font-bold text-red-700">★</span>
           付項目は必須入力です。記載不備がある場合は差戻しとなりますのでご注意ください。詳細は
           <span className={TEXT_LINK_CLASS}>リポジトリ登録手順書.pdf</span>
-          をご確認ください。
+          をご確認ください。なお、
+          <span className="font-bold text-red-700">
+            この画面は PoC 用モックであり、GitHub mutation には未接続です。
+          </span>
         </div>
 
         <Panel title="申請者情報（自動入力）" bodyClassName="p-0">
