@@ -138,8 +138,23 @@ export interface GitHubRepositoryScopedNumberCoordinates extends GitHubRepositor
   readonly number: number;
 }
 
-function createGitHubApolloClient(accessToken: string): ApolloClient {
-  return new ApolloClient({
+const githubApolloClients = new Map<string, ApolloClient>();
+
+function getGitHubApolloClient(accessToken: string): ApolloClient {
+  const existingClient = githubApolloClients.get(accessToken);
+  if (existingClient !== undefined) {
+    if (typeof window !== "undefined") {
+      (
+        window as typeof window & {
+          __APOLLO_CLIENT__?: ApolloClient;
+        }
+      ).__APOLLO_CLIENT__ = existingClient;
+    }
+
+    return existingClient;
+  }
+
+  const client = new ApolloClient({
     cache: new InMemoryCache(),
     link: new HttpLink({
       uri: import.meta.env.VITE_GITHUB_GRAPHQL_URL ?? "https://api.github.com/graphql",
@@ -155,7 +170,22 @@ function createGitHubApolloClient(accessToken: string): ApolloClient {
         fetchPolicy: "no-cache",
       },
     },
+    devtools: {
+      enabled: true,
+      name: "GitHub JTC",
+    },
   });
+
+  if (typeof window !== "undefined") {
+    (
+      window as typeof window & {
+        __APOLLO_CLIENT__?: ApolloClient;
+      }
+    ).__APOLLO_CLIENT__ = client;
+  }
+
+  githubApolloClients.set(accessToken, client);
+  return client;
 }
 
 function getGitHubRestBaseUrl(): string {
@@ -211,7 +241,7 @@ async function executeGitHubQuery<TData, TVariables extends Record<string, unkno
   query: TypedDocumentNode<TData, TVariables>,
   variables: TVariables,
 ): Promise<TData> {
-  const client = createGitHubApolloClient(accessToken);
+  const client = getGitHubApolloClient(accessToken);
   const result = await client.query({ query, variables });
 
   if (result.data === undefined || result.data === null) {
@@ -226,7 +256,7 @@ async function executeGitHubMutation<TData, TVariables extends Record<string, un
   mutation: TypedDocumentNode<TData, TVariables>,
   variables: TVariables,
 ): Promise<TData> {
-  const client = createGitHubApolloClient(accessToken);
+  const client = getGitHubApolloClient(accessToken);
   const result = await client.mutate({ mutation, variables });
 
   if (result.data === undefined || result.data === null) {
