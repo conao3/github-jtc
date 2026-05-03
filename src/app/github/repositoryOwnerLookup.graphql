@@ -1,0 +1,6 @@
+query RepositoryOwnerLookup($login: String!) {
+  repositoryOwner(login: $login) {
+    __typename
+    login
+  }
+}

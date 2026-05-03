@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useForm } from "@tanstack/react-form";
 import { Link } from "react-router-dom";
@@ -19,7 +19,7 @@ import {
   type GitHubSearchRepositoriesConnection,
   type GitHubSearchRepository,
 } from "../app/github.ts";
-import { SearchRepositoriesDocument } from "../gql/graphql.ts";
+import { RepositoryOwnerLookupDocument, SearchRepositoriesDocument } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -100,10 +100,9 @@ function filterRepositories(
   return repositories.filter((repository) => repository.viewerPermission === filters.permission);
 }
 
-function buildRepositorySearchQuery(filters: RepositoryFilterValues): string {
+function buildRepositorySearchQuery(filters: RepositoryFilterValues, ownerQualifier: string | null): string {
   const parts = ["archived:false", "sort:updated-desc"];
   const repositoryName = filters.repositoryName.trim();
-  const owner = filters.owner.trim();
   const language = filters.language.trim();
 
   if (repositoryName.length > 0) {
@@ -114,8 +113,8 @@ function buildRepositorySearchQuery(filters: RepositoryFilterValues): string {
     }
   }
 
-  if (owner.length > 0) {
-    parts.push(`(user:${owner} OR org:${owner})`);
+  if (ownerQualifier !== null) {
+    parts.push(ownerQualifier);
   }
 
   switch (filters.visibility) {
@@ -146,13 +145,36 @@ export function RepositoriesScreen(): JSX.Element {
   const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
   const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hasInitializedOwnerFilter, setHasInitializedOwnerFilter] = useState(false);
   const currentCursor = cursorHistory[currentPage - 1] ?? null;
+  const ownerInput = appliedFilters.owner.trim();
+  const ownerLookupQuery = useQuery(RepositoryOwnerLookupDocument, {
+    skip: accessToken === undefined || ownerInput.length === 0,
+    variables: {
+      login: ownerInput,
+    },
+    fetchPolicy: "network-only",
+  });
+  const ownerLookupResult = ownerLookupQuery.data?.repositoryOwner;
+  const ownerQualifier =
+    ownerInput.length === 0
+      ? null
+      : ownerLookupResult?.__typename === "User"
+        ? `user:${ownerInput}`
+        : ownerLookupResult?.__typename === "Organization"
+          ? `org:${ownerInput}`
+          : null;
+  const shouldWaitForOwnerLookup =
+    ownerInput.length > 0 && ownerLookupQuery.loading && ownerLookupResult === undefined;
+  const hasOwnerLookupError = ownerInput.length > 0 && ownerLookupQuery.error !== undefined;
+  const hasMissingOwner =
+    ownerInput.length > 0 && !shouldWaitForOwnerLookup && !hasOwnerLookupError && ownerLookupResult === null;
   const repositoriesQuery = useQuery(SearchRepositoriesDocument, {
-    skip: accessToken === undefined,
+    skip: accessToken === undefined || shouldWaitForOwnerLookup || hasOwnerLookupError || hasMissingOwner,
     variables: {
       first: QUERY_SIZE,
       after: currentCursor,
-      query: buildRepositorySearchQuery(appliedFilters),
+      query: buildRepositorySearchQuery(appliedFilters, ownerQualifier),
     },
     fetchPolicy: "network-only",
   });
@@ -169,6 +191,18 @@ export function RepositoriesScreen(): JSX.Element {
       setCurrentPage(1);
     },
   });
+
+  useEffect(() => {
+    if (hasInitializedOwnerFilter || viewerLogin.length === 0) {
+      return;
+    }
+
+    form.setFieldValue("owner", viewerLogin);
+    setAppliedFilters((previous) => ({ ...previous, owner: viewerLogin }));
+    setCursorHistory([null]);
+    setCurrentPage(1);
+    setHasInitializedOwnerFilter(true);
+  }, [form, hasInitializedOwnerFilter, viewerLogin]);
 
   function applyPreset(next: RepositoryFilterValues): void {
     form.reset(next);
@@ -471,6 +505,25 @@ export function RepositoriesScreen(): JSX.Element {
                   GitHub GraphQL からリポジトリ一覧を取得しています。
                 </td>
               </tr>
+            ) : shouldWaitForOwnerLookup ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center text-slate-600">
+                  所有者 {ownerInput} を確認しています。
+                </td>
+              </tr>
+            ) : hasOwnerLookupError ? (
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="error"
+                {...describeGitHubError(ownerLookupQuery.error, "所有者情報の取得に失敗しました。")}
+              />
+            ) : hasMissingOwner ? (
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="empty"
+                title="指定した所有者は見つかりません。"
+                detail={`GitHub 上で ${ownerInput} に一致する User または Organization を確認できませんでした。`}
+              />
             ) : repositoriesQuery.error ? (
               <GitHubTableStateRow
                 colSpan={8}

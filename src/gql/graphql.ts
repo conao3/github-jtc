@@ -1114,6 +1114,17 @@ export type RepositoryLanguagesQuery = {
   } | null;
 };
 
+export type RepositoryOwnerLookupQueryVariables = Exact<{
+  login: string;
+}>;
+
+export type RepositoryOwnerLookupQuery = {
+  repositoryOwner:
+    | { __typename: "Organization"; login: string }
+    | { __typename: "User"; login: string }
+    | null;
+};
+
 export type RepositoryPullRequestsQueryVariables = Exact<{
   owner: string;
   name: string;
@@ -5700,6 +5711,46 @@ export const RepositoryLanguagesDocument = {
     },
   ],
 } as unknown as DocumentNode<RepositoryLanguagesQuery, RepositoryLanguagesQueryVariables>;
+export const RepositoryOwnerLookupDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "RepositoryOwnerLookup" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "login" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "repositoryOwner" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "login" },
+                value: { kind: "Variable", name: { kind: "Name", value: "login" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                { kind: "Field", name: { kind: "Name", value: "login" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RepositoryOwnerLookupQuery, RepositoryOwnerLookupQueryVariables>;
 export const RepositoryPullRequestsDocument = {
   kind: "Document",
   definitions: [
