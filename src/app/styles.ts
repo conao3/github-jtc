@@ -10,9 +10,9 @@ export const TEXT_LINK_CLASS =
   "text-blue-700 underline underline-offset-2 visited:text-violet-700 hover:text-blue-900";
 
 export const FONT_SCALE_CLASS: Record<FontScale, string> = {
-  small: "text-xs",
-  medium: "text-sm",
-  large: "text-base",
+  small: "jtc-font-small",
+  medium: "jtc-font-medium",
+  large: "jtc-font-large",
 };
 
 export const BODY_BG_CLASS = clsx(FONT_FAMILY_CLASS, "h-screen overflow-hidden bg-slate-300 text-slate-900");
