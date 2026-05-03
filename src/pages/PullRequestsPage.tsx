@@ -226,7 +226,7 @@ export function PullRequestsScreen(): JSX.Element {
     >
       <Panel
         title="照会条件"
-        action={<span className={MUTED_CLASS}>画面内絞込 / ページ切替</span>}
+        action={<span className={MUTED_CLASS}>GitHub 全件検索 / カーソルページ切替</span>}
         bodyClassName="p-0"
       >
         <form
