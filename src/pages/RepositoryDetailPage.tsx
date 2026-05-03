@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  describeGitHubError,
   fetchGitHubRepositoryDetail,
   formatGitHubByteSize,
   formatGitHubDate,
@@ -171,19 +173,27 @@ export function RepositoryDetailScreen({
         bodyClassName="p-0"
       >
         {coordinates === null ? (
-          <div className="py-8 text-center text-red-800">リポジトリ識別子を解釈できませんでした。</div>
+          <GitHubInlineState
+            tone="error"
+            title="リポジトリ識別子を解釈できませんでした。"
+            detail="一覧画面から対象リポジトリを選び直してください。"
+            className="py-8"
+          />
         ) : repositoryQuery.isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub からリポジトリ詳細を取得しています。</div>
         ) : repositoryQuery.isError ? (
-          <div className="py-8 text-center text-red-800">
-            {repositoryQuery.error instanceof Error
-              ? repositoryQuery.error.message
-              : "リポジトリ詳細の取得に失敗しました。"}
-          </div>
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(repositoryQuery.error, "リポジトリ詳細の取得に失敗しました。")}
+          />
         ) : repository == null ? (
-          <div className="py-8 text-center text-slate-600">
-            {coordinates.owner}/{coordinates.name} は参照できません。
-          </div>
+          <GitHubInlineState
+            tone="empty"
+            title="対象リポジトリを表示できません。"
+            detail={`${coordinates.owner}/${coordinates.name} は存在しないか、現在の token では参照できません。`}
+            className="py-8"
+          />
         ) : (
           <table className={TABLE_CLASS}>
             <tbody>
@@ -309,11 +319,12 @@ export function RepositoryDetailScreen({
           </thead>
           <tbody>
             {rootEntries.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-6 text-center text-slate-600">
-                  ルートディレクトリに表示可能なファイルがありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={6}
+                tone="empty"
+                title="表示可能なファイルがありません。"
+                detail="root tree が空か、この token では tree を参照できません。"
+              />
             ) : (
               rootEntries.map((entry) => (
                 <tr key={entry.oid}>
@@ -344,9 +355,16 @@ export function RepositoryDetailScreen({
 
       <Panel title="README プレビュー">
         <div className={clsx("min-h-32 bg-amber-50 p-3 text-xs whitespace-pre-wrap", MONO_CLASS)}>
-          {readmeText === null || readmeText.length === 0
-            ? "README.md は見つからないか、binary / 非対応形式のためプレビューできません。"
-            : readmeText}
+          {readmeText === null || readmeText.length === 0 ? (
+            <GitHubInlineState
+              tone="empty"
+              title="README をプレビューできません。"
+              detail="README.md が存在しないか、binary / 非対応形式です。"
+              className="py-10"
+            />
+          ) : (
+            readmeText
+          )}
         </div>
       </Panel>
 
@@ -361,11 +379,12 @@ export function RepositoryDetailScreen({
           </thead>
           <tbody>
             {languageEdges.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="py-6 text-center text-slate-600">
-                  言語情報がありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={3}
+                tone="empty"
+                title="言語情報がありません。"
+                detail="GitHub 側で言語構成がまだ集計されていない可能性があります。"
+              />
             ) : (
               languageEdges.map((edge) =>
                 edge?.node === null || edge?.node === undefined ? null : (

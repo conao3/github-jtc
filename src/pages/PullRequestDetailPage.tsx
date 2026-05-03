@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  describeGitHubError,
   fetchGitHubPullRequestDetail,
   formatGitHubDateTime,
   parseRepositoryScopedNumberRouteId,
@@ -220,9 +222,12 @@ export function PullRequestDetailScreen({
             <table className={TABLE_CLASS}>
               <tbody>
                 {closingIssues.length === 0 ? (
-                  <tr>
-                    <td className="text-center text-slate-600">関連Issueなし</td>
-                  </tr>
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="関連 Issue はありません。"
+                    detail="closingIssuesReferences に紐づく Issue が見つかりません。"
+                  />
                 ) : (
                   closingIssues.map((issue) => (
                     <tr key={issue.id}>
@@ -287,17 +292,27 @@ export function PullRequestDetailScreen({
         bodyClassName="p-0"
       >
         {coordinates === null ? (
-          <div className="py-8 text-center text-red-800">PR 識別子を解釈できませんでした。</div>
+          <GitHubInlineState
+            tone="error"
+            title="PR 識別子を解釈できませんでした。"
+            detail="一覧画面から対象 PR を選び直してください。"
+            className="py-8"
+          />
         ) : detailQuery.isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub から PR 詳細を取得しています。</div>
         ) : detailQuery.isError ? (
-          <div className="py-8 text-center text-red-800">
-            {detailQuery.error instanceof Error ? detailQuery.error.message : "PR 詳細の取得に失敗しました。"}
-          </div>
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(detailQuery.error, "PR 詳細の取得に失敗しました。")}
+          />
         ) : pullRequest === null || pullRequest === undefined ? (
-          <div className="py-8 text-center text-slate-600">
-            {coordinates.owner}/{coordinates.name} の PR #{coordinates.number} は参照できません。
-          </div>
+          <GitHubInlineState
+            tone="empty"
+            title="対象 PR を表示できません。"
+            detail={`${coordinates.owner}/${coordinates.name} の PR #${coordinates.number} は存在しないか、現在の token では参照できません。`}
+            className="py-8"
+          />
         ) : (
           <table className={TABLE_CLASS}>
             <tbody>
@@ -406,11 +421,12 @@ export function PullRequestDetailScreen({
           </thead>
           <tbody>
             {files.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-6 text-center text-slate-600">
-                  変更ファイルはありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={6}
+                tone="empty"
+                title="変更ファイルはありません。"
+                detail="files connection が空です。差分がない PR か、取得対象外の可能性があります。"
+              />
             ) : (
               files.map((file) => (
                 <tr key={file.path}>
@@ -441,9 +457,12 @@ export function PullRequestDetailScreen({
       >
         <div className="space-y-1.5 bg-slate-50 p-0.5">
           {reviews.length === 0 ? (
-            <div className="border border-slate-300 bg-white p-3 text-xs text-slate-600">
-              レビュー投稿はまだありません。
-            </div>
+            <GitHubInlineState
+              tone="empty"
+              title="レビュー投稿はまだありません。"
+              detail="reviews connection に投稿がありません。"
+              className="border border-slate-300 bg-white p-3 text-xs"
+            />
           ) : (
             reviews.map((review) => {
               const reviewState = getReviewState(review);

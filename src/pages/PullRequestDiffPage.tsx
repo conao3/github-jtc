@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  describeGitHubError,
   fetchGitHubPullRequestDetail,
   formatGitHubDateTime,
   parseRepositoryScopedNumberRouteId,
@@ -156,17 +158,27 @@ export function PullRequestDiffScreen({
         bodyClassName="p-0"
       >
         {coordinates === null ? (
-          <div className="py-8 text-center text-red-800">PR 識別子を解釈できませんでした。</div>
+          <GitHubInlineState
+            tone="error"
+            title="PR 識別子を解釈できませんでした。"
+            detail="一覧画面から対象 PR を選び直してください。"
+            className="py-8"
+          />
         ) : detailQuery.isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub から差分情報を取得しています。</div>
         ) : detailQuery.isError ? (
-          <div className="py-8 text-center text-red-800">
-            {detailQuery.error instanceof Error
-              ? detailQuery.error.message
-              : "差分情報の取得に失敗しました。"}
-          </div>
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(detailQuery.error, "差分情報の取得に失敗しました。")}
+          />
         ) : pullRequest === null || pullRequest === undefined || selectedFile === null ? (
-          <div className="py-8 text-center text-slate-600">表示できる差分データがありません。</div>
+          <GitHubInlineState
+            tone="empty"
+            title="表示できる差分データがありません。"
+            detail="対象 PR に取得可能な changed file がありません。"
+            className="py-8"
+          />
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
@@ -229,9 +241,12 @@ export function PullRequestDiffScreen({
       <Panel title="レビューコメント / スレッド" action={<span>{threadComments.length}件</span>}>
         <div className="space-y-1.5 bg-slate-50 p-0.5">
           {threadComments.length === 0 ? (
-            <div className="border border-slate-300 bg-white p-3 text-xs text-slate-600">
-              このファイルに紐づくレビューコメントはありません。
-            </div>
+            <GitHubInlineState
+              tone="empty"
+              title="このファイルのレビューコメントはありません。"
+              detail="review thread は存在しないか、別ファイルに紐づいています。"
+              className="border border-slate-300 bg-white p-3 text-xs"
+            />
           ) : (
             threadComments.map((comment) => (
               <div key={comment.id} className="border border-slate-300 bg-white p-2 text-xs">
@@ -277,11 +292,12 @@ export function PullRequestDiffScreen({
           </thead>
           <tbody>
             {commits.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-6 text-center text-slate-600">
-                  関連コミットはありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={4}
+                tone="empty"
+                title="関連コミットはありません。"
+                detail="commits connection に表示可能なデータがありません。"
+              />
             ) : (
               commits.map((commit) => {
                 const author = (commit.commit.authors.nodes ?? [])[0];

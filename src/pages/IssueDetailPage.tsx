@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  describeGitHubError,
   fetchGitHubIssueDetail,
   formatGitHubDateTime,
   parseRepositoryScopedNumberRouteId,
@@ -331,19 +333,27 @@ export function IssueDetailScreen({
         bodyClassName="p-0"
       >
         {coordinates === null ? (
-          <div className="py-8 text-center text-red-800">Issue 識別子を解釈できませんでした。</div>
+          <GitHubInlineState
+            tone="error"
+            title="Issue 識別子を解釈できませんでした。"
+            detail="一覧画面から対象 Issue を選び直してください。"
+            className="py-8"
+          />
         ) : detailQuery.isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub から Issue 詳細を取得しています。</div>
         ) : detailQuery.isError ? (
-          <div className="py-8 text-center text-red-800">
-            {detailQuery.error instanceof Error
-              ? detailQuery.error.message
-              : "Issue 詳細の取得に失敗しました。"}
-          </div>
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(detailQuery.error, "Issue 詳細の取得に失敗しました。")}
+          />
         ) : issue === null || issue === undefined ? (
-          <div className="py-8 text-center text-slate-600">
-            {coordinates.owner}/{coordinates.name} の Issue #{coordinates.number} は参照できません。
-          </div>
+          <GitHubInlineState
+            tone="empty"
+            title="対象 Issue を表示できません。"
+            detail={`${coordinates.owner}/${coordinates.name} の Issue #${coordinates.number} は存在しないか、現在の token では参照できません。`}
+            className="py-8"
+          />
         ) : (
           <table className={TABLE_CLASS}>
             <tbody>
@@ -423,11 +433,12 @@ export function IssueDetailScreen({
           </thead>
           <tbody>
             {coordinates === null ? (
-              <tr>
-                <td colSpan={5} className="py-6 text-center text-red-800">
-                  Issue 識別子を解釈できませんでした。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={5}
+                tone="error"
+                title="Issue 識別子を解釈できませんでした。"
+                detail="一覧画面から対象 Issue を選び直してください。"
+              />
             ) : detailQuery.isPending ? (
               <tr>
                 <td colSpan={5} className="py-6 text-center text-slate-600">
@@ -435,19 +446,18 @@ export function IssueDetailScreen({
                 </td>
               </tr>
             ) : detailQuery.isError ? (
-              <tr>
-                <td colSpan={5} className="py-6 text-center text-red-800">
-                  {detailQuery.error instanceof Error
-                    ? detailQuery.error.message
-                    : "更新履歴の取得に失敗しました。"}
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={5}
+                tone="error"
+                {...describeGitHubError(detailQuery.error, "更新履歴の取得に失敗しました。")}
+              />
             ) : timelineRows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-6 text-center text-slate-600">
-                  表示可能な timeline item はありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={5}
+                tone="empty"
+                title="表示可能な timeline item はありません。"
+                detail="コメントや state change などの履歴がまだ投稿されていません。"
+              />
             ) : (
               timelineRows.map((row, index) => (
                 <tr key={row.id}>

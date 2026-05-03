@@ -7,12 +7,14 @@ import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { ClientPager } from "../app/components/ClientPager.tsx";
+import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
+  describeGitHubError,
   fetchGitHubViewerIssues,
   formatGitHubDateTime,
   type GitHubViewerIssue,
@@ -369,21 +371,26 @@ export function IssuesScreen(): JSX.Element {
                 </td>
               </tr>
             ) : issuesQuery.isError ? (
-              <tr>
-                <td colSpan={8} className="py-6 text-center text-red-800">
-                  {issuesQuery.error instanceof Error
-                    ? issuesQuery.error.message
-                    : "Issue 一覧の取得に失敗しました。"}
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="error"
+                {...describeGitHubError(issuesQuery.error, "Issue 一覧の取得に失敗しました。")}
+              />
             ) : pagedIssues.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-6 text-center text-slate-600">
-                  {hasActiveIssueFilters(appliedFilters)
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="empty"
+                title={
+                  hasActiveIssueFilters(appliedFilters)
                     ? "条件に一致する Issue はありません。"
-                    : "viewer に紐づく Issue はありません。"}
-                </td>
-              </tr>
+                    : "viewer に紐づく Issue はありません。"
+                }
+                detail={
+                  hasActiveIssueFilters(appliedFilters)
+                    ? "件名・担当者・状態を見直して再検索してください。"
+                    : "viewer に関連する issue が見つかりませんでした。"
+                }
+              />
             ) : (
               pagedIssues.map((issue) => {
                 const routeId = createRepositoryScopedNumberRouteId({

@@ -4,10 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   createRepositoryRouteId,
+  describeGitHubError,
   fetchGitHubCommitHistory,
   fetchGitHubViewerRepositories,
   formatGitHubDateTime,
@@ -236,11 +238,12 @@ export function CommitsScreen(): JSX.Element {
               </thead>
               <tbody>
                 {authorRanking.length === 0 ? (
-                  <tr>
-                    <td colSpan={2} className="py-4 text-center text-slate-600">
-                      取得データなし
-                    </td>
-                  </tr>
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="作成者別ランキングはありません。"
+                    detail="表示対象の commit history がまだありません。"
+                  />
                 ) : (
                   authorRanking.map(({ author, count }, index) => (
                     <tr key={author}>
@@ -259,8 +262,12 @@ export function CommitsScreen(): JSX.Element {
             <ul className={TODO_LIST_CLASS}>
               {tags.length === 0 ? (
                 <li className={TODO_LIST_ITEM_CLASS}>
-                  <span>タグなし</span>
-                  <span className={clsx("text-xs", MONO_CLASS)}>0</span>
+                  <GitHubInlineState
+                    tone="empty"
+                    title="タグはありません。"
+                    detail="repository.refs(refPrefix: TAG) に表示可能なデータがありません。"
+                    className="w-full py-1 text-xs"
+                  />
                 </li>
               ) : (
                 tags.map((ref) => (
@@ -351,11 +358,12 @@ export function CommitsScreen(): JSX.Element {
           </thead>
           <tbody>
             {selectedCoordinates === null ? (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-red-800">
-                  対象リポジトリを解釈できませんでした。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="error"
+                title="対象リポジトリを解釈できませんでした。"
+                detail="一覧画面から対象リポジトリを選び直してください。"
+              />
             ) : commitHistoryQuery.isPending ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-600">
@@ -363,31 +371,32 @@ export function CommitsScreen(): JSX.Element {
                 </td>
               </tr>
             ) : commitHistoryQuery.isError ? (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-red-800">
-                  {commitHistoryQuery.error instanceof Error
-                    ? commitHistoryQuery.error.message
-                    : "コミット履歴の取得に失敗しました。"}
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="error"
+                {...describeGitHubError(commitHistoryQuery.error, "コミット履歴の取得に失敗しました。")}
+              />
             ) : repository === null || repository === undefined ? (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-slate-600">
-                  {selectedCoordinates.owner}/{selectedCoordinates.name} は参照できません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="empty"
+                title={`${selectedCoordinates.owner}/${selectedCoordinates.name} は参照できません。`}
+                detail="repository が存在しないか、viewer 権限が不足しています。"
+              />
             ) : commitTarget === null ? (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-slate-600">
-                  default branch の commit history を取得できませんでした。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="empty"
+                title="default branch の commit history を取得できませんでした。"
+                detail="defaultBranchRef が未設定か、対象 ref が commit を指していません。"
+              />
             ) : commits.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-slate-600">
-                  コミットはありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="empty"
+                title="コミットはありません。"
+                detail="default branch 上に表示対象の commit history がありません。"
+              />
             ) : (
               commits.map((commit) => {
                 const relatedPullRequest = getCommitRelatedPullRequest(commit);
@@ -450,7 +459,12 @@ export function CommitsScreen(): JSX.Element {
 
       <Panel title="日別コミット数（直近30日）">
         {commits.length === 0 ? (
-          <div className="px-3 py-6 text-center text-slate-600">履歴取得後にグラフを表示します。</div>
+          <GitHubInlineState
+            tone="empty"
+            title="履歴取得後にグラフを表示します。"
+            detail="commit history が空のため、日別集計は表示されません。"
+            className="px-3 py-6"
+          />
         ) : (
           <div className={clsx("p-2 text-xs", MONO_CLASS)}>
             <div className="flex h-24 items-end gap-0.5 border-b border-b-slate-400 border-l border-l-slate-400 px-1">

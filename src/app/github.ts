@@ -53,6 +53,12 @@ export type GitHubPullRequestDetail = NonNullable<
 >;
 export type GitHubIssueDetail = NonNullable<NonNullable<IssueDetailQuery["repository"]>["issue"]>;
 
+export interface GitHubErrorDescriptor {
+  readonly kind: "permission_denied" | "rate_limited" | "not_found" | "network" | "unknown";
+  readonly title: string;
+  readonly detail: string;
+}
+
 export interface GitHubRepositoryCoordinates {
   readonly owner: string;
   readonly name: string;
@@ -369,4 +375,64 @@ export function sumLanguageSizes(
   edges: NonNullable<GitHubRepositoryDetail["languages"]>["edges"] | null | undefined,
 ): number {
   return (edges ?? []).reduce((total, edge) => total + (edge?.size ?? 0), 0);
+}
+
+export function describeGitHubError(error: unknown, fallbackTitle: string): GitHubErrorDescriptor {
+  const detail =
+    error instanceof Error && error.message.length > 0
+      ? error.message
+      : "GitHub から詳細を取得できませんでした。";
+  const normalized = detail.toLowerCase();
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("secondary rate limit") ||
+    normalized.includes("api rate limit exceeded")
+  ) {
+    return {
+      kind: "rate_limited",
+      title: "GitHub API の rate limit に達しました。",
+      detail: "しばらく待って再試行するか、対象クエリ数を減らしてください。",
+    };
+  }
+
+  if (
+    normalized.includes("resource not accessible by integration") ||
+    normalized.includes("forbidden") ||
+    normalized.includes("not authorized") ||
+    normalized.includes("insufficient scopes")
+  ) {
+    return {
+      kind: "permission_denied",
+      title: "この GitHub App / user token では対象データを参照できません。",
+      detail: "App 権限、installation 対象、viewer 権限を確認してください。",
+    };
+  }
+
+  if (
+    normalized.includes("could not resolve to a repository") ||
+    normalized.includes("could not resolve to an issue") ||
+    normalized.includes("could not resolve to a pullrequest") ||
+    normalized.includes("not found")
+  ) {
+    return {
+      kind: "not_found",
+      title: "対象データが存在しないか、viewer から参照できません。",
+      detail,
+    };
+  }
+
+  if (normalized.includes("failed to fetch") || normalized.includes("network")) {
+    return {
+      kind: "network",
+      title: "GitHub への通信に失敗しました。",
+      detail: "ネットワーク接続、broker、認証状態を確認してから再試行してください。",
+    };
+  }
+
+  return {
+    kind: "unknown",
+    title: fallbackTitle,
+    detail,
+  };
 }

@@ -2,10 +2,16 @@ import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
-import { fetchGitHubDashboard, formatGitHubDateTime, type GitHubDashboardPayload } from "../app/github.ts";
+import {
+  describeGitHubError,
+  fetchGitHubDashboard,
+  formatGitHubDateTime,
+  type GitHubDashboardPayload,
+} from "../app/github.ts";
 import {
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
@@ -333,13 +339,18 @@ export function DashboardScreen(): JSX.Element {
             {dashboardQuery.isPending ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.isError ? (
-              <div className="px-2 py-3 text-xs text-red-800">
-                {dashboardQuery.error instanceof Error
-                  ? dashboardQuery.error.message
-                  : "レビュー依頼一覧を取得できませんでした。"}
-              </div>
+              <GitHubInlineState
+                tone="error"
+                className="px-2 py-3 text-xs"
+                {...describeGitHubError(dashboardQuery.error, "レビュー依頼一覧を取得できませんでした。")}
+              />
             ) : reviewRequests.length === 0 ? (
-              <div className="px-2 py-3 text-xs text-slate-600">レビュー依頼中の PR はありません。</div>
+              <GitHubInlineState
+                tone="empty"
+                title="レビュー依頼中の PR はありません。"
+                detail="review-requested search に open PR がありません。"
+                className="px-2 py-3 text-xs"
+              />
             ) : (
               <SideList>
                 {reviewRequests.map((pullRequest) => {
@@ -376,13 +387,18 @@ export function DashboardScreen(): JSX.Element {
             {dashboardQuery.isPending ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.isError ? (
-              <div className="px-2 py-3 text-xs text-red-800">
-                {dashboardQuery.error instanceof Error
-                  ? dashboardQuery.error.message
-                  : "Issue 一覧を取得できませんでした。"}
-              </div>
+              <GitHubInlineState
+                tone="error"
+                className="px-2 py-3 text-xs"
+                {...describeGitHubError(dashboardQuery.error, "Issue 一覧を取得できませんでした。")}
+              />
             ) : assignedIssues.length === 0 ? (
-              <div className="px-2 py-3 text-xs text-slate-600">担当中の open issue はありません。</div>
+              <GitHubInlineState
+                tone="empty"
+                title="担当中の open issue はありません。"
+                detail="assignee search に一致する Issue がありません。"
+                className="px-2 py-3 text-xs"
+              />
             ) : (
               <SideList>
                 {assignedIssues.map((issue) => {
@@ -414,9 +430,12 @@ export function DashboardScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {recentRepositories.length === 0 ? (
-                  <tr>
-                    <td className="text-center text-slate-600">データなし</td>
-                  </tr>
+                  <GitHubTableStateRow
+                    colSpan={3}
+                    tone="empty"
+                    title="最近更新したリポジトリはありません。"
+                    detail="viewer.repositories に表示可能なデータがありません。"
+                  />
                 ) : (
                   recentRepositories.map((repository: RecentRepositoryNode) => (
                     <tr key={repository.id}>
@@ -452,22 +471,32 @@ export function DashboardScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {dashboardQuery.isPending
               ? "GitHub から集計中..."
-              : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "viewer"} / 直近30日集計`}
+              : dashboardQuery.isError
+                ? "GitHub 集計の取得に失敗"
+                : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "viewer"} / 直近30日集計`}
           </span>
         }
       >
-        <div className={KPI_ROW_CLASS}>
-          {kpis.map((item) => (
-            <div key={item.label} className={KPI_CARD_CLASS}>
-              <div className={KPI_LABEL_CLASS}>{item.label}</div>
-              <div className={KPI_VALUE_CLASS}>
-                {item.value}
-                <span className={KPI_UNIT_CLASS}>件</span>
+        {dashboardQuery.isError ? (
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(dashboardQuery.error, "ダッシュボード集計の取得に失敗しました。")}
+          />
+        ) : (
+          <div className={KPI_ROW_CLASS}>
+            {kpis.map((item) => (
+              <div key={item.label} className={KPI_CARD_CLASS}>
+                <div className={KPI_LABEL_CLASS}>{item.label}</div>
+                <div className={KPI_VALUE_CLASS}>
+                  {item.value}
+                  <span className={KPI_UNIT_CLASS}>件</span>
+                </div>
+                <div className={KPI_DELTA_CLASS}>{item.note}</div>
               </div>
-              <div className={KPI_DELTA_CLASS}>{item.note}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Panel>
 
       <Panel

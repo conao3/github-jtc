@@ -7,12 +7,14 @@ import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { ClientPager } from "../app/components/ClientPager.tsx";
+import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryRouteId,
+  describeGitHubError,
   fetchGitHubViewerRepositories,
   formatGitHubDateTime,
   formatGitHubPermission,
@@ -287,9 +289,12 @@ export function RepositoriesScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {languageStats.length === 0 ? (
-                  <tr>
-                    <td className="text-center text-slate-600">データなし</td>
-                  </tr>
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="主要言語データはありません。"
+                    detail="絞込結果にリポジトリがないか、primary language が未設定です。"
+                  />
                 ) : (
                   languageStats.map(([label, value]) => (
                     <tr key={label}>
@@ -496,21 +501,26 @@ export function RepositoriesScreen(): JSX.Element {
                 </td>
               </tr>
             ) : repositoriesQuery.isError ? (
-              <tr>
-                <td colSpan={12} className="py-6 text-center text-red-800">
-                  {repositoriesQuery.error instanceof Error
-                    ? repositoriesQuery.error.message
-                    : "リポジトリ一覧の取得に失敗しました。"}
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={12}
+                tone="error"
+                {...describeGitHubError(repositoriesQuery.error, "リポジトリ一覧の取得に失敗しました。")}
+              />
             ) : pagedRepositories.length === 0 ? (
-              <tr>
-                <td colSpan={12} className="py-6 text-center text-slate-600">
-                  {hasActiveRepositoryFilters(appliedFilters)
+              <GitHubTableStateRow
+                colSpan={12}
+                tone="empty"
+                title={
+                  hasActiveRepositoryFilters(appliedFilters)
                     ? "条件に一致するリポジトリはありません。"
-                    : "閲覧可能なリポジトリがありません。"}
-                </td>
-              </tr>
+                    : "閲覧可能なリポジトリはありません。"
+                }
+                detail={
+                  hasActiveRepositoryFilters(appliedFilters)
+                    ? "検索条件を緩めるか、ページサイズを変更して再確認してください。"
+                    : "GitHub App が参照できる repository がない可能性があります。"
+                }
+              />
             ) : (
               pagedRepositories.map((repository, index) => {
                 const state = getRepositoryState(repository);

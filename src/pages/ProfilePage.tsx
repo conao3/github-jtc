@@ -2,10 +2,12 @@ import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  describeGitHubError,
   fetchGitHubViewerProfile,
   formatGitHubDate,
   formatGitHubDateTime,
@@ -100,9 +102,12 @@ export function ProfileScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {repositories.length === 0 ? (
-                  <tr>
-                    <td className="text-center text-slate-600">データなし</td>
-                  </tr>
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="最近更新したリポジトリはありません。"
+                    detail="viewer.repositories に表示可能なデータがありません。"
+                  />
                 ) : (
                   repositories.map((repository) => (
                     <tr key={repository.id}>
@@ -138,11 +143,11 @@ export function ProfileScreen(): JSX.Element {
         {profileQuery.isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub プロフィール情報を取得しています。</div>
         ) : profileQuery.isError || profile === undefined ? (
-          <div className="py-8 text-center text-red-800">
-            {profileQuery.error instanceof Error
-              ? profileQuery.error.message
-              : "プロフィール情報の取得に失敗しました。"}
-          </div>
+          <GitHubInlineState
+            tone="error"
+            className="py-8"
+            {...describeGitHubError(profileQuery.error, "プロフィール情報の取得に失敗しました。")}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="text-center">
@@ -242,11 +247,12 @@ export function ProfileScreen(): JSX.Element {
           </thead>
           <tbody>
             {repositories.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-6 text-center text-slate-600">
-                  表示可能なリポジトリ情報がありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={5}
+                tone="empty"
+                title="表示可能なリポジトリ情報がありません。"
+                detail="この user token で参照できる repository が存在しません。"
+              />
             ) : (
               repositories.map((repository, index) => (
                 <tr key={repository.id}>
@@ -306,11 +312,12 @@ export function ProfileScreen(): JSX.Element {
           </thead>
           <tbody>
             {organizations.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-6 text-center text-slate-600">
-                  所属している Organization がありません。
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={4}
+                tone="empty"
+                title="所属 Organization はありません。"
+                detail="viewer.organizations に表示可能なデータがありません。"
+              />
             ) : (
               organizations.map((organization, index) => (
                 <tr key={organization.id}>

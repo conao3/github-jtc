@@ -7,12 +7,14 @@ import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { ClientPager } from "../app/components/ClientPager.tsx";
+import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
+  describeGitHubError,
   fetchGitHubViewerPullRequests,
   formatGitHubDateTime,
   type GitHubViewerPullRequest,
@@ -352,21 +354,26 @@ export function PullRequestsScreen(): JSX.Element {
                 </td>
               </tr>
             ) : pullRequestsQuery.isError ? (
-              <tr>
-                <td colSpan={8} className="py-6 text-center text-red-800">
-                  {pullRequestsQuery.error instanceof Error
-                    ? pullRequestsQuery.error.message
-                    : "PR 一覧の取得に失敗しました。"}
-                </td>
-              </tr>
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="error"
+                {...describeGitHubError(pullRequestsQuery.error, "PR 一覧の取得に失敗しました。")}
+              />
             ) : pagedPullRequests.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-6 text-center text-slate-600">
-                  {hasActivePullRequestFilters(appliedFilters)
+              <GitHubTableStateRow
+                colSpan={8}
+                tone="empty"
+                title={
+                  hasActivePullRequestFilters(appliedFilters)
                     ? "条件に一致する PR はありません。"
-                    : "viewer に紐づく PR はありません。"}
-                </td>
-              </tr>
+                    : "viewer に紐づく PR はありません。"
+                }
+                detail={
+                  hasActivePullRequestFilters(appliedFilters)
+                    ? "状態・repository 条件を広げて再検索してください。"
+                    : "viewer に関連する pull request が見つかりませんでした。"
+                }
+              />
             ) : (
               pagedPullRequests.map((pullRequest) => {
                 const state = getPullRequestState(pullRequest);
