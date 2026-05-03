@@ -307,10 +307,7 @@ export function RepositoriesScreen(): JSX.Element {
         </>
       }
     >
-      <Panel
-        title="検索条件"
-        bodyClassName="p-0"
-      >
+      <Panel title="検索条件" bodyClassName="p-0">
         <form
           className="flex flex-col gap-1 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
           onSubmit={(event) => {
