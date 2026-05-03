@@ -546,32 +546,80 @@ export function parseRepositoryScopedNumberRouteId(
   return { owner, name, number };
 }
 
-export function formatGitHubDateTime(value: string | null | undefined): string {
-  if (value === undefined || value === null || value.length === 0) {
+type DateInput = Date | string | number | null | undefined;
+
+function toValidDate(value: DateInput): Date | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getJapaneseEra(date: Date): { readonly label: "R" | "H" | "S"; readonly year: number } | null {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const numeric = year * 10000 + month * 100 + day;
+
+  if (numeric >= 20190501) {
+    return { label: "R", year: year - 2018 };
+  }
+
+  if (numeric >= 19890108) {
+    return { label: "H", year: year - 1988 };
+  }
+
+  if (numeric >= 19261225) {
+    return { label: "S", year: year - 1925 };
+  }
+
+  return null;
+}
+
+function padTwoDigits(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function formatJapaneseEraDateValue(date: Date): string {
+  const era = getJapaneseEra(date);
+  const month = padTwoDigits(date.getMonth() + 1);
+  const day = padTwoDigits(date.getDate());
+
+  if (era === null) {
+    return `${date.getFullYear()}/${month}/${day}`;
+  }
+
+  return `${era.label}${era.year}/${month}/${day}`;
+}
+
+export function formatJapaneseEraDateTime(value: DateInput): string {
+  const date = toValidDate(value);
+
+  if (date === null) {
     return "－";
   }
 
-  return new Date(value).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  return `${formatJapaneseEraDateValue(date)} ${padTwoDigits(date.getHours())}:${padTwoDigits(date.getMinutes())}:${padTwoDigits(date.getSeconds())}`;
+}
+
+export function formatJapaneseEraDate(value: DateInput): string {
+  const date = toValidDate(value);
+
+  if (date === null) {
+    return "－";
+  }
+
+  return formatJapaneseEraDateValue(date);
+}
+
+export function formatGitHubDateTime(value: string | null | undefined): string {
+  return formatJapaneseEraDateTime(value);
 }
 
 export function formatGitHubDate(value: string | null | undefined): string {
-  if (value === undefined || value === null || value.length === 0) {
-    return "－";
-  }
-
-  return new Date(value).toLocaleDateString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  return formatJapaneseEraDate(value);
 }
 
 export function formatGitHubVisibility(value: string | null | undefined): string {

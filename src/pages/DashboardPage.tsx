@@ -10,6 +10,7 @@ import {
   describeGitHubError,
   fetchGitHubDashboard,
   formatGitHubDateTime,
+  formatJapaneseEraDateTime,
   type GitHubDashboardPayload,
 } from "../app/github.ts";
 import {
@@ -46,7 +47,7 @@ import {
 const noticeRows = [
   [
     "重要",
-    "【重要】システムメンテナンスに伴うサービス停止について（令和8年5月15日 22:00～翌2:00）",
+    "【重要】システムメンテナンスに伴うサービス停止について（R8/05/15 22:00～翌2:00）",
     "R8/05/02 09:00",
     "R8/05/16 18:00",
     "運用統括部",
@@ -454,7 +455,7 @@ export function DashboardScreen(): JSX.Element {
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>運用連絡：</b>令和8年5月15日(金)
+        <b>運用連絡：</b>R8/05/15(金)
         22:00～翌2:00、本番リポジトリDB定期メンテナンスを実施します。当該時間帯は プッシュ/マージ
         が不可となります。詳細は
         <span className={TEXT_LINK_CLASS}>運用手順書（変更管理編）.pdf</span>
@@ -462,7 +463,7 @@ export function DashboardScreen(): JSX.Element {
       </div>
 
       <Panel
-        title={`本日のサマリ（${new Date().toLocaleString("ja-JP")} 時点）`}
+        title={`本日のサマリ（${formatJapaneseEraDateTime(new Date())} 時点）`}
         action={
           <span className={MUTED_CLASS}>
             {dashboardQuery.isPending

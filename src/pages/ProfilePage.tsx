@@ -11,6 +11,7 @@ import {
   fetchGitHubViewerProfile,
   formatGitHubDate,
   formatGitHubDateTime,
+  formatJapaneseEraDateTime,
   formatGitHubPermission,
 } from "../app/github.ts";
 import {
@@ -136,7 +137,7 @@ export function ProfileScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {profile === undefined
               ? "GitHub から読込中..."
-              : `最終同期：${new Date().toLocaleString("ja-JP")}`}
+              : `最終同期：${formatJapaneseEraDateTime(new Date())}`}
           </span>
         }
       >

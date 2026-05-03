@@ -16,6 +16,7 @@ import {
   createRepositoryPath,
   describeGitHubError,
   fetchGitHubViewer,
+  formatJapaneseEraDateTime,
 } from "../app/github.ts";
 import {
   FLOW_WRAP_CLASS,
@@ -323,7 +324,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                     : `${viewerQuery.data.login}@users.noreply.github.com`}
                 </td>
                 <th>申請日時</th>
-                <td className={MONO_CLASS}>{new Date().toLocaleString("ja-JP")}</td>
+                <td className={MONO_CLASS}>{formatJapaneseEraDateTime(new Date())}</td>
               </tr>
             </tbody>
           </table>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { fetchGitHubViewer } from "./github.ts";
+import { fetchGitHubViewer, formatJapaneseEraDateTime } from "./github.ts";
 import { getAppOriginBaseUrl } from "./runtime.ts";
 import { LOADING_CLASS } from "./styles.ts";
 
@@ -340,19 +340,7 @@ export async function beginGitHubAppLogin(redirectTo: string): Promise<void> {
 }
 
 export function formatSessionTimestamp(value: string | undefined): string {
-  if (value === undefined) {
-    return "－";
-  }
-
-  return new Date(value).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  return formatJapaneseEraDateTime(value);
 }
 
 export function useAuthSession() {

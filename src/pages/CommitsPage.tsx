@@ -17,6 +17,7 @@ import {
   fetchGitHubCommitHistory,
   fetchGitHubViewerRepositories,
   formatGitHubDateTime,
+  formatJapaneseEraDate,
   parseRepositoryRouteId,
   type GitHubCommitHistoryRepository,
   type GitHubViewerRepository,
@@ -136,14 +137,7 @@ function getTagDate(ref: GitHubTagRef): string | null {
 }
 
 function formatShortDate(value: string | null | undefined): string {
-  if (value === undefined || value === null || value.length === 0) {
-    return "－";
-  }
-
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-  }).format(new Date(value));
+  return formatJapaneseEraDate(value);
 }
 
 function buildCommitBars(
