@@ -70,15 +70,15 @@ export default function LoginOutageDialog({
             </div>
             <div className="border border-slate-300 bg-white px-3 py-2">
               <div>
-                GitHub client_id：
+                GitHubクライアントID：
                 {clientId.length > 0 ? <span className={MONO_CLASS}>{clientId}</span> : "未設定"}
               </div>
               <div>
-                callback URL：
+                コールバックURL：
                 <span className={clsx("ml-1", MONO_CLASS)}>{redirectUri}</span>
               </div>
               <div>
-                exchange endpoint：
+                交換エンドポイント：
                 <span className={clsx("ml-1", MONO_CLASS)}>
                   {exchangeUrl.length > 0 ? exchangeUrl : "未設定"}
                 </span>

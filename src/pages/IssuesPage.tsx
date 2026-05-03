@@ -59,20 +59,20 @@ function getIssueState(issue: GitHubViewerIssue): {
   readonly label: string;
 } {
   if (issue.state === "OPEN") {
-    return { tone: "pending", label: "Open" };
+    return { tone: "pending", label: "オープン" };
   }
 
   switch (issue.stateReason) {
     case "COMPLETED":
-      return { tone: "done", label: "Closed" };
+      return { tone: "done", label: "クローズ" };
     case "DUPLICATE":
-      return { tone: "done", label: "Duplicate" };
+      return { tone: "done", label: "重複" };
     case "NOT_PLANNED":
-      return { tone: "done", label: "Not planned" };
+      return { tone: "done", label: "対応予定なし" };
     case "REOPENED":
-      return { tone: "pending", label: "Reopened" };
+      return { tone: "pending", label: "再オープン" };
     default:
-      return { tone: "done", label: "Closed" };
+      return { tone: "done", label: "クローズ" };
   }
 }
 
@@ -89,7 +89,7 @@ function getAssigneeSummary(issue: GitHubViewerIssue): string {
     return assignees[0] ?? "未割当";
   }
 
-  return `${assignees[0] ?? "assigned"} +${assignees.length - 1}`;
+  return `${assignees[0] ?? "担当者"} +${assignees.length - 1}`;
 }
 
 function renderLabelSummary(issue: GitHubViewerIssue): JSX.Element {
@@ -215,10 +215,10 @@ export function IssuesScreen(): JSX.Element {
           <Panel title="チケットサマリ" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
-                ["Open", `${openCount}件`],
-                ["Closed", `${closedCount}件`],
-                ["Assigned", `${assignedCount}件`],
-                ["No labels", `${unlabeledCount}件`],
+                ["オープン", `${openCount}件`],
+                ["クローズ", `${closedCount}件`],
+                ["担当あり", `${assignedCount}件`],
+                ["ラベルなし", `${unlabeledCount}件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -243,10 +243,10 @@ export function IssuesScreen(): JSX.Element {
                 className={buttonClassName()}
                 onClick={() => applyPreset({ ...initialIssueFilterValues, state: "OPEN" })}
               >
-                Openのみ表示
+                オープンのみ表示
               </button>
               <button type="button" className={buttonClassName()}>
-                CSV出力
+                一覧出力
               </button>
             </div>
           </Panel>
@@ -259,7 +259,7 @@ export function IssuesScreen(): JSX.Element {
     >
       <Panel
         title="照会条件"
-        action={<span className={MUTED_CLASS}>client-side filter / pagination</span>}
+        action={<span className={MUTED_CLASS}>画面内絞込 / ページ切替</span>}
         bodyClassName="p-0"
       >
         <form
@@ -292,8 +292,8 @@ export function IssuesScreen(): JSX.Element {
                 onChange={(event) => field.handleChange(event.target.value as IssueFilterValues["state"])}
               >
                 <option value="all">──全て──</option>
-                <option value="OPEN">Open</option>
-                <option value="CLOSED">Closed</option>
+                <option value="OPEN">オープン</option>
+                <option value="CLOSED">クローズ</option>
               </select>
             )}
           </form.Field>
@@ -302,7 +302,7 @@ export function IssuesScreen(): JSX.Element {
             {(field) => (
               <input
                 className="border border-slate-400 px-1.5 py-0.5"
-                placeholder="assignee login"
+                placeholder="担当者ログインID"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -383,12 +383,12 @@ export function IssuesScreen(): JSX.Element {
                 title={
                   hasActiveIssueFilters(appliedFilters)
                     ? "条件に一致するチケットはありません。"
-                    : "viewer に紐づくチケットはありません。"
+                    : "利用者に紐づくチケットはありません。"
                 }
                 detail={
                   hasActiveIssueFilters(appliedFilters)
                     ? "件名・担当者・状態を見直して再検索してください。"
-                    : "viewer に関連するチケットが見つかりませんでした。"
+                    : "利用者に関連するチケットが見つかりませんでした。"
                 }
               />
             ) : (

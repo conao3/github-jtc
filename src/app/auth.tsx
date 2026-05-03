@@ -253,7 +253,7 @@ async function exchangeGitHubCodeForSession(input: GitHubCallbackInput): Promise
   }
 
   if (pending.state !== input.returnedState) {
-    throw new Error("GitHub ログインの state 検証に失敗しました。");
+    throw new Error("GitHub ログインの状態検証に失敗しました。");
   }
 
   const response = await fetch(config.exchangeUrl, {
@@ -285,7 +285,7 @@ async function exchangeGitHubCodeForSession(input: GitHubCallbackInput): Promise
   const accessToken = payload?.accessToken ?? payload?.access_token;
 
   if (accessToken === undefined || accessToken.length === 0) {
-    throw new Error("交換応答に access token が含まれていません。");
+    throw new Error("交換応答にアクセストークンが含まれていません。");
   }
 
   const viewer = await fetchGitHubViewer(accessToken);
@@ -316,7 +316,7 @@ export async function beginGitHubAppLogin(redirectTo: string): Promise<void> {
   const config = getGitHubAuthConfig();
 
   if (!config.enabled) {
-    throw new Error("GitHub App 連携の client ID または code exchange endpoint が未設定です。");
+    throw new Error("GitHub App 連携のクライアントIDまたはコード交換エンドポイントが未設定です。");
   }
 
   const state = randomBase64Url();

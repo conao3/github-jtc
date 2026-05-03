@@ -189,10 +189,10 @@ export function PullRequestsScreen(): JSX.Element {
           <Panel title="レビュー状況" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
-                ["Open", `${openCount}件`],
-                ["Merged", `${mergedCount}件`],
-                ["Closed", `${closedCount}件`],
-                ["Draft", `${draftCount}件`],
+                ["オープン", `${openCount}件`],
+                ["マージ済", `${mergedCount}件`],
+                ["クローズ", `${closedCount}件`],
+                ["下書き", `${draftCount}件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -210,17 +210,17 @@ export function PullRequestsScreen(): JSX.Element {
                 rel="noreferrer"
                 className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
               >
-                GitHubでPR作成
+                GitHubでプルリクエスト作成
               </a>
               <button
                 type="button"
                 className={buttonClassName()}
                 onClick={() => applyPreset({ ...initialPullRequestFilterValues, state: "OPEN" })}
               >
-                Openのみ表示
+                オープンのみ表示
               </button>
               <button type="button" className={buttonClassName()}>
-                CSV出力
+                一覧出力
               </button>
             </div>
           </Panel>
@@ -233,7 +233,7 @@ export function PullRequestsScreen(): JSX.Element {
     >
       <Panel
         title="照会条件"
-        action={<span className={MUTED_CLASS}>client-side filter / pagination</span>}
+        action={<span className={MUTED_CLASS}>画面内絞込 / ページ切替</span>}
         bodyClassName="p-0"
       >
         <form
@@ -244,7 +244,7 @@ export function PullRequestsScreen(): JSX.Element {
             void form.handleSubmit();
           }}
         >
-          <label>PR番号/件名</label>
+          <label>プルリクエスト番号/件名</label>
           <form.Field name="query" validators={zodValidators(pullRequestFilterFieldValidators.query)}>
             {(field) => (
               <input
@@ -268,10 +268,10 @@ export function PullRequestsScreen(): JSX.Element {
                 }
               >
                 <option value="all">──全て──</option>
-                <option value="OPEN">Open</option>
-                <option value="MERGED">Merged</option>
-                <option value="CLOSED">Closed</option>
-                <option value="DRAFT">Draft</option>
+                <option value="OPEN">オープン</option>
+                <option value="MERGED">マージ済</option>
+                <option value="CLOSED">クローズ</option>
+                <option value="DRAFT">下書き</option>
               </select>
             )}
           </form.Field>
@@ -323,7 +323,7 @@ export function PullRequestsScreen(): JSX.Element {
       </Panel>
 
       <Panel
-        title="対象PR一覧"
+        title="対象プルリクエスト一覧"
         action={
           <span className={MUTED_CLASS}>
             {pullRequestsQuery.isPending
@@ -336,7 +336,7 @@ export function PullRequestsScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-24">PR</th>
+              <th className="w-24">プルリクエスト</th>
               <th>件名</th>
               <th className="w-32">リポジトリ</th>
               <th className="w-16">状態</th>
@@ -350,14 +350,14 @@ export function PullRequestsScreen(): JSX.Element {
             {pullRequestsQuery.isPending ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
-                  GitHub から PR 一覧を取得しています。
+                  GitHub からプルリクエスト一覧を取得しています。
                 </td>
               </tr>
             ) : pullRequestsQuery.isError ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="error"
-                {...describeGitHubError(pullRequestsQuery.error, "PR 一覧の取得に失敗しました。")}
+                {...describeGitHubError(pullRequestsQuery.error, "プルリクエスト一覧の取得に失敗しました。")}
               />
             ) : pagedPullRequests.length === 0 ? (
               <GitHubTableStateRow
@@ -365,13 +365,13 @@ export function PullRequestsScreen(): JSX.Element {
                 tone="empty"
                 title={
                   hasActivePullRequestFilters(appliedFilters)
-                    ? "条件に一致する PR はありません。"
-                    : "viewer に紐づく PR はありません。"
+                    ? "条件に一致するプルリクエストはありません。"
+                    : "利用者に紐づくプルリクエストはありません。"
                 }
                 detail={
                   hasActivePullRequestFilters(appliedFilters)
-                    ? "状態・repository 条件を広げて再検索してください。"
-                    : "viewer に関連する pull request が見つかりませんでした。"
+                    ? "状態・リポジトリ条件を広げて再検索してください。"
+                    : "利用者に関連するプルリクエストが見つかりませんでした。"
                 }
               />
             ) : (
@@ -393,7 +393,7 @@ export function PullRequestsScreen(): JSX.Element {
                     <td>
                       <div className="font-bold">{pullRequest.title}</div>
                       <div className={clsx("text-xs text-slate-600", MONO_CLASS)}>
-                        author: {pullRequest.author?.login ?? "unknown"}
+                        作成者: {pullRequest.author?.login ?? "不明"}
                       </div>
                     </td>
                     <td className={clsx("text-center", MONO_CLASS)}>

@@ -38,7 +38,7 @@ function getEntryKindLabel(value: string): string {
     case "blob":
       return "ファイル";
     case "commit":
-      return "submodule";
+      return "サブモジュール";
     default:
       return value;
   }
@@ -111,11 +111,11 @@ export function RepositoryDetailScreen({
                   <td>{formatGitHubVisibility(repository?.visibility)}</td>
                 </tr>
                 <tr>
-                  <th>Owner</th>
+                  <th>所有者</th>
                   <td className={MONO_CLASS}>{repository?.owner.login ?? coordinates?.owner ?? "－"}</td>
                 </tr>
                 <tr>
-                  <th>default branch</th>
+                  <th>既定ブランチ</th>
                   <td className={MONO_CLASS}>{repository?.defaultBranchRef?.name ?? "－"}</td>
                 </tr>
               </tbody>
@@ -127,10 +127,10 @@ export function RepositoryDetailScreen({
               {[
                 ["総コミット数", String(latestCommit?.history.totalCount ?? 0)],
                 ["ブランチ数", String(repository?.refs?.totalCount ?? 0)],
-                ["Watchers", String(repository?.watchers.totalCount ?? 0)],
-                ["Stars", String(repository?.stargazerCount ?? 0)],
-                ["Open チケット", `${repository?.issues.totalCount ?? 0} 件`],
-                ["Open PR", `${repository?.pullRequests.totalCount ?? 0} 件`],
+                ["ウォッチャー数", String(repository?.watchers.totalCount ?? 0)],
+                ["スター数", String(repository?.stargazerCount ?? 0)],
+                ["オープン中チケット", `${repository?.issues.totalCount ?? 0} 件`],
+                ["オープン中プルリクエスト", `${repository?.pullRequests.totalCount ?? 0} 件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -191,7 +191,7 @@ export function RepositoryDetailScreen({
           <GitHubInlineState
             tone="empty"
             title="対象リポジトリを表示できません。"
-            detail={`${coordinates.owner}/${coordinates.name} は存在しないか、現在の token では参照できません。`}
+            detail={`${coordinates.owner}/${coordinates.name} は存在しないか、現在のトークンでは参照できません。`}
             className="py-8"
           />
         ) : (
@@ -207,12 +207,12 @@ export function RepositoryDetailScreen({
                 <th>URL</th>
                 <td className={MONO_CLASS}>
                   <a href={repository.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                    open
+                    開く
                   </a>
                 </td>
               </tr>
               <tr>
-                <th>Owner</th>
+                <th>所有者</th>
                 <td>{getOwnerLabel(repository.owner)}</td>
                 <th>主要言語</th>
                 <td>{repository.primaryLanguage?.name ?? "未設定"}</td>
@@ -220,7 +220,7 @@ export function RepositoryDetailScreen({
               <tr>
                 <th>公開範囲</th>
                 <td>{formatGitHubVisibility(repository.visibility)}</td>
-                <th>Viewer権限</th>
+                <th>利用者権限</th>
                 <td>{formatGitHubPermission(repository.viewerPermission)}</td>
               </tr>
               <tr>
@@ -228,15 +228,15 @@ export function RepositoryDetailScreen({
                 <td colSpan={3}>{repository.description ?? "説明は設定されていません。"}</td>
               </tr>
               <tr>
-                <th>Homepage</th>
+                <th>ホームページ</th>
                 <td className={MONO_CLASS}>{repository.homepageUrl ?? "未設定"}</td>
-                <th>default branch</th>
+                <th>既定ブランチ</th>
                 <td className={MONO_CLASS}>{repository.defaultBranchRef?.name ?? "－"}</td>
               </tr>
               <tr>
                 <th>作成日</th>
                 <td className={MONO_CLASS}>{formatGitHubDate(repository.createdAt)}</td>
-                <th>最終 push</th>
+                <th>最終プッシュ</th>
                 <td className={MONO_CLASS}>{formatGitHubDateTime(repository.pushedAt)}</td>
               </tr>
               <tr>
@@ -244,7 +244,7 @@ export function RepositoryDetailScreen({
                 <td colSpan={3}>
                   <div className="font-bold">{latestCommit?.messageHeadline ?? "情報なし"}</div>
                   <div className="text-slate-600">
-                    {latestCommit?.author?.user?.login ?? latestCommit?.author?.name ?? "unknown"} ／{" "}
+                    {latestCommit?.author?.user?.login ?? latestCommit?.author?.name ?? "不明"} ／{" "}
                     {formatGitHubDateTime(latestCommit?.committedDate)}
                   </div>
                 </td>
@@ -290,7 +290,7 @@ export function RepositoryDetailScreen({
           <select className="border border-slate-400 px-1 py-0.5">
             <option>名前順</option>
           </select>
-          <span className="text-xs text-slate-600">※ root tree の実データを表示しています。</span>
+          <span className="text-xs text-slate-600">※ ルートツリーの実データを表示しています。</span>
         </div>
 
         <div className={TABS_ROW_CLASS}>
@@ -312,8 +312,8 @@ export function RepositoryDetailScreen({
               <th>名前</th>
               <th className="w-20">種別</th>
               <th className="w-20">サイズ</th>
-              <th className="w-16">mode</th>
-              <th className="w-32">OID</th>
+              <th className="w-16">モード</th>
+              <th className="w-32">オブジェクトID</th>
               <th className="w-16">操作</th>
             </tr>
           </thead>
@@ -323,7 +323,7 @@ export function RepositoryDetailScreen({
                 colSpan={6}
                 tone="empty"
                 title="表示可能なファイルがありません。"
-                detail="root tree が空か、この token では tree を参照できません。"
+                detail="ルートツリーが空か、このトークンではツリーを参照できません。"
               />
             ) : (
               rootEntries.map((entry) => (
@@ -349,7 +349,7 @@ export function RepositoryDetailScreen({
         </table>
 
         <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-xs text-slate-600">
-          root tree: {rootEntries.length} 件を表示中
+          ルートツリー: {rootEntries.length} 件を表示中
         </div>
       </Panel>
 
@@ -359,7 +359,7 @@ export function RepositoryDetailScreen({
             <GitHubInlineState
               tone="empty"
               title="README をプレビューできません。"
-              detail="README.md が存在しないか、binary / 非対応形式です。"
+              detail="README.md が存在しないか、バイナリ / 非対応形式です。"
               className="py-10"
             />
           ) : (

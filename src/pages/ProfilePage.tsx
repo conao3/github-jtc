@@ -68,7 +68,7 @@ export function ProfileScreen(): JSX.Element {
       activeSideItem="ユーザー管理"
       rightColumn={
         <>
-          <Panel title="操作メニュー" action={<span className={MUTED_CLASS}>※ PoC ダミー操作</span>}>
+          <Panel title="操作メニュー">
             <div className="flex flex-col gap-1">
               {["プロフィール編集", "SSH鍵管理", "アクセストークン", "通知設定", "公開プロフィール確認"].map(
                 (label) => (
@@ -84,10 +84,10 @@ export function ProfileScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {[
-                  ["所属 Organization", String(profile?.organizations.totalCount ?? 0)],
-                  ["閲覧可能 Repository", String(profile?.repositories.totalCount ?? 0)],
-                  ["Followers", String(profile?.followers.totalCount ?? 0)],
-                  ["Following", String(profile?.following.totalCount ?? 0)],
+                  ["所属組織", String(profile?.organizations.totalCount ?? 0)],
+                  ["閲覧可能リポジトリ", String(profile?.repositories.totalCount ?? 0)],
+                  ["フォロワー", String(profile?.followers.totalCount ?? 0)],
+                  ["フォロー中", String(profile?.following.totalCount ?? 0)],
                 ].map(([label, value]) => (
                   <tr key={label}>
                     <th>{label}</th>
@@ -106,7 +106,7 @@ export function ProfileScreen(): JSX.Element {
                     colSpan={2}
                     tone="empty"
                     title="最近更新したリポジトリはありません。"
-                    detail="viewer.repositories に表示可能なデータがありません。"
+                    detail="最近更新したリポジトリの表示対象データがありません。"
                   />
                 ) : (
                   repositories.map((repository) => (
@@ -157,9 +157,9 @@ export function ProfileScreen(): JSX.Element {
                 className="mx-auto h-32 w-32 border-2 border-slate-600 bg-slate-200 object-cover"
               />
               <div className="mt-1 text-xs text-slate-600">
-                GitHub avatar
+                GitHub アバター
                 <br />
-                login: <span className={MONO_CLASS}>{profile.login}</span>
+                ログインID: <span className={MONO_CLASS}>{profile.login}</span>
               </div>
               <a
                 href={profile.url}
@@ -180,7 +180,7 @@ export function ProfileScreen(): JSX.Element {
                     <td className={MONO_CLASS}>
                       <b>{profile.login}</b>
                     </td>
-                    <th>Node ID</th>
+                    <th>ノードID</th>
                     <td className={MONO_CLASS}>{profile.id}</td>
                   </tr>
                   <tr>
@@ -198,7 +198,7 @@ export function ProfileScreen(): JSX.Element {
                   <tr>
                     <th>メール</th>
                     <td className={MONO_CLASS}>{profile.email.length > 0 ? profile.email : "非公開"}</td>
-                    <th>Web site</th>
+                    <th>ウェブサイト</th>
                     <td className={MONO_CLASS}>{profile.websiteUrl ?? "未設定"}</td>
                   </tr>
                   <tr>
@@ -216,7 +216,7 @@ export function ProfileScreen(): JSX.Element {
                     <td>{sessionQuery.data?.user.providerLabel ?? "GitHub App"}</td>
                   </tr>
                   <tr>
-                    <th>Followers / Following</th>
+                    <th>フォロワー / フォロー中</th>
                     <td className={MONO_CLASS}>
                       {profile.followers.totalCount} / {profile.following.totalCount}
                     </td>
@@ -251,7 +251,7 @@ export function ProfileScreen(): JSX.Element {
                 colSpan={5}
                 tone="empty"
                 title="表示可能なリポジトリ情報がありません。"
-                detail="この user token で参照できる repository が存在しません。"
+                detail="このユーザートークンで参照できるリポジトリが存在しません。"
               />
             ) : (
               repositories.map((repository, index) => (
@@ -282,7 +282,10 @@ export function ProfileScreen(): JSX.Element {
         <div className={KPI_ROW_CLASS}>
           {[
             ["コミット数", String(profile?.contributionsCollection.totalCommitContributions ?? 0)],
-            ["PR作成数", String(profile?.contributionsCollection.totalPullRequestContributions ?? 0)],
+            [
+              "プルリクエスト作成数",
+              String(profile?.contributionsCollection.totalPullRequestContributions ?? 0),
+            ],
             [
               "レビュー対応",
               String(profile?.contributionsCollection.totalPullRequestReviewContributions ?? 0),
@@ -300,12 +303,12 @@ export function ProfileScreen(): JSX.Element {
         </div>
       </Panel>
 
-      <Panel title="所属 Organization" bodyClassName="p-0">
+      <Panel title="所属組織" bodyClassName="p-0">
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
               <th className="w-10">No</th>
-              <th>Organization</th>
+              <th>組織ID</th>
               <th>名称</th>
               <th className="w-32">URL</th>
             </tr>
@@ -315,8 +318,8 @@ export function ProfileScreen(): JSX.Element {
               <GitHubTableStateRow
                 colSpan={4}
                 tone="empty"
-                title="所属 Organization はありません。"
-                detail="viewer.organizations に表示可能なデータがありません。"
+                title="所属組織はありません。"
+                detail="所属組織の表示対象データがありません。"
               />
             ) : (
               organizations.map((organization, index) => (
@@ -326,7 +329,7 @@ export function ProfileScreen(): JSX.Element {
                   <td>{organization.name ?? "名称未設定"}</td>
                   <td className={MONO_CLASS}>
                     <a href={organization.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                      open
+                      開く
                     </a>
                   </td>
                 </tr>

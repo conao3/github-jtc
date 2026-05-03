@@ -220,7 +220,7 @@ export function RepositoriesScreen(): JSX.Element {
   const pagedRepositories = filteredRepositories.slice(startIndex, startIndex + pageSize);
   const quickFilters = [
     {
-      label: "★ 直近 push 順",
+      label: "★ 直近プッシュ順",
       filters: initialRepositoryFilterValues,
     },
     {
@@ -228,15 +228,15 @@ export function RepositoriesScreen(): JSX.Element {
       filters: { ...initialRepositoryFilterValues, permission: "WRITE" },
     },
     {
-      label: "★ Open PR があるもの",
+      label: "★ オープン中プルリクエストがあるもの",
       filters: { ...initialRepositoryFilterValues, hasOpenPr: "yes" },
     },
     {
-      label: "★ Open PR がないもの",
+      label: "★ オープン中プルリクエストがないもの",
       filters: { ...initialRepositoryFilterValues, hasOpenPr: "no" },
     },
     {
-      label: "★ Public リポジトリ",
+      label: "★ 公開リポジトリ",
       filters: { ...initialRepositoryFilterValues, visibility: "PUBLIC" },
     },
   ] satisfies ReadonlyArray<{ readonly label: string; readonly filters: RepositoryFilterValues }>;
@@ -272,8 +272,8 @@ export function RepositoriesScreen(): JSX.Element {
                   ["非公開", String(privateCount)],
                   ["組織内", String(internalCount)],
                   ["公開", String(publicCount)],
-                  ["Open PR", String(pullRequestTotal)],
-                  ["Open チケット", String(issueTotal)],
+                  ["オープン中プルリクエスト", String(pullRequestTotal)],
+                  ["オープン中チケット", String(issueTotal)],
                   ["合計", String(filteredRepositories.length)],
                 ].map(([label, value]) => (
                   <tr key={label}>
@@ -315,7 +315,7 @@ export function RepositoriesScreen(): JSX.Element {
     >
       <Panel
         title="検索条件"
-        action={<span className={MUTED_CLASS}>client-side filter / pagination</span>}
+        action={<span className={MUTED_CLASS}>画面内絞込 / ページ切替</span>}
         bodyClassName="p-0"
       >
         <form
@@ -342,7 +342,7 @@ export function RepositoriesScreen(): JSX.Element {
                 />
               )}
             </form.Field>
-            <label>Owner：</label>
+            <label>所有者：</label>
             <form.Field name="owner" validators={zodValidators(repositoryFilterFieldValidators.owner)}>
               {(field) => (
                 <input
@@ -412,7 +412,7 @@ export function RepositoriesScreen(): JSX.Element {
                 </select>
               )}
             </form.Field>
-            <label>Open PR：</label>
+            <label>オープン中プルリクエスト：</label>
             <form.Field
               name="hasOpenPr"
               validators={zodValidators(repositoryFilterFieldValidators.hasOpenPr)}
@@ -481,15 +481,15 @@ export function RepositoriesScreen(): JSX.Element {
             <tr>
               <th className="w-10">No</th>
               <th>リポジトリ名／説明</th>
-              <th className="w-24">Owner</th>
+              <th className="w-24">所有者</th>
               <th className="w-20">主要言語</th>
-              <th className="w-16">Commit</th>
-              <th className="w-16">PR</th>
+              <th className="w-16">コミット</th>
+              <th className="w-16">プルリクエスト</th>
               <th className="w-16">チケット</th>
               <th className="w-20">状態</th>
               <th className="w-16">権限</th>
               <th className="w-16">公開</th>
-              <th className="w-28">最終 push</th>
+              <th className="w-28">最終プッシュ</th>
               <th className="w-16">操作</th>
             </tr>
           </thead>
@@ -518,7 +518,7 @@ export function RepositoriesScreen(): JSX.Element {
                 detail={
                   hasActiveRepositoryFilters(appliedFilters)
                     ? "検索条件を緩めるか、ページサイズを変更して再確認してください。"
-                    : "GitHub App が参照できる repository がない可能性があります。"
+                    : "GitHub App が参照できるリポジトリがない可能性があります。"
                 }
               />
             ) : (
@@ -543,8 +543,8 @@ export function RepositoriesScreen(): JSX.Element {
                       </div>
                       <div className="text-slate-700">{repository.description ?? "説明なし"}</div>
                       <div className="text-slate-500">
-                        default branch: {repository.defaultBranchRef?.name ?? "－"} ／ stars:{" "}
-                        {repository.stargazerCount} ／ forks: {repository.forkCount}
+                        既定ブランチ: {repository.defaultBranchRef?.name ?? "－"} ／ スター:{" "}
+                        {repository.stargazerCount} ／ フォーク: {repository.forkCount}
                       </div>
                     </td>
                     <td className="text-center">{getOwnerLabel(repository)}</td>

@@ -11,6 +11,10 @@ import {
   describeGitHubError,
   fetchGitHubPullRequestDetail,
   formatGitHubDateTime,
+  formatGitHubFileChangeType,
+  formatGitHubMergeableState,
+  formatGitHubMergeStateStatus,
+  formatGitHubReviewDecision,
   parseRepositoryScopedNumberRouteId,
   type GitHubPullRequestDetail,
 } from "../app/github.ts";
@@ -89,9 +93,9 @@ function getWorkflowSteps(pullRequest: GitHubPullRequestDetail) {
     {
       state: "done" as const,
       step: "STEP 1",
-      title: "PR作成",
+      title: "プルリクエスト作成",
       meta: [
-        `作成者：${pullRequest.author?.login ?? "unknown"}`,
+        `作成者：${pullRequest.author?.login ?? "不明"}`,
         `作成日時：${formatGitHubDateTime(pullRequest.createdAt)}`,
       ],
       status: <JtcStatusTag tone="done">✓ 完了</JtcStatusTag>,
@@ -117,7 +121,7 @@ function getWorkflowSteps(pullRequest: GitHubPullRequestDetail) {
       step: "STEP 3",
       title: "レビュー結果",
       meta: [
-        `reviewDecision：${pullRequest.reviewDecision ?? "未判定"}`,
+        `レビュー判定：${formatGitHubReviewDecision(pullRequest.reviewDecision)}`,
         `最新レビュー：${latestReview?.author?.login ?? "なし"}`,
       ],
       status: <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>,
@@ -126,7 +130,10 @@ function getWorkflowSteps(pullRequest: GitHubPullRequestDetail) {
       state: pullRequest.state === "MERGED" ? ("done" as const) : ("future" as const),
       step: "STEP 4",
       title: "マージ状態",
-      meta: [`mergeable：${pullRequest.mergeable}`, `mergeStateStatus：${pullRequest.mergeStateStatus}`],
+      meta: [
+        `マージ可否：${formatGitHubMergeableState(pullRequest.mergeable)}`,
+        `マージ状態：${formatGitHubMergeStateStatus(pullRequest.mergeStateStatus)}`,
+      ],
       status: (
         <JtcStatusTag tone={pullRequest.state === "MERGED" ? "done" : "required"}>
           {pullRequest.state === "MERGED" ? "✓ 完了" : "未マージ"}
@@ -179,7 +186,7 @@ export function PullRequestDetailScreen({
         case "Mannequin":
           return reviewer.login;
         default:
-          return "unknown";
+          return "不明";
       }
     });
 
@@ -199,12 +206,12 @@ export function PullRequestDetailScreen({
             <table className={TABLE_CLASS}>
               <tbody>
                 <tr>
-                  <th>reviewDecision</th>
-                  <td>{pullRequest?.reviewDecision ?? "未判定"}</td>
+                  <th>レビュー判定</th>
+                  <td>{formatGitHubReviewDecision(pullRequest?.reviewDecision)}</td>
                 </tr>
                 <tr>
-                  <th>mergeable</th>
-                  <td>{pullRequest?.mergeable ?? "UNKNOWN"}</td>
+                  <th>マージ可否</th>
+                  <td>{formatGitHubMergeableState(pullRequest?.mergeable)}</td>
                 </tr>
                 <tr>
                   <th>レビュー依頼</th>
@@ -255,7 +262,7 @@ export function PullRequestDetailScreen({
                     <li key={review.id} className={TODO_LIST_ITEM_CLASS}>
                       <span>
                         <JtcStatusTag tone={reviewState.tone}>{reviewState.label}</JtcStatusTag>
-                        <span className="ml-1">{review.author?.login ?? "unknown"}</span>
+                        <span className="ml-1">{review.author?.login ?? "不明"}</span>
                       </span>
                       <span className={clsx("text-xs", MONO_CLASS)}>
                         {formatGitHubDateTime(review.submittedAt)}
@@ -274,7 +281,7 @@ export function PullRequestDetailScreen({
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>レビュー導線：</b>この画面は GitHub GraphQL の pull request
+        <b>レビュー導線：</b>この画面は GitHub GraphQL のプルリクエスト
         詳細を表示しています。最終的な承認・マージ操作は
         <span className={TEXT_LINK_CLASS}> GitHub 本体 </span>
         で実施してください。
@@ -294,23 +301,25 @@ export function PullRequestDetailScreen({
         {coordinates === null ? (
           <GitHubInlineState
             tone="error"
-            title="PR 識別子を解釈できませんでした。"
-            detail="一覧画面から対象 PR を選び直してください。"
+            title="プルリクエスト識別子を解釈できませんでした。"
+            detail="一覧画面から対象プルリクエストを選び直してください。"
             className="py-8"
           />
         ) : detailQuery.isPending ? (
-          <div className="py-8 text-center text-slate-600">GitHub から PR 詳細を取得しています。</div>
+          <div className="py-8 text-center text-slate-600">
+            GitHub からプルリクエスト詳細を取得しています。
+          </div>
         ) : detailQuery.isError ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
-            {...describeGitHubError(detailQuery.error, "PR 詳細の取得に失敗しました。")}
+            {...describeGitHubError(detailQuery.error, "プルリクエスト詳細の取得に失敗しました。")}
           />
         ) : pullRequest === null || pullRequest === undefined ? (
           <GitHubInlineState
             tone="empty"
-            title="対象 PR を表示できません。"
-            detail={`${coordinates.owner}/${coordinates.name} の PR #${coordinates.number} は存在しないか、現在の token では参照できません。`}
+            title="対象プルリクエストを表示できません。"
+            detail={`${coordinates.owner}/${coordinates.name} のプルリクエスト #${coordinates.number} は存在しないか、現在のトークンでは参照できません。`}
             className="py-8"
           />
         ) : (
@@ -335,14 +344,14 @@ export function PullRequestDetailScreen({
                 </td>
               </tr>
               <tr>
-                <th>source</th>
+                <th>変更元</th>
                 <td className={MONO_CLASS}>{pullRequest.headRefName}</td>
-                <th>target</th>
+                <th>変更先</th>
                 <td className={MONO_CLASS}>{pullRequest.baseRefName}</td>
               </tr>
               <tr>
                 <th>作成者</th>
-                <td>{pullRequest.author?.login ?? "unknown"}</td>
+                <td>{pullRequest.author?.login ?? "不明"}</td>
                 <th>レビュー依頼先</th>
                 <td>{reviewerLabels.length === 0 ? "なし" : reviewerLabels.join(" / ")}</td>
               </tr>
@@ -353,8 +362,8 @@ export function PullRequestDetailScreen({
                     ? "なし"
                     : closingIssues.map((issue) => `#${issue.number}`).join(" / ")}
                 </td>
-                <th>mergeStateStatus</th>
-                <td>{pullRequest.mergeStateStatus}</td>
+                <th>マージ状態</th>
+                <td>{formatGitHubMergeStateStatus(pullRequest.mergeStateStatus)}</td>
               </tr>
               <tr>
                 <th>コミット数</th>
@@ -365,8 +374,8 @@ export function PullRequestDetailScreen({
                 </td>
               </tr>
               <tr>
-                <th>mergeable</th>
-                <td>{pullRequest.mergeable}</td>
+                <th>マージ可否</th>
+                <td>{formatGitHubMergeableState(pullRequest.mergeable)}</td>
                 <th>コメント数</th>
                 <td>{pullRequest.comments.totalCount}</td>
               </tr>
@@ -425,7 +434,7 @@ export function PullRequestDetailScreen({
                 colSpan={6}
                 tone="empty"
                 title="変更ファイルはありません。"
-                detail="files connection が空です。差分がない PR か、取得対象外の可能性があります。"
+                detail="変更ファイル一覧が空です。差分がないプルリクエストか、取得対象外の可能性があります。"
               />
             ) : (
               files.map((file) => (
@@ -433,7 +442,7 @@ export function PullRequestDetailScreen({
                   <td className={MONO_CLASS}>{file.path}</td>
                   <td className="text-right text-green-700">+{file.additions}</td>
                   <td className="text-right text-red-700">-{file.deletions}</td>
-                  <td className="text-center">{file.changeType}</td>
+                  <td className="text-center">{formatGitHubFileChangeType(file.changeType)}</td>
                   <td className="text-center">
                     <JtcStatusTag tone={file.viewerViewedState === "VIEWED" ? "done" : "confirmed"}>
                       {file.viewerViewedState === "VIEWED" ? "確認済" : "未確認"}
@@ -470,7 +479,7 @@ export function PullRequestDetailScreen({
               return (
                 <div key={review.id} className="border border-slate-300 bg-white p-2 text-xs">
                   <div className="mb-1 font-bold text-blue-900">
-                    ● {review.author?.login ?? "unknown"}
+                    ● {review.author?.login ?? "不明"}
                     <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
                       {formatGitHubDateTime(review.submittedAt)}
                     </span>
@@ -489,8 +498,8 @@ export function PullRequestDetailScreen({
       <Panel title="GitHub操作">
         <div className="p-3 text-center">
           <div className="mb-2 text-xs text-slate-600">
-            最終的なレビュー操作は GitHub 本体で行ってください。GraphQL では表示を担当し、mutation
-            は未接続です。
+            最終的なレビュー操作は GitHub 本体で行ってください。GraphQL
+            では表示のみ対応し、更新操作は未接続です。
           </div>
           <a
             href={pullRequest?.url}

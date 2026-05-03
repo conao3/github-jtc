@@ -54,7 +54,7 @@ function getCommitTarget(
 }
 
 function getCommitAuthorLabel(commit: GitHubHistoryCommit): string {
-  return commit.author?.user?.login ?? commit.author?.name ?? "unknown";
+  return commit.author?.user?.login ?? commit.author?.name ?? "不明";
 }
 
 function getCommitRelatedPullRequest(commit: GitHubHistoryCommit): {
@@ -71,7 +71,7 @@ function getCommitRelatedPullRequest(commit: GitHubHistoryCommit): {
   }
 
   return {
-    label: `PR #${pullRequest.number}`,
+    label: `プルリクエスト #${pullRequest.number}`,
     url: pullRequest.url,
   };
 }
@@ -242,7 +242,7 @@ export function CommitsScreen(): JSX.Element {
                     colSpan={2}
                     tone="empty"
                     title="作成者別ランキングはありません。"
-                    detail="表示対象の commit history がまだありません。"
+                    detail="表示対象のコミット履歴がまだありません。"
                   />
                 ) : (
                   authorRanking.map(({ author, count }, index) => (
@@ -265,7 +265,7 @@ export function CommitsScreen(): JSX.Element {
                   <GitHubInlineState
                     tone="empty"
                     title="タグはありません。"
-                    detail="repository.refs(refPrefix: TAG) に表示可能なデータがありません。"
+                    detail="タグ参照に表示可能なデータがありません。"
                     className="w-full py-1 text-xs"
                   />
                 </li>
@@ -317,9 +317,7 @@ export function CommitsScreen(): JSX.Element {
           <select className="border border-slate-400 px-1 py-0.5" value={defaultBranchName} disabled>
             <option>{defaultBranchName}</option>
           </select>
-          <span className={clsx("text-xs text-slate-600", MONO_CLASS)}>
-            defaultBranchRef.target.history を表示
-          </span>
+          <span className={clsx("text-xs text-slate-600", MONO_CLASS)}>既定ブランチの履歴を表示</span>
           <a
             href={commitsUrl}
             target="_blank"
@@ -337,7 +335,7 @@ export function CommitsScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {commitHistoryQuery.isPending
               ? "GitHub から読込中..."
-              : `history ${history?.totalCount ?? commits.length}件 ／ ${commits.length}件表示`}
+              : `履歴 ${history?.totalCount ?? commits.length}件 ／ ${commits.length}件表示`}
           </span>
         }
         bodyClassName="p-0"
@@ -367,7 +365,7 @@ export function CommitsScreen(): JSX.Element {
             ) : commitHistoryQuery.isPending ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-600">
-                  GitHub から default branch の履歴を取得しています。
+                  GitHub から既定ブランチの履歴を取得しています。
                 </td>
               </tr>
             ) : commitHistoryQuery.isError ? (
@@ -381,21 +379,21 @@ export function CommitsScreen(): JSX.Element {
                 colSpan={9}
                 tone="empty"
                 title={`${selectedCoordinates.owner}/${selectedCoordinates.name} は参照できません。`}
-                detail="repository が存在しないか、viewer 権限が不足しています。"
+                detail="リポジトリが存在しないか、利用者権限が不足しています。"
               />
             ) : commitTarget === null ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
-                title="default branch の commit history を取得できませんでした。"
-                detail="defaultBranchRef が未設定か、対象 ref が commit を指していません。"
+                title="既定ブランチのコミット履歴を取得できませんでした。"
+                detail="既定ブランチが未設定か、対象参照がコミットを指していません。"
               />
             ) : commits.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
                 title="コミットはありません。"
-                detail="default branch 上に表示対象の commit history がありません。"
+                detail="既定ブランチ上に表示対象のコミット履歴がありません。"
               />
             ) : (
               commits.map((commit) => {
@@ -428,7 +426,7 @@ export function CommitsScreen(): JSX.Element {
                     </td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
                       <span className="text-green-700">+{commit.additions}</span> /{" "}
-                      <span className="text-red-700">-{commit.deletions}</span> ({changedFiles}f)
+                      <span className="text-red-700">-{commit.deletions}</span> ({changedFiles}件)
                     </td>
                     <td className="text-center">
                       {relatedPullRequest === null ? (
@@ -462,7 +460,7 @@ export function CommitsScreen(): JSX.Element {
           <GitHubInlineState
             tone="empty"
             title="履歴取得後にグラフを表示します。"
-            detail="commit history が空のため、日別集計は表示されません。"
+            detail="コミット履歴が空のため、日別集計は表示されません。"
             className="px-3 py-6"
           />
         ) : (
@@ -504,7 +502,7 @@ export function CommitsScreen(): JSX.Element {
               to="/pull-requests"
               className={buttonClassName({ className: "inline-flex justify-center" })}
             >
-              PR一覧
+              プルリクエスト一覧
             </Link>
           </div>
         </Panel>

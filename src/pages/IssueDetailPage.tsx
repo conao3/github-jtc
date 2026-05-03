@@ -11,6 +11,8 @@ import {
   describeGitHubError,
   fetchGitHubIssueDetail,
   formatGitHubDateTime,
+  formatGitHubIssueState,
+  formatGitHubIssueStateReason,
   parseRepositoryScopedNumberRouteId,
   type GitHubIssueDetail,
 } from "../app/github.ts";
@@ -29,36 +31,25 @@ function getIssueState(issue: GitHubIssueDetail): {
   readonly label: string;
 } {
   if (issue.state === "OPEN") {
-    return { tone: "pending", label: "Open" };
+    return { tone: "pending", label: "オープン" };
   }
 
   switch (issue.stateReason) {
     case "COMPLETED":
-      return { tone: "done", label: "Completed" };
+      return { tone: "done", label: "完了" };
     case "DUPLICATE":
-      return { tone: "done", label: "Duplicate" };
+      return { tone: "done", label: "重複" };
     case "NOT_PLANNED":
-      return { tone: "done", label: "Not planned" };
+      return { tone: "done", label: "対応予定なし" };
     case "REOPENED":
-      return { tone: "pending", label: "Reopened" };
+      return { tone: "pending", label: "再オープン" };
     default:
-      return { tone: "done", label: "Closed" };
+      return { tone: "done", label: "クローズ" };
   }
 }
 
 function getIssueStateReasonLabel(stateReason: GitHubIssueDetail["stateReason"] | null | undefined): string {
-  switch (stateReason) {
-    case "COMPLETED":
-      return "completed";
-    case "DUPLICATE":
-      return "duplicate";
-    case "NOT_PLANNED":
-      return "not planned";
-    case "REOPENED":
-      return "reopened";
-    default:
-      return "－";
-  }
+  return formatGitHubIssueStateReason(stateReason);
 }
 
 function getAssigneeLabels(issue: GitHubIssueDetail): string[] {
@@ -98,7 +89,7 @@ function buildTimelineRows(issue: GitHubIssueDetail): Array<{
     {
       id: `created:${issue.id}`,
       date: issue.createdAt,
-      actor: issue.author?.login ?? "unknown",
+      actor: issue.author?.login ?? "不明",
       tone: "new" as const,
       label: "作成",
       body: issue.title,
@@ -115,7 +106,7 @@ function buildTimelineRows(issue: GitHubIssueDetail): Array<{
         rows.push({
           id: item.id,
           date: item.publishedAt ?? null,
-          actor: item.author?.login ?? "unknown",
+          actor: item.author?.login ?? "不明",
           tone: "review",
           label: "コメント",
           body: item.bodyText.length > 200 ? `${item.bodyText.slice(0, 200)}…` : item.bodyText,
@@ -125,47 +116,47 @@ function buildTimelineRows(issue: GitHubIssueDetail): Array<{
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "done",
           label: "クローズ",
-          body: `stateReason: ${getIssueStateReasonLabel(item.stateReason)}`,
+          body: `状態理由: ${getIssueStateReasonLabel(item.stateReason)}`,
         });
         break;
       case "ReopenedEvent":
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "pending",
           label: "再オープン",
-          body: `stateReason: ${getIssueStateReasonLabel(item.stateReason)}`,
+          body: `状態理由: ${getIssueStateReasonLabel(item.stateReason)}`,
         });
         break;
       case "AssignedEvent":
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "confirmed",
           label: "割当",
-          body: `assignee: ${item.assignee?.login ?? "unknown"}`,
+          body: `担当者: ${item.assignee?.login ?? "不明"}`,
         });
         break;
       case "UnassignedEvent":
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "confirmed",
           label: "解除",
-          body: `assignee: ${item.assignee?.login ?? "unknown"}`,
+          body: `担当者: ${item.assignee?.login ?? "不明"}`,
         });
         break;
       case "LabeledEvent":
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "confirmed",
           label: "ラベル追加",
           body: item.label.name,
@@ -175,7 +166,7 @@ function buildTimelineRows(issue: GitHubIssueDetail): Array<{
         rows.push({
           id: item.id,
           date: item.createdAt,
-          actor: item.actor?.login ?? "unknown",
+          actor: item.actor?.login ?? "不明",
           tone: "confirmed",
           label: "ラベル解除",
           body: item.label.name,
@@ -255,10 +246,10 @@ export function IssueDetailScreen({
           <Panel title="チケットサマリ" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
-                ["state", issue?.state ?? "－"],
-                ["stateReason", getIssueStateReasonLabel(issue?.stateReason)],
-                ["comments", `${issue?.comments.totalCount ?? 0}`],
-                ["labels", `${issue?.labels?.totalCount ?? 0}`],
+                ["状態", formatGitHubIssueState(issue?.state)],
+                ["状態理由", getIssueStateReasonLabel(issue?.stateReason)],
+                ["コメント", `${issue?.comments.totalCount ?? 0}`],
+                ["ラベル", `${issue?.labels?.totalCount ?? 0}`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -276,7 +267,7 @@ export function IssueDetailScreen({
                   <td className={clsx("text-xs", MONO_CLASS)}>{issue?.repository.nameWithOwner ?? "－"}</td>
                 </tr>
                 <tr>
-                  <th>Milestone</th>
+                  <th>マイルストーン</th>
                   <td>{issue?.milestone?.title ?? "未設定"}</td>
                 </tr>
                 <tr>
@@ -351,7 +342,7 @@ export function IssueDetailScreen({
           <GitHubInlineState
             tone="empty"
             title="対象チケットを表示できません。"
-            detail={`${coordinates.owner}/${coordinates.name} のチケット #${coordinates.number} は存在しないか、現在の token では参照できません。`}
+            detail={`${coordinates.owner}/${coordinates.name} のチケット #${coordinates.number} は存在しないか、現在のトークンでは参照できません。`}
             className="py-8"
           />
         ) : (
@@ -375,7 +366,7 @@ export function IssueDetailScreen({
               </tr>
               <tr>
                 <th>作成者</th>
-                <td className={MONO_CLASS}>{issue.author?.login ?? "unknown"}</td>
+                <td className={MONO_CLASS}>{issue.author?.login ?? "不明"}</td>
                 <th>担当者</th>
                 <td className={clsx("text-xs", MONO_CLASS)}>
                   {assignees.length === 0 ? "未割当" : assignees.join(", ")}
@@ -396,15 +387,15 @@ export function IssueDetailScreen({
                 </td>
               </tr>
               <tr>
-                <th>Milestone</th>
+                <th>マイルストーン</th>
                 <td>{issue.milestone?.title ?? "未設定"}</td>
                 <th>期限</th>
                 <td className={MONO_CLASS}>{formatGitHubDateTime(issue.milestone?.dueOn)}</td>
               </tr>
               <tr>
-                <th>closedAt</th>
+                <th>クローズ日時</th>
                 <td className={MONO_CLASS}>{formatGitHubDateTime(issue.closedAt)}</td>
-                <th>stateReason</th>
+                <th>状態理由</th>
                 <td className={MONO_CLASS}>{getIssueStateReasonLabel(issue.stateReason)}</td>
               </tr>
               <tr>
@@ -455,8 +446,8 @@ export function IssueDetailScreen({
               <GitHubTableStateRow
                 colSpan={5}
                 tone="empty"
-                title="表示可能な timeline item はありません。"
-                detail="コメントや state change などの履歴がまだ投稿されていません。"
+                title="表示可能なタイムライン項目はありません。"
+                detail="コメントや状態変更などの履歴がまだ投稿されていません。"
               />
             ) : (
               timelineRows.map((row, index) => (

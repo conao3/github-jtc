@@ -103,7 +103,7 @@ async function executeGitHubQuery<TData, TVariables extends Record<string, unkno
   const result = await client.query({ query, variables });
 
   if (result.data === undefined || result.data === null) {
-    throw new Error("GitHub GraphQL query returned no data.");
+    throw new Error("GitHub GraphQL の問い合わせ結果にデータがありません。");
   }
 
   return result.data;
@@ -118,7 +118,7 @@ async function executeGitHubMutation<TData, TVariables extends Record<string, un
   const result = await client.mutate({ mutation, variables });
 
   if (result.data === undefined || result.data === null) {
-    throw new Error("GitHub GraphQL mutation returned no data.");
+    throw new Error("GitHub GraphQL の更新結果にデータがありません。");
   }
 
   return result.data;
@@ -129,7 +129,7 @@ export async function fetchGitHubViewer(accessToken: string): Promise<GitHubView
   const viewer = data.viewer;
 
   if (viewer === undefined || viewer === null) {
-    throw new Error("GitHub GraphQL viewer query did not return a user.");
+    throw new Error("GitHub GraphQL の利用者情報が取得できませんでした。");
   }
 
   return viewer;
@@ -182,7 +182,7 @@ export async function createGitHubRepository(
   const repository = data.createRepository?.repository;
 
   if (repository === undefined || repository === null) {
-    throw new Error("GitHub did not return the created repository.");
+    throw new Error("GitHub が作成済みリポジトリ情報を返しませんでした。");
   }
 
   return repository;
@@ -390,6 +390,115 @@ export function formatGitHubPermission(value: string | null | undefined): string
   }
 }
 
+export function formatGitHubIssueState(value: string | null | undefined): string {
+  switch (value) {
+    case "OPEN":
+      return "オープン";
+    case "CLOSED":
+      return "クローズ";
+    default:
+      return value ?? "－";
+  }
+}
+
+export function formatGitHubIssueStateReason(value: string | null | undefined): string {
+  switch (value) {
+    case "COMPLETED":
+      return "完了";
+    case "DUPLICATE":
+      return "重複";
+    case "NOT_PLANNED":
+      return "対応予定なし";
+    case "REOPENED":
+      return "再オープン";
+    default:
+      return "－";
+  }
+}
+
+export function formatGitHubReviewDecision(value: string | null | undefined): string {
+  switch (value) {
+    case "APPROVED":
+      return "承認済";
+    case "CHANGES_REQUESTED":
+      return "差戻し";
+    case "REVIEW_REQUIRED":
+      return "要レビュー";
+    default:
+      return "未判定";
+  }
+}
+
+export function formatGitHubMergeableState(value: string | null | undefined): string {
+  switch (value) {
+    case "CONFLICTING":
+      return "競合あり";
+    case "MERGEABLE":
+      return "マージ可能";
+    case "UNKNOWN":
+      return "不明";
+    default:
+      return value ?? "－";
+  }
+}
+
+export function formatGitHubMergeStateStatus(value: string | null | undefined): string {
+  switch (value) {
+    case "BEHIND":
+      return "後続更新あり";
+    case "BLOCKED":
+      return "要対応";
+    case "CLEAN":
+      return "問題なし";
+    case "DIRTY":
+      return "競合あり";
+    case "DRAFT":
+      return "下書き";
+    case "HAS_HOOKS":
+      return "フック確認";
+    case "UNKNOWN":
+      return "不明";
+    case "UNSTABLE":
+      return "不安定";
+    default:
+      return value ?? "－";
+  }
+}
+
+export function formatGitHubViewedState(value: string | null | undefined): string {
+  switch (value) {
+    case "VIEWED":
+      return "確認済";
+    case "DISMISSED":
+      return "対象外";
+    case "UNVIEWED":
+      return "未確認";
+    default:
+      return value ?? "－";
+  }
+}
+
+export function formatGitHubFileChangeType(value: string | null | undefined): string {
+  switch (value) {
+    case "ADDED":
+      return "追加";
+    case "CHANGED":
+      return "変更";
+    case "COPIED":
+      return "複製";
+    case "DELETED":
+      return "削除";
+    case "MODIFIED":
+      return "修正";
+    case "RENAMED":
+      return "名前変更";
+    case "UNCHANGED":
+      return "変更なし";
+    default:
+      return value ?? "－";
+  }
+}
+
 export function formatGitHubByteSize(value: number | null | undefined): string {
   if (value === undefined || value === null || Number.isNaN(value)) {
     return "－";
@@ -426,8 +535,8 @@ export function describeGitHubError(error: unknown, fallbackTitle: string): GitH
   ) {
     return {
       kind: "rate_limited",
-      title: "GitHub API の rate limit に達しました。",
-      detail: "しばらく待って再試行するか、対象クエリ数を減らしてください。",
+      title: "GitHub API の利用上限に達しました。",
+      detail: "しばらく待って再試行するか、問い合わせ数を減らしてください。",
     };
   }
 
@@ -439,8 +548,8 @@ export function describeGitHubError(error: unknown, fallbackTitle: string): GitH
   ) {
     return {
       kind: "permission_denied",
-      title: "この GitHub App / user token では対象データを参照できません。",
-      detail: "App 権限、installation 対象、viewer 権限を確認してください。",
+      title: "この GitHub App / ユーザートークンでは対象データを参照できません。",
+      detail: "App 権限、インストール対象、利用者権限を確認してください。",
     };
   }
 
@@ -452,7 +561,7 @@ export function describeGitHubError(error: unknown, fallbackTitle: string): GitH
   ) {
     return {
       kind: "not_found",
-      title: "対象データが存在しないか、viewer から参照できません。",
+      title: "対象データが存在しないか、利用者から参照できません。",
       detail,
     };
   }
@@ -461,7 +570,7 @@ export function describeGitHubError(error: unknown, fallbackTitle: string): GitH
     return {
       kind: "network",
       title: "GitHub への通信に失敗しました。",
-      detail: "ネットワーク接続、broker、認証状態を確認してから再試行してください。",
+      detail: "ネットワーク接続、認証中継先、認証状態を確認してから再試行してください。",
     };
   }
 

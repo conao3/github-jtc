@@ -112,7 +112,7 @@ const sections: SectionDefinition[] = [
   },
   {
     id: "pr-issue",
-    title: "プルリク・チケット",
+    title: "プルリクエスト・チケット",
     subtitle: "変更管理プロセスの中核",
     artboards: [
       {
@@ -125,7 +125,7 @@ const sections: SectionDefinition[] = [
       },
       {
         id: "pr-diff",
-        label: "⑤-2 PR差分表示（コードdiff）",
+        label: "⑤-2 プルリクエスト差分表示（コード差分）",
         route: "/pull-requests/conao3:github-jtc:1/diff",
         width: 1280,
         height: 878,
@@ -196,9 +196,9 @@ export default function DesignCanvasPage(): JSX.Element {
       <div className="w-full">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="m-0 text-3xl font-bold text-stone-800">JTC GitHub Design Canvas</h1>
+            <h1 className="m-0 text-3xl font-bold text-stone-800">JTC GitHub 画面キャンバス</h1>
             <p className="m-0 mt-1 text-sm text-stone-600">
-              bundle で定義された 10
+              バンドルで定義された 10
               画面を、実コンポーネントのまま一覧・拡大・ルート遷移できるキャンバスです。
             </p>
           </div>

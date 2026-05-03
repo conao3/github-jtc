@@ -78,7 +78,7 @@ const noticeRows = [
   ],
   [
     "運用",
-    "Git操作における注意事項について（force-push禁止の徹底）",
+    "Git操作における注意事項について（強制プッシュ禁止の徹底）",
     "R8/04/30 11:20",
     "R8/06/30 23:59",
     "運用統括部",
@@ -141,7 +141,7 @@ const flowSteps = [
 
 const shortcuts = [
   ["変", "変更登録"],
-  ["PR", "PR作成"],
+  ["プ", "プルリクエスト作成"],
   ["課", "チケット作成"],
   ["🔍", "リポジトリ検索"],
   ["人", "ユーザー検索"],
@@ -211,9 +211,9 @@ function getIssueStateTag(state: AssignedIssueNode["state"]): {
 } {
   switch (state) {
     case "OPEN":
-      return { tone: "inProgress", label: "Open" };
+      return { tone: "inProgress", label: "オープン" };
     case "CLOSED":
-      return { tone: "confirmed", label: "Closed" };
+      return { tone: "confirmed", label: "クローズ" };
     default:
       return { tone: "new", label: state };
   }
@@ -269,29 +269,29 @@ export function DashboardScreen(): JSX.Element {
     {
       label: "担当リポジトリ数",
       value: String(dashboard?.viewer.repositories.totalCount ?? 0),
-      note: "viewer.repositories",
+      note: "利用可能リポジトリ参照",
     },
     {
       label: "直近30日コミット",
       value: String(dashboard?.viewer.contributionsCollection.totalCommitContributions ?? 0),
-      note: "contributionsCollection",
+      note: "直近30日集計",
     },
     {
-      label: "レビュー依頼中PR",
+      label: "レビュー依頼中プルリクエスト",
       value: String(dashboard?.reviewRequests.issueCount ?? 0),
-      note: "search review-requested",
+      note: "レビュー依頼検索",
     },
     {
       label: "自分担当チケット",
       value: String(dashboard?.issueAssignments.issueCount ?? 0),
-      note: "search assignee",
+      note: "担当者検索",
     },
   ] as const;
   const todoItems = [
     ["レビュー依頼中", `${dashboard?.reviewRequests.issueCount ?? 0} 件`],
     ["自分担当チケット", `${dashboard?.issueAssignments.issueCount ?? 0} 件`],
-    ["自分が開いているPR", `${dashboard?.authoredPullRequests.issueCount ?? 0} 件`],
-    ["最近更新したRepo", `${recentRepositories.length} 件`],
+    ["自分が開いているプルリクエスト", `${dashboard?.authoredPullRequests.issueCount ?? 0} 件`],
+    ["最近更新したリポジトリ", `${recentRepositories.length} 件`],
     [
       "直近30日レビュー",
       `${dashboard?.viewer.contributionsCollection.totalPullRequestReviewContributions ?? 0} 件`,
@@ -318,7 +318,7 @@ export function DashboardScreen(): JSX.Element {
             </div>
           </Panel>
 
-          <Panel title="GitHub ToDo一覧" bodyClassName="p-0">
+          <Panel title="GitHub 未処理一覧" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {todoItems.map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
@@ -331,7 +331,7 @@ export function DashboardScreen(): JSX.Element {
             </ul>
           </Panel>
 
-          <Panel title="レビュー依頼中PR" bodyClassName="p-0">
+          <Panel title="レビュー依頼中プルリクエスト" bodyClassName="p-0">
             {dashboardQuery.isPending ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.isError ? (
@@ -343,8 +343,8 @@ export function DashboardScreen(): JSX.Element {
             ) : reviewRequests.length === 0 ? (
               <GitHubInlineState
                 tone="empty"
-                title="レビュー依頼中の PR はありません。"
-                detail="review-requested search に open PR がありません。"
+                title="レビュー依頼中のプルリクエストはありません。"
+                detail="レビュー依頼検索にオープン中のプルリクエストがありません。"
                 className="px-2 py-3 text-xs"
               />
             ) : (
@@ -361,7 +361,7 @@ export function DashboardScreen(): JSX.Element {
                           rel="noreferrer"
                           className={TEXT_LINK_CLASS}
                         >
-                          PR #{pullRequest.number}
+                          プルリクエスト #{pullRequest.number}
                         </a>
                       </div>
                       <div>{pullRequest.title}</div>
@@ -391,8 +391,8 @@ export function DashboardScreen(): JSX.Element {
             ) : assignedIssues.length === 0 ? (
               <GitHubInlineState
                 tone="empty"
-                title="担当中の open チケットはありません。"
-                detail="assignee search に一致するチケットがありません。"
+                title="担当中のオープン中チケットはありません。"
+                detail="担当者検索に一致するチケットがありません。"
                 className="px-2 py-3 text-xs"
               />
             ) : (
@@ -430,7 +430,7 @@ export function DashboardScreen(): JSX.Element {
                     colSpan={3}
                     tone="empty"
                     title="最近更新したリポジトリはありません。"
-                    detail="viewer.repositories に表示可能なデータがありません。"
+                    detail="最近更新したリポジトリの表示対象データがありません。"
                   />
                 ) : (
                   recentRepositories.map((repository: RecentRepositoryNode) => (
@@ -455,7 +455,7 @@ export function DashboardScreen(): JSX.Element {
     >
       <div className={WARN_LINE_CLASS}>
         <b>運用連絡：</b>令和8年5月15日(金)
-        22:00～翌2:00、本番リポジトリDB定期メンテナンスを実施します。当該時間帯は push/merge
+        22:00～翌2:00、本番リポジトリDB定期メンテナンスを実施します。当該時間帯は プッシュ/マージ
         が不可となります。詳細は
         <span className={TEXT_LINK_CLASS}>運用手順書（変更管理編）.pdf</span>
         をご確認ください。
@@ -469,7 +469,7 @@ export function DashboardScreen(): JSX.Element {
               ? "GitHub から集計中..."
               : dashboardQuery.isError
                 ? "GitHub 集計の取得に失敗"
-                : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "viewer"} / 直近30日集計`}
+                : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "利用者"} / 直近30日集計`}
           </span>
         }
       >
@@ -495,11 +495,7 @@ export function DashboardScreen(): JSX.Element {
         )}
       </Panel>
 
-      <Panel
-        title="お知らせ・運用連絡"
-        action={<span className={MUTED_CLASS}>※ 社内ポータル再現用のダミー一覧</span>}
-        bodyClassName="p-0"
-      >
+      <Panel title="お知らせ・運用連絡" bodyClassName="p-0">
         <div className={TABS_ROW_CLASS}>
           <span className={clsx(TAB_CLASS, TAB_ACTIVE_CLASS)}>
             重要なお知らせ <span className={TAB_BADGE_CLASS}>3</span>
@@ -536,7 +532,7 @@ export function DashboardScreen(): JSX.Element {
                 </td>
                 <td>
                   {title}
-                  {(kind === "重要" || title.includes("force-push")) && (
+                  {(kind === "重要" || title.includes("強制プッシュ")) && (
                     <span className="ml-1 font-bold text-red-700">★</span>
                   )}
                 </td>
@@ -562,10 +558,7 @@ export function DashboardScreen(): JSX.Element {
         </div>
       </Panel>
 
-      <Panel
-        title="変更登録フロー（現在ステータス）：CHG-2025-00472 「決済例外処理の修正」"
-        action={<span className={MUTED_CLASS}>※ GitHub 非連携のダミーフロー</span>}
-      >
+      <Panel title="変更登録フロー：CHG-2025-00472 「決済例外処理の修正」">
         <div className={FLOW_WRAP_CLASS}>
           {flowSteps.map((step) => (
             <div key={step.step} className={flowStepClassName(step.state)}>

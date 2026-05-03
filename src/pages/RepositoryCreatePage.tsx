@@ -141,13 +141,13 @@ export function RepositoryCreateScreen(): JSX.Element {
   const createRepositoryMutation = useMutation({
     mutationFn: async (value: RepositoryCreateFormValues) => {
       if (accessToken === undefined) {
-        throw new Error("GitHub access token がありません。再ログインしてください。");
+        throw new Error("GitHub アクセストークンがありません。再ログインしてください。");
       }
 
       const viewer = viewerQuery.data;
 
       if (viewer === undefined) {
-        throw new Error("GitHub viewer 情報の取得完了後に再試行してください。");
+        throw new Error("GitHub 利用者情報の取得完了後に再試行してください。");
       }
 
       return await createGitHubRepository(accessToken, {
@@ -223,7 +223,7 @@ export function RepositoryCreateScreen(): JSX.Element {
 
           <Panel title="GitHub 実作成設定" bodyClassName="p-0">
             {viewerQuery.isPending ? (
-              <div className="px-2 py-3 text-xs text-slate-600">GitHub viewer 情報を確認しています。</div>
+              <div className="px-2 py-3 text-xs text-slate-600">GitHub 利用者情報を確認しています。</div>
             ) : viewerQuery.isError ? (
               <GitHubInlineState
                 tone="error"
@@ -233,7 +233,7 @@ export function RepositoryCreateScreen(): JSX.Element {
             ) : viewerQuery.data === undefined ? (
               <GitHubInlineState
                 tone="empty"
-                title="GitHub viewer 情報がありません。"
+                title="GitHub 利用者情報がありません。"
                 detail="再ログイン後にもう一度お試しください。"
                 className="px-2 py-3 text-xs"
               />
@@ -241,7 +241,7 @@ export function RepositoryCreateScreen(): JSX.Element {
               <table className={TABLE_CLASS}>
                 <tbody>
                   <tr>
-                    <th>作成先 Owner</th>
+                    <th>作成先所有者</th>
                     <td className={MONO_CLASS}>{viewerQuery.data.login}</td>
                   </tr>
                   <tr>
@@ -249,12 +249,12 @@ export function RepositoryCreateScreen(): JSX.Element {
                     <td className={MONO_CLASS}>createRepository</td>
                   </tr>
                   <tr>
-                    <th>visibility</th>
+                    <th>公開設定</th>
                     <td>{getRepositoryVisibilitySummary(submittedValues)}</td>
                   </tr>
                   <tr>
                     <th>PoC 範囲</th>
-                    <td>viewer 配下への作成のみ対応。Organization 配下作成は未対応。</td>
+                    <td>現在利用者配下への作成のみ対応。組織配下作成は未対応。</td>
                   </tr>
                 </tbody>
               </table>
@@ -299,8 +299,7 @@ export function RepositoryCreateScreen(): JSX.Element {
           <span className="font-bold text-red-700">★</span>
           付項目は必須入力です。記載不備がある場合は差戻しとなりますのでご注意ください。詳細は
           <span className={TEXT_LINK_CLASS}>リポジトリ登録手順書.pdf</span>
-          をご確認ください。
-          します。
+          をご確認ください。 します。
         </div>
 
         <Panel title="申請者情報（自動入力）" bodyClassName="p-0">
@@ -308,7 +307,7 @@ export function RepositoryCreateScreen(): JSX.Element {
             <tbody>
               <tr>
                 <th>申請者ID</th>
-                <td className={MONO_CLASS}>{applicant?.login ?? "GitHub viewer"}</td>
+                <td className={MONO_CLASS}>{applicant?.login ?? "GitHub 利用者"}</td>
                 <th>氏名</th>
                 <td>{applicant?.displayName ?? viewerQuery.data?.name ?? viewerQuery.data?.login ?? "－"}</td>
               </tr>
@@ -320,7 +319,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                 <th>連絡先</th>
                 <td className={MONO_CLASS}>
                   {viewerQuery.data?.login === undefined
-                    ? "GitHub viewer 読込中"
+                    ? "GitHub 利用者情報読込中"
                     : `${viewerQuery.data.login}@users.noreply.github.com`}
                 </td>
                 <th>申請日時</th>
@@ -795,13 +794,13 @@ export function RepositoryCreateScreen(): JSX.Element {
               className="mb-3"
               {...describeGitHubError(
                 createRepositoryMutation.error,
-                "GitHub repository の作成に失敗しました。",
+                "GitHub リポジトリの作成に失敗しました。",
               )}
             />
           ) : null}
           {createdRepository === undefined ? null : (
             <div className="mb-3 border border-green-700 bg-green-100 px-3 py-2 text-left text-sm text-green-900">
-              <div className="font-bold">GitHub repository を作成しました。</div>
+              <div className="font-bold">GitHub リポジトリを作成しました。</div>
               <div className={MONO_CLASS}>{createdRepository.nameWithOwner}</div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <a
@@ -824,7 +823,7 @@ export function RepositoryCreateScreen(): JSX.Element {
             </div>
           )}
           <div className="mb-2 text-xs text-slate-600">
-            ※申請内容は登録後の修正が困難です。GitHub 上に実際の repository
+            ※申請内容は登録後の修正が困難です。GitHub 上に実際のリポジトリ
             を作成するため、十分に確認してから実行してください。
           </div>
           <button type="button" className={buttonClassName()}>

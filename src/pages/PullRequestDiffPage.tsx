@@ -12,6 +12,8 @@ import {
   describeGitHubError,
   fetchGitHubPullRequestDetail,
   formatGitHubDateTime,
+  formatGitHubFileChangeType,
+  formatGitHubViewedState,
   parseRepositoryScopedNumberRouteId,
 } from "../app/github.ts";
 import {
@@ -68,7 +70,7 @@ export function PullRequestDiffScreen({
               body: comment.body,
               createdAt: comment.createdAt,
               diffHunk: comment.diffHunk,
-              author: comment.author?.login ?? "unknown",
+              author: comment.author?.login ?? "不明",
               resolved: thread?.isResolved ?? false,
               outdated: thread?.isOutdated ?? false,
             })),
@@ -78,7 +80,7 @@ export function PullRequestDiffScreen({
   const commits = (pullRequest?.commits?.nodes ?? []).filter((commit) => commit !== null);
   const reviewChecklist = [
     { label: "対象ファイルを確認", checked: selectedFile !== null },
-    { label: "viewerViewedState を確認", checked: selectedFile?.viewerViewedState === "VIEWED" },
+    { label: "閲覧状態を確認", checked: selectedFile?.viewerViewedState === "VIEWED" },
     { label: "レビューコメントを確認", checked: threadComments.length > 0 },
     { label: "コミット履歴を確認", checked: commits.length > 0 },
   ] as const;
@@ -134,7 +136,7 @@ export function PullRequestDiffScreen({
                 </div>
               ))}
               <div className="pt-1 text-xs text-slate-600">
-                ※ GraphQL では patch 本文は取得できないため GitHub 本体への遷移が必要です。
+                ※ GraphQL ではパッチ本文は取得できないため GitHub 本体への遷移が必要です。
               </div>
             </div>
           </Panel>
@@ -146,7 +148,7 @@ export function PullRequestDiffScreen({
       }
     >
       <Panel
-        title={`差分表示 PR #${coordinates?.number ?? "?"} ／ ${selectedFile?.path ?? "file not selected"}`}
+        title={`差分表示 プルリクエスト #${coordinates?.number ?? "?"} ／ ${selectedFile?.path ?? "ファイル未選択"}`}
         action={
           <span>
             表示モード：
@@ -160,8 +162,8 @@ export function PullRequestDiffScreen({
         {coordinates === null ? (
           <GitHubInlineState
             tone="error"
-            title="PR 識別子を解釈できませんでした。"
-            detail="一覧画面から対象 PR を選び直してください。"
+            title="プルリクエスト識別子を解釈できませんでした。"
+            detail="一覧画面から対象プルリクエストを選び直してください。"
             className="py-8"
           />
         ) : detailQuery.isPending ? (
@@ -176,7 +178,7 @@ export function PullRequestDiffScreen({
           <GitHubInlineState
             tone="empty"
             title="表示できる差分データがありません。"
-            detail="対象 PR に取得可能な changed file がありません。"
+            detail="対象プルリクエストに取得可能な変更ファイルがありません。"
             className="py-8"
           />
         ) : (
@@ -204,16 +206,16 @@ export function PullRequestDiffScreen({
               <tbody>
                 <tr>
                   <th>変更種別</th>
-                  <td>{selectedFile.changeType}</td>
-                  <th>viewerViewedState</th>
+                  <td>{formatGitHubFileChangeType(selectedFile.changeType)}</td>
+                  <th>閲覧状態</th>
                   <td>
                     <JtcStatusTag tone={selectedFile.viewerViewedState === "VIEWED" ? "done" : "confirmed"}>
-                      {selectedFile.viewerViewedState}
+                      {formatGitHubViewedState(selectedFile.viewerViewedState)}
                     </JtcStatusTag>
                   </td>
                 </tr>
                 <tr>
-                  <th>PR</th>
+                  <th>プルリクエスト</th>
                   <td className={MONO_CLASS}>#{pullRequest.number}</td>
                   <th>リポジトリ</th>
                   <td className={MONO_CLASS}>
@@ -230,9 +232,9 @@ export function PullRequestDiffScreen({
             </table>
 
             <div className="border-t border-t-slate-300 bg-slate-50 p-2 text-xs text-slate-700">
-              GitHub GraphQL API では patch hunk 本文そのものは返らないため、この画面では
-              <b>ファイル単位の差分メタデータ</b>と<b>レビューコメント</b>
-              を表示しています。完全な unified / side-by-side diff は GitHub 本体で確認してください。
+              GitHub GraphQL API ではパッチ本文そのものは返らないため、この画面では
+              <b>ファイル単位の差分情報</b>と<b>レビューコメント</b>
+              を表示しています。完全な統合差分や左右比較差分は GitHub 本体で確認してください。
             </div>
           </>
         )}
@@ -259,7 +261,7 @@ export function PullRequestDiffScreen({
                     <JtcStatusTag
                       tone={comment.resolved ? "done" : comment.outdated ? "confirmed" : "review"}
                     >
-                      {comment.resolved ? "resolved" : comment.outdated ? "outdated" : "open"}
+                      {comment.resolved ? "解決済" : comment.outdated ? "旧版" : "未解決"}
                     </JtcStatusTag>
                   </span>
                 </div>
@@ -286,7 +288,7 @@ export function PullRequestDiffScreen({
             <tr>
               <th className="w-28">OID</th>
               <th>メッセージ</th>
-              <th className="w-24">Author</th>
+              <th className="w-24">作成者</th>
               <th className="w-28">日時</th>
             </tr>
           </thead>
@@ -306,7 +308,7 @@ export function PullRequestDiffScreen({
                   <tr key={commit.id}>
                     <td className={MONO_CLASS}>{commit.commit.oid.slice(0, 12)}</td>
                     <td>{commit.commit.messageHeadline}</td>
-                    <td className="text-center">{author?.user?.login ?? author?.name ?? "unknown"}</td>
+                    <td className="text-center">{author?.user?.login ?? author?.name ?? "不明"}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>
                       {formatGitHubDateTime(commit.commit.committedDate)}
                     </td>
@@ -326,7 +328,7 @@ export function PullRequestDiffScreen({
             rel="noreferrer"
             className={buttonClassName({ tone: "primary", size: "lg", className: "inline-flex" })}
           >
-            GitHubのDiffを開く
+            GitHubの差分を開く
           </a>
         </div>
       </Panel>

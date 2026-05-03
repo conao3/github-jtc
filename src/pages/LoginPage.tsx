@@ -95,7 +95,7 @@ export function LoginScreen(): JSX.Element {
         <div className="flex items-center justify-between border-b-2 border-b-slate-600 bg-gradient-to-b from-blue-700 to-blue-900 px-4 py-2 text-white">
           <div>
             <div className={PRODUCT_NAME_CLASS}>
-              JTC GitHub<span className="align-super text-xs">®</span> Enterprise Edition 5.2.1
+              JTC GitHub<span className="align-super text-xs">®</span> エンタープライズ版 5.2.1
             </div>
             <div className={PRODUCT_SUBTITLE_CLASS}>統合ソースコード管理基盤</div>
           </div>
@@ -325,7 +325,7 @@ export function LoginScreen(): JSX.Element {
                   ※ 上記以外のブラウザでは正常に動作しない場合があります。
                 </div>
                 <div className="text-xs text-slate-600">※ 画面解像度：1280×800以上</div>
-                <div className="text-xs text-slate-600">※ JavaScript／Cookieを有効にしてください。</div>
+                <div className="text-xs text-slate-600">※ JavaScript／クッキーを有効にしてください。</div>
               </div>
             </Panel>
 

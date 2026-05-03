@@ -89,7 +89,7 @@ const sideGroups: NavGroup[] = [
       { label: "ダッシュボード", to: "/" },
       { label: "お知らせ一覧" },
       { label: "個人設定", to: "/profile" },
-      { label: "ToDo一覧" },
+      { label: "未処理一覧" },
       { label: "スケジュール" },
     ],
   },
@@ -194,7 +194,7 @@ export function JtcChrome({
             <div className={PRODUCT_NAME_CLASS}>
               JTC GitHub<span className="align-super text-xs">®</span>
             </div>
-            <div className={PRODUCT_EDITION_CLASS}>Enterprise Edition 5.2.1</div>
+            <div className={PRODUCT_EDITION_CLASS}>エンタープライズ版 5.2.1</div>
             <div className={PRODUCT_SUBTITLE_CLASS}>統合ソースコード管理基盤</div>
           </div>
 
@@ -233,9 +233,9 @@ export function JtcChrome({
                   <td colSpan={3}>
                     <span className="lbl">セッション有効期限：</span>
                     <span className={clsx("val", MONO_CLASS)}>{expiresAt}</span>
-                    <span className="ml-3 lbl">GitHub GraphQL：</span>
+                    <span className="ml-3 lbl">GitHub連携：</span>
                     <span className="val">
-                      {session?.provider === "github" ? "viewer 取得済" : "未接続（社内認証のみ）"}
+                      {session?.provider === "github" ? "利用者情報取得済" : "未接続（社内認証のみ）"}
                     </span>
                   </td>
                 </tr>
