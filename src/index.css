@@ -180,7 +180,7 @@
     background-color: #f8fbff;
   }
 
-  & tbody tr:hover {
+  & tbody td:hover {
     background-color: #fff3bf;
   }
 }
