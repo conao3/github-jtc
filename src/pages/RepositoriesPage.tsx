@@ -22,6 +22,9 @@ import {
 import {
   MONO_CLASS,
   MUTED_CLASS,
+  PAGER_CLASS,
+  PAGER_LINK_ACTIVE_CLASS,
+  PAGER_LINK_CLASS,
   TABLE_CLASS,
   TEXT_LINK_CLASS,
   TODO_LIST_CLASS,
@@ -133,11 +136,15 @@ function filterRepositories(
 export function RepositoriesScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const currentCursor = cursorHistory[currentPage - 1] ?? null;
   const repositoriesQuery = useQuery({
-    queryKey: ["github", "viewer-repositories", QUERY_SIZE],
+    queryKey: ["github", "viewer-repositories", QUERY_SIZE, currentCursor],
     enabled: accessToken !== undefined,
     staleTime: REPOSITORIES_STALE_TIME_MS,
-    queryFn: () => fetchGitHubViewerRepositories(accessToken ?? "", { first: QUERY_SIZE, after: null }),
+    queryFn: () =>
+      fetchGitHubViewerRepositories(accessToken ?? "", { first: QUERY_SIZE, after: currentCursor }),
   });
   const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
   const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
@@ -145,12 +152,57 @@ export function RepositoriesScreen(): JSX.Element {
     defaultValues: initialRepositoryFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
+      setCursorHistory([null]);
+      setCurrentPage(1);
     },
   });
 
   function applyPreset(next: RepositoryFilterValues): void {
     form.reset(next);
     setAppliedFilters(next);
+    setCursorHistory([null]);
+    setCurrentPage(1);
+  }
+
+  function goToFirstPage(): void {
+    setCurrentPage(1);
+  }
+
+  function goToPreviousPage(): void {
+    setCurrentPage((previous) => Math.max(1, previous - 1));
+  }
+
+  function goToNextPage(): void {
+    const endCursor = repositoriesQuery.data?.pageInfo.endCursor;
+    if (
+      repositoriesQuery.data?.pageInfo.hasNextPage !== true ||
+      endCursor === null ||
+      endCursor === undefined
+    ) {
+      return;
+    }
+
+    setCursorHistory((previous) => {
+      if (previous[currentPage] === endCursor) {
+        return previous;
+      }
+
+      return [...previous.slice(0, currentPage), endCursor];
+    });
+    setCurrentPage((previous) => previous + 1);
+  }
+
+  function renderPagerButton(label: string, disabled: boolean, onClick: () => void): JSX.Element {
+    return (
+      <button
+        type="button"
+        className={clsx(PAGER_LINK_CLASS, disabled && "cursor-default text-slate-400")}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {label}
+      </button>
+    );
   }
 
   const filteredRepositories = filterRepositories(repositories, appliedFilters);
@@ -162,6 +214,10 @@ export function RepositoriesScreen(): JSX.Element {
     (repository) => repository.visibility === "INTERNAL",
   ).length;
   const publicCount = filteredRepositories.filter((repository) => repository.visibility === "PUBLIC").length;
+  const totalCount = repositoriesQuery.data?.totalCount ?? repositories.length;
+  const visibleFrom = repositories.length === 0 ? 0 : (currentPage - 1) * QUERY_SIZE + 1;
+  const visibleTo = repositories.length === 0 ? 0 : visibleFrom + repositories.length - 1;
+  const hasNextPage = repositoriesQuery.data?.pageInfo.hasNextPage ?? false;
   const quickFilters = [
     {
       label: "★ 直近プッシュ順",
@@ -253,7 +309,7 @@ export function RepositoriesScreen(): JSX.Element {
     >
       <Panel
         title="検索条件"
-        action={<span className={MUTED_CLASS}>画面内絞込 / 初回表示は直近10件</span>}
+        action={<span className={MUTED_CLASS}>画面内絞込 / GitHubカーソルページ切替</span>}
         bodyClassName="p-0"
       >
         <form
@@ -370,7 +426,7 @@ export function RepositoriesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {repositoriesQuery.isPending
               ? "GitHub から読込中..."
-              : `表示 ${filteredRepositories.length}件 / 利用可能全 ${repositoriesQuery.data?.totalCount ?? repositories.length}件`}
+              : `取得 ${visibleFrom}～${visibleTo}件目 / 表示 ${filteredRepositories.length}件 / 利用可能全 ${totalCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -419,7 +475,9 @@ export function RepositoriesScreen(): JSX.Element {
             ) : (
               filteredRepositories.map((repository, index) => (
                 <tr key={repository.id}>
-                  <td className="text-center">{String(index + 1).padStart(3, "0")}</td>
+                  <td className="text-center">
+                    {String((currentPage - 1) * QUERY_SIZE + index + 1).padStart(3, "0")}
+                  </td>
                   <td>
                     <div className={MONO_CLASS}>
                       <Link
@@ -452,6 +510,17 @@ export function RepositoriesScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <div className={PAGER_CLASS}>
+          <span className={MUTED_CLASS}>
+            {repositoriesQuery.isPending
+              ? `ページ ${currentPage} を取得中...`
+              : `ページ ${currentPage} / 1ページ ${QUERY_SIZE}件`}
+          </span>
+          {renderPagerButton("≪先頭", currentPage === 1 || repositoriesQuery.isPending, goToFirstPage)}
+          {renderPagerButton("＜前", currentPage === 1 || repositoriesQuery.isPending, goToPreviousPage)}
+          <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>現在 {currentPage}</span>
+          {renderPagerButton("次＞", !hasNextPage || repositoriesQuery.isPending, goToNextPage)}
+        </div>
       </Panel>
     </JtcChrome>
   );
