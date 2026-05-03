@@ -9,6 +9,7 @@ import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
   formatGitHubFileChangeType,
@@ -290,7 +291,22 @@ export function PullRequestDetailScreen({
                   closingIssues.map((issue) => (
                     <tr key={issue.id}>
                       <td className={MONO_CLASS}>#{issue.number}</td>
-                      <td>{issue.title}</td>
+                      <td>
+                        {coordinates === null ? (
+                          issue.title
+                        ) : (
+                          <Link
+                            to={`/issues/${createRepositoryScopedNumberRouteId({
+                              owner: coordinates.owner,
+                              name: coordinates.name,
+                              number: issue.number,
+                            })}`}
+                            className={TEXT_LINK_CLASS}
+                          >
+                            {issue.title}
+                          </Link>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

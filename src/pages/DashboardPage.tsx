@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
+import { Link } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
@@ -7,7 +8,13 @@ import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHub
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
-import { describeGitHubError, formatGitHubDateTime, formatJapaneseEraDateTime } from "../app/github.ts";
+import {
+  createRepositoryPath,
+  createRepositoryScopedNumberRouteId,
+  describeGitHubError,
+  formatGitHubDateTime,
+  formatJapaneseEraDateTime,
+} from "../app/github.ts";
 import {
   DashboardDocument,
   DashboardRecentRepositoriesDocument,
@@ -363,17 +370,33 @@ export function DashboardScreen(): JSX.Element {
                   return (
                     <div key={pullRequest.id} className="space-y-1 px-2 py-2 text-xs">
                       <div className="font-bold">
-                        <a
-                          href={pullRequest.url}
-                          target="_blank"
-                          rel="noreferrer"
+                        <Link
+                          to={`/pull-requests/${createRepositoryScopedNumberRouteId(
+                            `${pullRequest.repository.nameWithOwner}/${pullRequest.number}`,
+                          )}`}
                           className={TEXT_LINK_CLASS}
                         >
                           プルリクエスト #{pullRequest.number}
-                        </a>
+                        </Link>
                       </div>
-                      <div>{pullRequest.title}</div>
-                      <div className={MONO_CLASS}>{pullRequest.repository.nameWithOwner}</div>
+                      <div>
+                        <Link
+                          to={`/pull-requests/${createRepositoryScopedNumberRouteId(
+                            `${pullRequest.repository.nameWithOwner}/${pullRequest.number}`,
+                          )}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {pullRequest.title}
+                        </Link>
+                      </div>
+                      <div className={MONO_CLASS}>
+                        <Link
+                          to={`/repositories/${createRepositoryPath(pullRequest.repository.nameWithOwner)}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {pullRequest.repository.nameWithOwner}
+                        </Link>
+                      </div>
                       <div className="flex items-center justify-between gap-2">
                         <JtcStatusTag tone={status.tone}>{status.label}</JtcStatusTag>
                         <span className={clsx("text-slate-600", MONO_CLASS)}>
@@ -411,12 +434,33 @@ export function DashboardScreen(): JSX.Element {
                   return (
                     <div key={issue.id} className="space-y-1 px-2 py-2 text-xs">
                       <div className="font-bold">
-                        <a href={issue.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                        <Link
+                          to={`/issues/${createRepositoryScopedNumberRouteId(
+                            `${issue.repository.nameWithOwner}/${issue.number}`,
+                          )}`}
+                          className={TEXT_LINK_CLASS}
+                        >
                           チケット #{issue.number}
-                        </a>
+                        </Link>
                       </div>
-                      <div>{issue.title}</div>
-                      <div className={MONO_CLASS}>{issue.repository.nameWithOwner}</div>
+                      <div>
+                        <Link
+                          to={`/issues/${createRepositoryScopedNumberRouteId(
+                            `${issue.repository.nameWithOwner}/${issue.number}`,
+                          )}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {issue.title}
+                        </Link>
+                      </div>
+                      <div className={MONO_CLASS}>
+                        <Link
+                          to={`/repositories/${createRepositoryPath(issue.repository.nameWithOwner)}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {issue.repository.nameWithOwner}
+                        </Link>
+                      </div>
                       <div className="flex items-center justify-between gap-2">
                         <JtcStatusTag tone={status.tone}>{status.label}</JtcStatusTag>
                         <span className={clsx("text-slate-600", MONO_CLASS)}>
@@ -461,7 +505,14 @@ export function DashboardScreen(): JSX.Element {
                 ) : (
                   recentRepositories.map((repository: RecentRepositoryNode) => (
                     <tr key={repository.id}>
-                      <td className={MONO_CLASS}>{repository.name}</td>
+                      <td className={MONO_CLASS}>
+                        <Link
+                          to={`/repositories/${createRepositoryPath(repository.nameWithOwner)}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {repository.name}
+                        </Link>
+                      </td>
                       <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
                       <td className={clsx("text-center", MONO_CLASS)}>
                         {formatGitHubDateTime(repository.pushedAt)}

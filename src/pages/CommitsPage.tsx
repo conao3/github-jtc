@@ -13,6 +13,7 @@ import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryRouteId,
+  createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
   formatJapaneseEraDate,
@@ -763,7 +764,11 @@ export function CommitsScreen(): JSX.Element {
                         {commit.abbreviatedOid}
                       </a>
                     </td>
-                    <td>{commit.messageHeadline}</td>
+                    <td>
+                      <Link to={`/commits/${selectedRepoId}/${commit.oid}/diff`} className={TEXT_LINK_CLASS}>
+                        {commit.messageHeadline}
+                      </Link>
+                    </td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>{branchName}</td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
                       {getCommitAuthorLabel(commit)}
@@ -777,14 +782,16 @@ export function CommitsScreen(): JSX.Element {
                       {relatedPullRequest === null ? (
                         "－"
                       ) : (
-                        <a
-                          href={relatedPullRequest.url}
-                          target="_blank"
-                          rel="noreferrer"
+                        <Link
+                          to={`/pull-requests/${createRepositoryScopedNumberRouteId({
+                            owner: selectedCoordinates.owner,
+                            name: selectedCoordinates.name,
+                            number: relatedPullRequest.number,
+                          })}`}
                           className={clsx(TEXT_LINK_CLASS, MONO_CLASS, "text-xs")}
                         >
                           {relatedPullRequest.label}
-                        </a>
+                        </Link>
                       )}
                     </td>
                     <td className="text-center">

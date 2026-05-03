@@ -13,6 +13,7 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
+  createRepositoryPath,
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
@@ -24,6 +25,7 @@ import {
   MONO_CLASS,
   MUTED_CLASS,
   TABLE_CLASS,
+  TEXT_LINK_CLASS,
   TODO_LIST_CLASS,
   TODO_LIST_ITEM_CLASS,
   buttonClassName,
@@ -344,25 +346,24 @@ export function PullRequestsScreen(): JSX.Element {
               <th className="w-36">更新日時</th>
               <th className="w-20">変更</th>
               <th className="w-16">コメント</th>
-              <th className="w-16">操作</th>
             </tr>
           </thead>
           <tbody>
             {pullRequestsQuery.loading ? (
               <tr>
-                <td colSpan={8} className="py-6 text-center text-slate-600">
+                <td colSpan={7} className="py-6 text-center text-slate-600">
                   GitHub からプルリクエスト一覧を取得しています。
                 </td>
               </tr>
             ) : pullRequestsQuery.error ? (
               <GitHubTableStateRow
-                colSpan={8}
+                colSpan={7}
                 tone="error"
                 {...describeGitHubError(pullRequestsQuery.error, "プルリクエスト一覧の取得に失敗しました。")}
               />
             ) : pagedPullRequests.length === 0 ? (
               <GitHubTableStateRow
-                colSpan={8}
+                colSpan={7}
                 tone="empty"
                 title={
                   hasActivePullRequestFilters(appliedFilters)
@@ -392,13 +393,20 @@ export function PullRequestsScreen(): JSX.Element {
                       </Link>
                     </td>
                     <td>
-                      <div className="font-bold">{pullRequest.title}</div>
+                      <Link to={`/pull-requests/${routeId}`} className={clsx("font-bold", TEXT_LINK_CLASS)}>
+                        {pullRequest.title}
+                      </Link>
                       <div className={clsx("text-xs text-slate-600", MONO_CLASS)}>
                         作成者: {pullRequest.author?.login ?? "不明"}
                       </div>
                     </td>
                     <td className={clsx("text-center", MONO_CLASS)}>
-                      {pullRequest.repository.nameWithOwner}
+                      <Link
+                        to={`/repositories/${createRepositoryPath(pullRequest.repository.nameWithOwner)}`}
+                        className={TEXT_LINK_CLASS}
+                      >
+                        {pullRequest.repository.nameWithOwner}
+                      </Link>
                     </td>
                     <td className="text-center">
                       <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
@@ -406,16 +414,6 @@ export function PullRequestsScreen(): JSX.Element {
                     <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{getPullRequestDelta(pullRequest)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{pullRequest.comments.totalCount}</td>
-                    <td className="text-center">
-                      <a
-                        href={pullRequest.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-900 underline"
-                      >
-                        GitHub
-                      </a>
-                    </td>
                   </tr>
                 );
               })

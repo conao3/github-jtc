@@ -569,27 +569,26 @@ export function RepositoryDetailScreen({
                 <th className="w-20">作成者</th>
                 <th className="w-36">日時</th>
                 <th className="w-20">関連</th>
-                <th className="w-16">操作</th>
               </tr>
             </thead>
             <tbody>
               {commitHistoryQuery.loading && recentCommits.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="empty"
                   title="コミット履歴を取得しています。"
                   detail="GitHub から既定ブランチの履歴を読み込んでいます。"
                 />
               ) : commitHistoryQuery.error ? (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="error"
                   title="コミット履歴の取得に失敗しました。"
                   detail={describeGitHubError(commitHistoryQuery.error, "").detail}
                 />
               ) : recentCommits.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="empty"
                   title="表示可能なコミット履歴はありません。"
                   detail="既定ブランチの履歴が空か、このトークンでは履歴を参照できません。"
@@ -602,7 +601,23 @@ export function RepositoryDetailScreen({
                   return (
                     <tr key={commit.id}>
                       <td className={MONO_CLASS}>{commit.abbreviatedOid}</td>
-                      <td>{commit.messageHeadline}</td>
+                      <td>
+                        {coordinates === null ? (
+                          <a href={commit.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                            {commit.messageHeadline}
+                          </a>
+                        ) : (
+                          <Link
+                            to={`/commits/${createRepositoryRouteId({
+                              owner: coordinates.owner,
+                              name: coordinates.name,
+                            })}/${commit.oid}/diff`}
+                            className={TEXT_LINK_CLASS}
+                          >
+                            {commit.messageHeadline}
+                          </Link>
+                        )}
+                      </td>
                       <td className="text-center">
                         {commit.author?.user?.login ?? commit.author?.name ?? "不明"}
                       </td>
@@ -619,23 +634,6 @@ export function RepositoryDetailScreen({
                           >
                             #{relatedPullRequest.number}
                           </a>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        {coordinates === null ? (
-                          <a href={commit.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                            GitHub
-                          </a>
-                        ) : (
-                          <Link
-                            to={`/commits/${createRepositoryRouteId({
-                              owner: coordinates.owner,
-                              name: coordinates.name,
-                            })}/${commit.oid}/diff`}
-                            className={TEXT_LINK_CLASS}
-                          >
-                            差分
-                          </Link>
                         )}
                       </td>
                     </tr>
@@ -800,20 +798,19 @@ export function RepositoryDetailScreen({
                 <th className="w-20">状態</th>
                 <th className="w-16">コメント</th>
                 <th className="w-36">更新日時</th>
-                <th className="w-16">操作</th>
               </tr>
             </thead>
             <tbody>
               {pullRequestsQuery.loading && visiblePullRequests.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="empty"
                   title="プルリクエスト一覧を取得しています。"
                   detail="GitHub からこのリポジトリのプルリクエストを読み込んでいます。"
                 />
               ) : pullRequestsQuery.error ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="error"
                   {...describeGitHubError(
                     pullRequestsQuery.error,
@@ -822,7 +819,7 @@ export function RepositoryDetailScreen({
                 />
               ) : visiblePullRequests.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="empty"
                   title="表示条件に一致するプルリクエストはありません。"
                   detail={
@@ -835,14 +832,7 @@ export function RepositoryDetailScreen({
                 visiblePullRequests.map((pullRequest) => (
                   <tr key={pullRequest.id}>
                     <td className={clsx("text-center", MONO_CLASS)}>#{pullRequest.number}</td>
-                    <td>{pullRequest.title}</td>
-                    <td className="text-center">{pullRequest.author?.login ?? "不明"}</td>
-                    <td className="text-center">{getPullRequestStatusLabel(pullRequest)}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {pullRequest.comments?.totalCount ?? 0}
-                    </td>
-                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
-                    <td className="text-center">
+                    <td>
                       {coordinates === null || pullRequest.number === undefined ? (
                         <a
                           href={pullRequest.url}
@@ -850,7 +840,7 @@ export function RepositoryDetailScreen({
                           rel="noreferrer"
                           className={TEXT_LINK_CLASS}
                         >
-                          GitHub
+                          {pullRequest.title}
                         </a>
                       ) : (
                         <Link
@@ -861,10 +851,16 @@ export function RepositoryDetailScreen({
                           })}`}
                           className={TEXT_LINK_CLASS}
                         >
-                          詳細
+                          {pullRequest.title}
                         </Link>
                       )}
                     </td>
+                    <td className="text-center">{pullRequest.author?.login ?? "不明"}</td>
+                    <td className="text-center">{getPullRequestStatusLabel(pullRequest)}</td>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      {pullRequest.comments?.totalCount ?? 0}
+                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
                   </tr>
                 ))
               )}

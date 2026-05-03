@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
+import { Link } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
@@ -8,6 +9,7 @@ import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  createRepositoryPath,
   describeGitHubError,
   formatGitHubDate,
   formatGitHubDateTime,
@@ -161,7 +163,14 @@ export function ProfileScreen(): JSX.Element {
                 ) : (
                   repositories.map((repository) => (
                     <tr key={repository.id}>
-                      <td className={MONO_CLASS}>{repository.name}</td>
+                      <td className={MONO_CLASS}>
+                        <Link
+                          to={`/repositories/${createRepositoryPath(repository.nameWithOwner)}`}
+                          className={TEXT_LINK_CLASS}
+                        >
+                          {repository.name}
+                        </Link>
+                      </td>
                       <td className="text-center">
                         <JtcStatusTag tone={repository.isPrivate ? "pending" : "done"}>
                           {repository.isPrivate ? "非公開" : "公開"}
@@ -337,9 +346,12 @@ export function ProfileScreen(): JSX.Element {
                 <tr key={repository.id}>
                   <td className="text-center">{index + 1}</td>
                   <td className={MONO_CLASS}>
-                    <a href={repository.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                    <Link
+                      to={`/repositories/${createRepositoryPath(repository.nameWithOwner)}`}
+                      className={TEXT_LINK_CLASS}
+                    >
                       {repository.nameWithOwner}
-                    </a>
+                    </Link>
                   </td>
                   <td className="text-center">{formatGitHubPermission(repository.viewerPermission)}</td>
                   <td className="text-center">
