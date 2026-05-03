@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
@@ -37,6 +37,7 @@ import {
 } from "../app/styles.ts";
 
 type RepositoryDetailTab = "files" | "commits" | "pullRequests" | "refs";
+type PullRequestStateFilter = "open" | "all" | "merged" | "closed";
 
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
@@ -111,6 +112,14 @@ function getPullRequestStatusLabel(pullRequest: {
     return "下書き";
   }
 
+  if (pullRequest.state === "MERGED") {
+    return "マージ済み";
+  }
+
+  if (pullRequest.state === "CLOSED") {
+    return "クローズ";
+  }
+
   if (pullRequest.reviewDecision !== null) {
     return formatGitHubReviewDecision(pullRequest.reviewDecision);
   }
@@ -122,12 +131,45 @@ function getPullRequestStatusLabel(pullRequest: {
   return pullRequest.state;
 }
 
+function isRepositoryDetailTab(value: string | null): value is RepositoryDetailTab {
+  return value === "files" || value === "commits" || value === "pullRequests" || value === "refs";
+}
+
+function isPullRequestStateFilter(value: string | null): value is PullRequestStateFilter {
+  return value === "open" || value === "all" || value === "merged" || value === "closed";
+}
+
+function parseRepositoryDetailTab(
+  tabValue: string | null,
+  pullRequestStateValue: string | null,
+): RepositoryDetailTab {
+  if (isRepositoryDetailTab(tabValue)) {
+    return tabValue;
+  }
+
+  if (isPullRequestStateFilter(pullRequestStateValue)) {
+    return "pullRequests";
+  }
+
+  return "files";
+}
+
+function parsePullRequestStateFilter(value: string | null): PullRequestStateFilter {
+  return isPullRequestStateFilter(value) ? value : "open";
+}
+
 export function RepositoryDetailScreen({
   repoId = "payment-system-core",
 }: {
   readonly repoId?: string;
 }): JSX.Element {
-  const [activeTab, setActiveTab] = useState<RepositoryDetailTab>("files");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<RepositoryDetailTab>(() =>
+    parseRepositoryDetailTab(searchParams.get("tab"), searchParams.get("prState")),
+  );
+  const [pullRequestStateFilter, setPullRequestStateFilter] = useState<PullRequestStateFilter>(() =>
+    parsePullRequestStateFilter(searchParams.get("prState")),
+  );
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
@@ -151,6 +193,20 @@ export function RepositoryDetailScreen({
       : [];
   const recentCommits = (latestCommit?.history.nodes ?? []).filter(isPresent);
   const recentPullRequests = (repository?.pullRequests.nodes ?? []).filter(isPresent);
+  const visiblePullRequests = recentPullRequests.filter((pullRequest) => {
+    switch (pullRequestStateFilter) {
+      case "all":
+        return true;
+      case "open":
+        return pullRequest.state === "OPEN";
+      case "merged":
+        return pullRequest.state === "MERGED";
+      case "closed":
+        return pullRequest.state === "CLOSED";
+      default:
+        return true;
+    }
+  });
   const branchRefs = (repository?.refs?.nodes ?? []).filter(isPresent);
   const tagRefs = (repository?.tagRefs?.nodes ?? []).filter(isPresent);
   const readmeText =
@@ -161,13 +217,36 @@ export function RepositoryDetailScreen({
     coordinates === null ? null : createRepositoryPath({ owner: coordinates.owner, name: coordinates.name });
   const combinedRefCount = (repository?.refs?.totalCount ?? 0) + (repository?.tagRefs?.totalCount ?? 0);
 
+  useEffect(() => {
+    setActiveTab(parseRepositoryDetailTab(searchParams.get("tab"), searchParams.get("prState")));
+    setPullRequestStateFilter(parsePullRequestStateFilter(searchParams.get("prState")));
+  }, [searchParams]);
+
+  function updateTabSearchParams(tab: RepositoryDetailTab, pullRequestState: PullRequestStateFilter): void {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    if (tab === "files") {
+      nextSearchParams.delete("tab");
+    } else {
+      nextSearchParams.set("tab", tab);
+    }
+
+    if (tab === "pullRequests" && pullRequestState !== "open") {
+      nextSearchParams.set("prState", pullRequestState);
+    } else {
+      nextSearchParams.delete("prState");
+    }
+
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
   function renderTabButton(tab: RepositoryDetailTab, label: string, badge?: number): JSX.Element {
     return (
       <button
         key={tab}
         type="button"
         className={clsx(TAB_CLASS, activeTab === tab && TAB_ACTIVE_CLASS)}
-        onClick={() => setActiveTab(tab)}
+        onClick={() => updateTabSearchParams(tab, pullRequestStateFilter)}
       >
         {label}
         {badge === undefined ? null : <span className={TAB_BADGE_CLASS}>{badge}</span>}
@@ -339,8 +418,31 @@ export function RepositoryDetailScreen({
     if (activeTab === "pullRequests") {
       return (
         <>
-          <div className="border-b border-b-slate-300 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
-            オープン中プルリクエストの最新 {recentPullRequests.length} 件を表示しています。
+          <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+            <label>状態：</label>
+            <select
+              className="border border-slate-400 px-1 py-0.5"
+              value={pullRequestStateFilter}
+              onChange={(event) =>
+                updateTabSearchParams("pullRequests", event.target.value as PullRequestStateFilter)
+              }
+            >
+              <option value="open">オープン（既定）</option>
+              <option value="all">すべて</option>
+              <option value="merged">マージ済み</option>
+              <option value="closed">クローズ</option>
+            </select>
+            <span>
+              最新 {recentPullRequests.length} 件を取得済みです。現在は{" "}
+              {pullRequestStateFilter === "open"
+                ? "オープン"
+                : pullRequestStateFilter === "all"
+                  ? "すべて"
+                  : pullRequestStateFilter === "merged"
+                    ? "マージ済み"
+                    : "クローズ"}{" "}
+              を表示しています。
+            </span>
           </div>
 
           <table className={TABLE_CLASS}>
@@ -356,15 +458,15 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {recentPullRequests.length === 0 ? (
+              {visiblePullRequests.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={7}
                   tone="empty"
-                  title="オープン中プルリクエストはありません。"
-                  detail="現在レビュー待ち・作業中のプルリクエストはありません。"
+                  title="表示条件に一致するプルリクエストはありません。"
+                  detail="状態の絞り込みを「すべて」に切り替えると、取得済みの全プルリクエストを確認できます。"
                 />
               ) : (
-                recentPullRequests.map((pullRequest) => (
+                visiblePullRequests.map((pullRequest) => (
                   <tr key={pullRequest.id}>
                     <td className={clsx("text-center", MONO_CLASS)}>#{pullRequest.number}</td>
                     <td>{pullRequest.title}</td>
@@ -518,7 +620,7 @@ export function RepositoryDetailScreen({
                 ["ウォッチャー数", String(repository?.watchers.totalCount ?? 0)],
                 ["スター数", String(repository?.stargazerCount ?? 0)],
                 ["オープン中チケット", `${repository?.issues.totalCount ?? 0} 件`],
-                ["オープン中プルリクエスト", `${repository?.pullRequests.totalCount ?? 0} 件`],
+                ["オープン中プルリクエスト", `${repository?.openPullRequests.totalCount ?? 0} 件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>

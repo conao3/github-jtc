@@ -716,6 +716,7 @@ export type RepositoryDetailQuery = {
     forkCount: number;
     watchers: { totalCount: number };
     issues: { totalCount: number };
+    openPullRequests: { totalCount: number };
     pullRequests: {
       totalCount: number;
       nodes: Array<{
@@ -3101,17 +3102,28 @@ export const RepositoryDetailDocument = {
                 },
                 {
                   kind: "Field",
+                  alias: { kind: "Name", value: "openPullRequests" },
+                  name: { kind: "Name", value: "pullRequests" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "states" },
+                      value: { kind: "EnumValue", value: "OPEN" },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                  },
+                },
+                {
+                  kind: "Field",
                   name: { kind: "Name", value: "pullRequests" },
                   arguments: [
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "10" },
-                    },
-                    {
-                      kind: "Argument",
-                      name: { kind: "Name", value: "states" },
-                      value: { kind: "EnumValue", value: "OPEN" },
+                      value: { kind: "IntValue", value: "30" },
                     },
                     {
                       kind: "Argument",

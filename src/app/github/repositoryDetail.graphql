@@ -25,7 +25,10 @@ query RepositoryDetail(
     issues(states: OPEN) {
       totalCount
     }
-    pullRequests(first: 10, states: OPEN, orderBy: { field: UPDATED_AT, direction: DESC }) {
+    openPullRequests: pullRequests(states: OPEN) {
+      totalCount
+    }
+    pullRequests(first: 30, orderBy: { field: UPDATED_AT, direction: DESC }) {
       totalCount
       nodes {
         id
