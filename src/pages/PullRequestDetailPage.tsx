@@ -45,6 +45,34 @@ const PULL_REQUEST_DETAIL_FILES_PAGE_SIZE = 20;
 const PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE = 5;
 const PULL_REQUEST_DETAIL_COMMENTS_PAGE_SIZE = 10;
 
+function renderUserAvatar(
+  login: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  sizeClassName = "size-8",
+): JSX.Element {
+  if (avatarUrl === null || avatarUrl === undefined || avatarUrl.length === 0) {
+    return (
+      <span
+        className={clsx(
+          "inline-flex items-center justify-center rounded-sm border border-slate-400 bg-slate-200 text-xs font-bold text-slate-600",
+          sizeClassName,
+        )}
+        aria-hidden="true"
+      >
+        人
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={avatarUrl}
+      alt={`${login ?? "不明"} のアイコン`}
+      className={clsx("rounded-sm border border-slate-400 object-cover", sizeClassName)}
+    />
+  );
+}
+
 function getPullRequestState(pullRequest: GitHubPullRequestDetail): {
   readonly tone: "new" | "review" | "pending" | "done" | "rejected";
   readonly label: string;
@@ -362,9 +390,10 @@ export function PullRequestDetailScreen({
 
                   return (
                     <li key={review.id} className={TODO_LIST_ITEM_CLASS}>
-                      <span>
+                      <span className="inline-flex items-center gap-1">
+                        {renderUserAvatar(review.author?.login, review.author?.avatarUrl, "size-6")}
                         <JtcStatusTag tone={reviewState.tone}>{reviewState.label}</JtcStatusTag>
-                        <span className="ml-1">{review.author?.login ?? "不明"}</span>
+                        <span>{review.author?.login ?? "不明"}</span>
                       </span>
                       <span className={clsx("text-xs", MONO_CLASS)}>
                         {formatGitHubDateTime(review.submittedAt)}
@@ -622,11 +651,14 @@ export function PullRequestDetailScreen({
           ) : (
             comments.map((comment) => (
               <div key={comment.id} className="border border-slate-300 bg-white p-2 text-xs">
-                <div className="mb-1 font-bold text-blue-900">
-                  ● {comment.author?.login ?? "不明"}
-                  <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
-                    {formatGitHubDateTime(comment.publishedAt)}
-                  </span>
+                <div className="mb-1 flex items-start gap-2">
+                  {renderUserAvatar(comment.author?.login, comment.author?.avatarUrl)}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-blue-900">{comment.author?.login ?? "不明"}</div>
+                    <div className={clsx("text-xs font-normal text-slate-600", MONO_CLASS)}>
+                      {formatGitHubDateTime(comment.publishedAt)}
+                    </div>
+                  </div>
                 </div>
                 <div className="whitespace-pre-wrap">
                   {comment.bodyText.trim().length > 0 ? comment.bodyText : "本文なし"}
@@ -668,12 +700,15 @@ export function PullRequestDetailScreen({
 
               return (
                 <div key={review.id} className="border border-slate-300 bg-white p-2 text-xs">
-                  <div className="mb-1 font-bold text-blue-900">
-                    ● {review.author?.login ?? "不明"}
-                    <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
-                      {formatGitHubDateTime(review.submittedAt)}
-                    </span>
-                    <span className="ml-2">
+                  <div className="mb-1 flex items-start gap-2">
+                    {renderUserAvatar(review.author?.login, review.author?.avatarUrl)}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-blue-900">{review.author?.login ?? "不明"}</div>
+                      <div className={clsx("text-xs font-normal text-slate-600", MONO_CLASS)}>
+                        {formatGitHubDateTime(review.submittedAt)}
+                      </div>
+                    </div>
+                    <span className="pt-0.5">
                       <JtcStatusTag tone={reviewState.tone}>{reviewState.label}</JtcStatusTag>
                     </span>
                   </div>
