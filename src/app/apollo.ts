@@ -1,3 +1,4 @@
+import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client";
 import { RetryLink } from "@apollo/client/link/retry";
 
@@ -78,4 +79,25 @@ export const githubApolloClient = createGitHubApolloClient();
 
 export async function clearGitHubApolloStore(): Promise<void> {
   await githubApolloClient.clearStore();
+}
+
+export function getCachedQueryFetchPolicy<TData, TVariables extends Record<string, unknown>>(
+  query: TypedDocumentNode<TData, TVariables>,
+  variables: TVariables,
+  skip = false,
+): "cache-first" | "cache-only" | undefined {
+  if (skip) {
+    return undefined;
+  }
+
+  try {
+    const cached = githubApolloClient.readQuery({
+      query,
+      variables,
+    });
+
+    return cached === null ? "cache-first" : "cache-only";
+  } catch {
+    return "cache-first";
+  }
 }

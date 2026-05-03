@@ -3,6 +3,7 @@ import { useQuery } from "@apollo/client/react";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
+import { getCachedQueryFetchPolicy } from "../app/apollo.ts";
 import { useAuthSession } from "../app/auth.tsx";
 import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
@@ -291,77 +292,124 @@ export function RepositoryDetailScreen({
   const coordinates = parseRepositoryRouteId(repoId);
   const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
   const browserPath = normalizeRepositoryBrowserPath(searchParams.get("path"));
+  const repositoryVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    readmeExpression: "HEAD:README.md",
+  };
+  const issuesVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    first: REPOSITORY_DETAIL_ISSUE_PAGE_SIZE,
+    after: issuesPager.currentCursor,
+  };
+  const pullRequestsVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    first: REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE,
+    after: pullRequestsPager.currentCursor,
+    states: getPullRequestStates(pullRequestStateFilter),
+  };
+  const branchesVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    first: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
+    after: branchesPager.currentCursor,
+  };
+  const tagsVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    first: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
+    after: tagsPager.currentCursor,
+  };
+  const languagesVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    first: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
+    after: languagesPager.currentCursor,
+  };
+  const commitHistoryVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    historyFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
+    historyAfter: currentCommitCursor,
+    tagsFirst: 1,
+  };
+  const fileBrowserVariables = {
+    owner: coordinates?.owner ?? "",
+    name: coordinates?.name ?? "",
+    expression: buildRepositoryObjectExpression(browserPath),
+  };
+  const shouldSkipRepositoryQuery = accessToken === undefined || coordinates === null;
+  const shouldSkipIssuesQuery = shouldSkipRepositoryQuery || activeTab !== "issues";
+  const shouldSkipPullRequestsQuery = shouldSkipRepositoryQuery || activeTab !== "pullRequests";
+  const shouldSkipBranchesQuery = shouldSkipRepositoryQuery || activeTab !== "refs";
+  const shouldSkipTagsQuery = shouldSkipRepositoryQuery || activeTab !== "refs";
+  const shouldSkipCommitHistoryQuery = shouldSkipRepositoryQuery || activeTab !== "commits";
+  const shouldSkipFileBrowserQuery = shouldSkipRepositoryQuery || activeTab !== "files";
   const repositoryQuery = useQuery(RepositoryDetailDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      readmeExpression: "HEAD:README.md",
-    },
+    skip: shouldSkipRepositoryQuery,
+    variables: repositoryVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      RepositoryDetailDocument,
+      repositoryVariables,
+      shouldSkipRepositoryQuery,
+    ),
   });
   const issuesQuery = useQuery(RepositoryIssuesDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      first: REPOSITORY_DETAIL_ISSUE_PAGE_SIZE,
-      after: issuesPager.currentCursor,
-    },
+    skip: shouldSkipIssuesQuery,
+    variables: issuesVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(RepositoryIssuesDocument, issuesVariables, shouldSkipIssuesQuery),
   });
   const pullRequestsQuery = useQuery(RepositoryPullRequestsDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      first: REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE,
-      after: pullRequestsPager.currentCursor,
-      states: getPullRequestStates(pullRequestStateFilter),
-    },
+    skip: shouldSkipPullRequestsQuery,
+    variables: pullRequestsVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      RepositoryPullRequestsDocument,
+      pullRequestsVariables,
+      shouldSkipPullRequestsQuery,
+    ),
   });
   const branchesQuery = useQuery(RepositoryBranchesDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      first: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
-      after: branchesPager.currentCursor,
-    },
+    skip: shouldSkipBranchesQuery,
+    variables: branchesVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      RepositoryBranchesDocument,
+      branchesVariables,
+      shouldSkipBranchesQuery,
+    ),
   });
   const tagsQuery = useQuery(RepositoryTagsDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      first: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
-      after: tagsPager.currentCursor,
-    },
+    skip: shouldSkipTagsQuery,
+    variables: tagsVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(RepositoryTagsDocument, tagsVariables, shouldSkipTagsQuery),
   });
   const languagesQuery = useQuery(RepositoryLanguagesDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      first: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
-      after: languagesPager.currentCursor,
-    },
+    skip: shouldSkipRepositoryQuery,
+    variables: languagesVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      RepositoryLanguagesDocument,
+      languagesVariables,
+      shouldSkipRepositoryQuery,
+    ),
   });
   const commitHistoryQuery = useQuery(CommitHistoryDocument, {
-    skip: accessToken === undefined || coordinates === null,
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      historyFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
-      historyAfter: currentCommitCursor,
-      tagsFirst: 1,
-    },
+    skip: shouldSkipCommitHistoryQuery,
+    variables: commitHistoryVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      CommitHistoryDocument,
+      commitHistoryVariables,
+      shouldSkipCommitHistoryQuery,
+    ),
   });
   const fileBrowserQuery = useQuery(RepositoryFileBrowserDocument, {
-    skip: accessToken === undefined || coordinates === null || activeTab !== "files",
-    variables: {
-      owner: coordinates?.owner ?? "",
-      name: coordinates?.name ?? "",
-      expression: buildRepositoryObjectExpression(browserPath),
-    },
+    skip: shouldSkipFileBrowserQuery,
+    variables: fileBrowserVariables,
+    fetchPolicy: getCachedQueryFetchPolicy(
+      RepositoryFileBrowserDocument,
+      fileBrowserVariables,
+      shouldSkipFileBrowserQuery,
+    ),
   });
   const repository = repositoryQuery.data?.repository ?? repositoryQuery.previousData?.repository;
   const latestCommit =
