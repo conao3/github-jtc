@@ -1,12 +1,22 @@
 import clsx from "clsx";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { FormErrorList } from "../app/components/FormErrorList.tsx";
+import { GitHubInlineState } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
+import {
+  createGitHubRepository,
+  createRepositoryRouteId,
+  describeGitHubError,
+  fetchGitHubViewer,
+} from "../app/github.ts";
 import {
   FLOW_WRAP_CLASS,
   FLOW_STEP_META_CLASS,
@@ -105,11 +115,70 @@ const steps = [
   ["future", "STEP 5", "リポジトリ作成", ["担当：基盤運用部（自動）"], "未着手", "required"],
 ] as const;
 
+function getRepositoryVisibility(values: RepositoryCreateFormValues): "PUBLIC" | "PRIVATE" {
+  if (values.confidentiality === "公開可" && values.containsPersonalInfo === "含まない") {
+    return "PUBLIC";
+  }
+
+  return "PRIVATE";
+}
+
+function getRepositoryVisibilitySummary(values: RepositoryCreateFormValues): string {
+  return getRepositoryVisibility(values) === "PUBLIC"
+    ? "公開可 / 個人情報なし のため PUBLIC として作成"
+    : "社外秘・社内秘・個人情報含む のいずれかのため PRIVATE として作成";
+}
+
 export function RepositoryCreateScreen(): JSX.Element {
+  const sessionQuery = useAuthSession();
+  const queryClient = useQueryClient();
+  const accessToken = sessionQuery.data?.accessToken;
+  const viewerQuery = useQuery({
+    queryKey: ["github", "viewer", "repository-create"],
+    enabled: accessToken !== undefined,
+    queryFn: () => fetchGitHubViewer(accessToken ?? ""),
+  });
+  const createRepositoryMutation = useMutation({
+    mutationFn: async (value: RepositoryCreateFormValues) => {
+      if (accessToken === undefined) {
+        throw new Error("GitHub access token がありません。再ログインしてください。");
+      }
+
+      const viewer = viewerQuery.data;
+
+      if (viewer === undefined) {
+        throw new Error("GitHub viewer 情報の取得完了後に再試行してください。");
+      }
+
+      return await createGitHubRepository(accessToken, {
+        name: value.repositoryName,
+        description: value.description,
+        hasIssuesEnabled: true,
+        hasWikiEnabled: false,
+        ownerId: viewer.id,
+        visibility: getRepositoryVisibility(value),
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["github"] });
+    },
+  });
   const form = useForm({
     defaultValues: initialRepositoryCreateValues,
-    onSubmit: async () => {},
+    onSubmit: async ({ value }) => {
+      await createRepositoryMutation.mutateAsync(value);
+    },
   });
+  const applicant = sessionQuery.data?.user;
+  const submittedValues = form.state.values;
+  const createdRepository = createRepositoryMutation.data;
+  const createdRepositoryRouteId =
+    createdRepository === undefined
+      ? null
+      : createRepositoryRouteId({
+          owner: createdRepository.owner.login,
+          name: createdRepository.name,
+        });
 
   return (
     <JtcChrome
@@ -152,6 +221,46 @@ export function RepositoryCreateScreen(): JSX.Element {
             </ul>
           </Panel>
 
+          <Panel title="GitHub 実作成設定" bodyClassName="p-0">
+            {viewerQuery.isPending ? (
+              <div className="px-2 py-3 text-xs text-slate-600">GitHub viewer 情報を確認しています。</div>
+            ) : viewerQuery.isError ? (
+              <GitHubInlineState
+                tone="error"
+                className="px-2 py-3 text-xs"
+                {...describeGitHubError(viewerQuery.error, "GitHub 作成先の確認に失敗しました。")}
+              />
+            ) : viewerQuery.data === undefined ? (
+              <GitHubInlineState
+                tone="empty"
+                title="GitHub viewer 情報がありません。"
+                detail="再ログイン後にもう一度お試しください。"
+                className="px-2 py-3 text-xs"
+              />
+            ) : (
+              <table className={TABLE_CLASS}>
+                <tbody>
+                  <tr>
+                    <th>作成先 Owner</th>
+                    <td className={MONO_CLASS}>{viewerQuery.data.login}</td>
+                  </tr>
+                  <tr>
+                    <th>作成 API</th>
+                    <td className={MONO_CLASS}>createRepository</td>
+                  </tr>
+                  <tr>
+                    <th>visibility</th>
+                    <td>{getRepositoryVisibilitySummary(submittedValues)}</td>
+                  </tr>
+                  <tr>
+                    <th>PoC 範囲</th>
+                    <td>viewer 配下への作成のみ対応。Organization 配下作成は未対応。</td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </Panel>
+
           <Panel title="参考資料">
             <div className="space-y-1.5 text-xs">
               <div>
@@ -190,10 +299,11 @@ export function RepositoryCreateScreen(): JSX.Element {
           <span className="font-bold text-red-700">★</span>
           付項目は必須入力です。記載不備がある場合は差戻しとなりますのでご注意ください。詳細は
           <span className={TEXT_LINK_CLASS}>リポジトリ登録手順書.pdf</span>
-          をご確認ください。なお、
+          をご確認ください。なお、この PoC は
           <span className="font-bold text-red-700">
-            この画面は PoC 用モックであり、GitHub mutation には未接続です。
+            現在ログイン中の GitHub viewer 配下に直接 repository を作成
           </span>
+          します。担当者設定・添付書類・承認フローは JTC 演出用の mock です。
         </div>
 
         <Panel title="申請者情報（自動入力）" bodyClassName="p-0">
@@ -201,19 +311,23 @@ export function RepositoryCreateScreen(): JSX.Element {
             <tbody>
               <tr>
                 <th>申請者ID</th>
-                <td className={MONO_CLASS}>yamada.taro</td>
+                <td className={MONO_CLASS}>{applicant?.login ?? "GitHub viewer"}</td>
                 <th>氏名</th>
-                <td>山田 太郎</td>
+                <td>{applicant?.displayName ?? viewerQuery.data?.name ?? viewerQuery.data?.login ?? "－"}</td>
               </tr>
               <tr>
                 <th>所属</th>
-                <td colSpan={3}>第一システム事業本部 デジタル基盤統括部 基盤開発二課</td>
+                <td colSpan={3}>{applicant?.department ?? "GitHub App 連携ユーザー"}</td>
               </tr>
               <tr>
                 <th>連絡先</th>
-                <td className={MONO_CLASS}>内線 1024 / yamada.taro@jtc-corp.example.co.jp</td>
+                <td className={MONO_CLASS}>
+                  {viewerQuery.data?.login === undefined
+                    ? "GitHub viewer 読込中"
+                    : `${viewerQuery.data.login}@users.noreply.github.com`}
+                </td>
                 <th>申請日時</th>
-                <td className={MONO_CLASS}>令和8年5月3日 08:42</td>
+                <td className={MONO_CLASS}>{new Date().toLocaleString("ja-JP")}</td>
               </tr>
             </tbody>
           </table>
@@ -678,15 +792,54 @@ export function RepositoryCreateScreen(): JSX.Element {
         </Panel>
 
         <div className="mb-1 border border-slate-300 bg-white px-2 py-3 text-center">
+          {createRepositoryMutation.isError ? (
+            <GitHubInlineState
+              tone="error"
+              className="mb-3"
+              {...describeGitHubError(
+                createRepositoryMutation.error,
+                "GitHub repository の作成に失敗しました。",
+              )}
+            />
+          ) : null}
+          {createdRepository === undefined ? null : (
+            <div className="mb-3 border border-green-700 bg-green-100 px-3 py-2 text-left text-sm text-green-900">
+              <div className="font-bold">GitHub repository を作成しました。</div>
+              <div className={MONO_CLASS}>{createdRepository.nameWithOwner}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={createdRepository.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClassName({ tone: "primary", size: "sm", className: "inline-flex" })}
+                >
+                  GitHubで開く
+                </a>
+                {createdRepositoryRouteId === null ? null : (
+                  <Link
+                    to={`/repositories/${createdRepositoryRouteId}`}
+                    className={buttonClassName({ size: "sm", className: "inline-flex" })}
+                  >
+                    この画面で詳細表示
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
           <div className="mb-2 text-xs text-slate-600">
-            ※申請内容は登録後の修正が困難です。十分にご確認のうえ申請してください。
+            ※申請内容は登録後の修正が困難です。GitHub 上に実際の repository
+            を作成するため、十分に確認してから実行してください。
           </div>
           <button type="button" className={buttonClassName()}>
             下書き保存
           </button>
           <span className="px-1" />
-          <button type="submit" className={buttonClassName({ tone: "primary", size: "lg" })}>
-            申請する
+          <button
+            type="submit"
+            className={buttonClassName({ tone: "primary", size: "lg" })}
+            disabled={viewerQuery.isPending || viewerQuery.isError || createRepositoryMutation.isPending}
+          >
+            {createRepositoryMutation.isPending ? "GitHubに作成中..." : "申請して GitHub に作成"}
           </button>
           <span className="px-1" />
           <button type="button" className={buttonClassName()}>

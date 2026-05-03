@@ -5,6 +5,9 @@ import {
   CommitHistoryDocument,
   type CommitHistoryQuery,
   type CommitHistoryQueryVariables,
+  CreateRepositoryDocument,
+  type CreateRepositoryMutation,
+  type CreateRepositoryMutationVariables,
   DashboardDocument,
   type DashboardQuery,
   type DashboardQueryVariables,
@@ -48,6 +51,9 @@ export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnec
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
 export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
 export type GitHubDashboardPayload = DashboardQuery;
+export type GitHubCreatedRepository = NonNullable<
+  NonNullable<CreateRepositoryMutation["createRepository"]>["repository"]
+>;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;
@@ -103,6 +109,21 @@ async function executeGitHubQuery<TData, TVariables extends Record<string, unkno
   return result.data;
 }
 
+async function executeGitHubMutation<TData, TVariables extends Record<string, unknown>>(
+  accessToken: string,
+  mutation: TypedDocumentNode<TData, TVariables>,
+  variables: TVariables,
+): Promise<TData> {
+  const client = createGitHubApolloClient(accessToken);
+  const result = await client.mutate({ mutation, variables });
+
+  if (result.data === undefined || result.data === null) {
+    throw new Error("GitHub GraphQL mutation returned no data.");
+  }
+
+  return result.data;
+}
+
 export async function fetchGitHubViewer(accessToken: string): Promise<GitHubViewerProfile> {
   const data = await executeGitHubQuery(accessToken, ViewerDocument, {});
   const viewer = data.viewer;
@@ -151,6 +172,20 @@ export async function fetchGitHubDashboard(
   variables: DashboardQueryVariables,
 ): Promise<GitHubDashboardPayload> {
   return await executeGitHubQuery(accessToken, DashboardDocument, variables);
+}
+
+export async function createGitHubRepository(
+  accessToken: string,
+  input: CreateRepositoryMutationVariables["input"],
+): Promise<GitHubCreatedRepository> {
+  const data = await executeGitHubMutation(accessToken, CreateRepositoryDocument, { input });
+  const repository = data.createRepository?.repository;
+
+  if (repository === undefined || repository === null) {
+    throw new Error("GitHub did not return the created repository.");
+  }
+
+  return repository;
 }
 
 export async function fetchGitHubViewerPullRequests(

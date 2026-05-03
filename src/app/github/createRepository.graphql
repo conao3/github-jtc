@@ -1,0 +1,29 @@
+mutation CreateRepository($input: CreateRepositoryInput!) {
+  createRepository(input: $input) {
+    repository {
+      id
+      name
+      nameWithOwner
+      url
+      description
+      isPrivate
+      visibility
+      viewerPermission
+      createdAt
+      updatedAt
+      owner {
+        __typename
+        login
+        ... on User {
+          name
+        }
+        ... on Organization {
+          name
+        }
+      }
+      defaultBranchRef {
+        name
+      }
+    }
+  }
+}
