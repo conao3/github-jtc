@@ -1,0 +1,6 @@
+query CommitHistoryAuthor($login: String!) {
+  user(login: $login) {
+    id
+    login
+  }
+}

@@ -23,6 +23,8 @@ import {
   type GitHubViewerRepository,
 } from "../app/github.ts";
 import {
+  type CommitAuthor,
+  CommitHistoryAuthorDocument,
   CommitHistoryDocument,
   CommitHistoryPageDocument,
   ViewerRepositoriesDocument,
@@ -221,6 +223,10 @@ function hasActiveCommitFilters(filters: CommitFilterValues): boolean {
   );
 }
 
+function hasPageLocalCommitFilters(filters: CommitFilterValues): boolean {
+  return filters.branch.trim().length > 0 || filters.query.trim().length > 0;
+}
+
 function parseDateInput(value: string, endOfDay: boolean): number | null {
   if (value.trim().length === 0) {
     return null;
@@ -240,35 +246,39 @@ function parseDateInput(value: string, endOfDay: boolean): number | null {
   return parsed.getTime();
 }
 
+function toGitTimestamp(value: string, endOfDay: boolean): string | undefined {
+  const timestamp = parseDateInput(value, endOfDay);
+
+  if (timestamp === null) {
+    return undefined;
+  }
+
+  return new Date(timestamp).toISOString();
+}
+
+function getAuthorLoginLookup(value: string): string | null {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0 || trimmed.includes("@")) {
+    return null;
+  }
+
+  return trimmed;
+}
+
 function filterCommits(
   commits: ReadonlyArray<GitHubHistoryCommit>,
   filters: CommitFilterValues,
   defaultBranchName: string,
 ): GitHubHistoryCommit[] {
   const branch = filters.branch.trim().toLowerCase();
-  const author = filters.author.trim().toLowerCase();
   const query = filters.query.trim().toLowerCase();
-  const fromTime = parseDateInput(filters.fromDate, false);
-  const toTime = parseDateInput(filters.toDate, true);
 
   return commits.filter((commit) => {
     const commitBranch = getCommitBranchLabel(commit, defaultBranchName).toLowerCase();
     const relatedPullRequest = getCommitRelatedPullRequest(commit);
-    const committedTime = new Date(commit.committedDate).getTime();
 
     if (branch.length > 0 && commitBranch !== branch) {
-      return false;
-    }
-
-    if (author.length > 0 && !getCommitAuthorLabel(commit).toLowerCase().includes(author)) {
-      return false;
-    }
-
-    if (fromTime !== null && committedTime < fromTime) {
-      return false;
-    }
-
-    if (toTime !== null && committedTime > toTime) {
       return false;
     }
 
@@ -421,24 +431,57 @@ export function CommitsScreen(): JSX.Element {
             repository.owner.login === selectedCoordinates.owner &&
             repository.name === selectedCoordinates.name,
         ) ?? null);
+  const authorInput = appliedFilters.author.trim();
+  const authorLoginLookup = getAuthorLoginLookup(authorInput);
+  const authorLookupQuery = useQuery(CommitHistoryAuthorDocument, {
+    skip: accessToken === undefined || authorLoginLookup === null,
+    variables: {
+      login: authorLoginLookup ?? "",
+    },
+    fetchPolicy: "network-only",
+  });
+  const historyAuthor: CommitAuthor | undefined =
+    authorInput.length === 0
+      ? undefined
+      : authorInput.includes("@")
+        ? { emails: [authorInput] }
+        : authorLookupQuery.data?.user?.id === undefined
+          ? undefined
+          : { id: authorLookupQuery.data.user.id };
+  const waitingForAuthorLookup = authorLoginLookup !== null && authorLookupQuery.loading;
+  const unknownAuthor =
+    authorLoginLookup !== null &&
+    !authorLookupQuery.loading &&
+    authorLookupQuery.error === undefined &&
+    authorLookupQuery.data?.user === null;
+  const historySince = toGitTimestamp(appliedFilters.fromDate, false);
+  const historyUntil = toGitTimestamp(appliedFilters.toDate, true);
   const commitHistoryQuery = useQuery(CommitHistoryDocument, {
-    skip: accessToken === undefined || selectedCoordinates === null,
+    skip:
+      accessToken === undefined || selectedCoordinates === null || waitingForAuthorLookup || unknownAuthor,
     variables: {
       owner: selectedCoordinates?.owner ?? "",
       name: selectedCoordinates?.name ?? "",
       historyFirst: HISTORY_PAGE_SIZE,
       historyAfter: null,
+      historyAuthor,
+      historySince,
+      historyUntil,
       tagsFirst: TAG_PAGE_SIZE,
     },
     fetchPolicy: "network-only",
   });
   const commitHistoryPageQuery = useQuery(CommitHistoryPageDocument, {
-    skip: accessToken === undefined || selectedCoordinates === null,
+    skip:
+      accessToken === undefined || selectedCoordinates === null || waitingForAuthorLookup || unknownAuthor,
     variables: {
       owner: selectedCoordinates?.owner ?? "",
       name: selectedCoordinates?.name ?? "",
       historyFirst: DISPLAY_PAGE_SIZE,
       historyAfter: commitPager.currentCursor,
+      historyAuthor,
+      historySince,
+      historyUntil,
     },
     fetchPolicy: "network-only",
   });
@@ -473,7 +516,8 @@ export function CommitsScreen(): JSX.Element {
   const historyCount = commitPageHistory?.totalCount ?? history?.totalCount ?? commits.length;
   const barMax = Math.max(1, ...commitBars.map((bar) => bar.count));
   const hasActiveFilters = hasActiveCommitFilters(appliedFilters);
-  const pagerSummary = hasActiveFilters
+  const hasPageLocalFilters = hasPageLocalCommitFilters(appliedFilters);
+  const pagerSummary = hasPageLocalFilters
     ? `取得 ${pageCommits.length}件中 ${filteredPageCommits.length}件を表示 / ページ ${commitPager.currentPage}`
     : undefined;
 
@@ -547,7 +591,15 @@ export function CommitsScreen(): JSX.Element {
         </>
       }
     >
-      <Panel title="検索条件" bodyClassName="p-0">
+      <Panel
+        title="検索条件"
+        action={
+          <span className={MUTED_CLASS}>
+            作成者/期間は GitHub 全件絞込 / ブランチ/キーワードは表示中履歴絞込
+          </span>
+        }
+        bodyClassName="p-0"
+      >
         <form
           className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
           onSubmit={(event) => {
@@ -587,7 +639,7 @@ export function CommitsScreen(): JSX.Element {
             )}
           </select>
 
-          <label>ブランチ：</label>
+          <label>ページ内ブランチ：</label>
           <form.Field name="branch" validators={zodValidators(commitFilterFieldValidators.branch)}>
             {(field) => (
               <select
@@ -611,7 +663,7 @@ export function CommitsScreen(): JSX.Element {
             {(field) => (
               <input
                 className={clsx("border border-slate-400 px-1.5 py-0.5", MONO_CLASS)}
-                placeholder="ユーザーID"
+                placeholder="GitHubユーザーIDまたはメール"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -677,9 +729,11 @@ export function CommitsScreen(): JSX.Element {
         title={`コミット履歴一覧（${repositoryNameWithOwner}）`}
         action={
           <span className={MUTED_CLASS}>
-            {commitHistoryPageQuery.loading
-              ? "GitHub から読込中..."
-              : `表示 ${filteredPageCommits.length}件 / 取得 ${pageCommits.length}件 / 履歴総数 ${historyCount}件`}
+            {waitingForAuthorLookup
+              ? "作成者を照会中..."
+              : commitHistoryPageQuery.loading
+                ? "GitHub から読込中..."
+                : `表示 ${filteredPageCommits.length}件 / 取得 ${pageCommits.length}件 / 履歴総数 ${historyCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -705,6 +759,25 @@ export function CommitsScreen(): JSX.Element {
                 tone="empty"
                 title="対象リポジトリを選択してください。"
                 detail="一覧から参照対象のリポジトリを選ぶと履歴を表示します。"
+              />
+            ) : waitingForAuthorLookup ? (
+              <tr>
+                <td colSpan={9} className="py-6 text-center text-slate-600">
+                  指定された GitHub ユーザーID を照会しています。
+                </td>
+              </tr>
+            ) : authorLookupQuery.error ? (
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="error"
+                {...describeGitHubError(authorLookupQuery.error, "作成者の照会に失敗しました。")}
+              />
+            ) : unknownAuthor ? (
+              <GitHubTableStateRow
+                colSpan={9}
+                tone="empty"
+                title="指定された GitHub ユーザーID は見つかりません。"
+                detail="メールアドレスか、存在する GitHub ユーザーID を指定してください。"
               />
             ) : commitHistoryPageQuery.loading && commitPageRepository === undefined ? (
               <tr>
@@ -829,7 +902,7 @@ export function CommitsScreen(): JSX.Element {
           currentPage={commitPager.currentPage}
           pageSize={DISPLAY_PAGE_SIZE}
           visibleCount={filteredPageCommits.length}
-          totalCount={hasActiveFilters ? undefined : historyCount}
+          totalCount={hasPageLocalFilters ? undefined : historyCount}
           summary={pagerSummary}
           hasNextPage={commitPageHistory?.pageInfo.hasNextPage ?? false}
           isLoading={commitHistoryPageQuery.loading}

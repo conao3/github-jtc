@@ -3,6 +3,9 @@ query CommitHistory(
   $name: String!
   $historyFirst: Int!
   $historyAfter: String
+  $historyAuthor: CommitAuthor
+  $historySince: GitTimestamp
+  $historyUntil: GitTimestamp
   $tagsFirst: Int!
 ) {
   repository(owner: $owner, name: $name) {
@@ -16,7 +19,13 @@ query CommitHistory(
       target {
         __typename
         ... on Commit {
-          history(first: $historyFirst, after: $historyAfter) {
+          history(
+            first: $historyFirst
+            after: $historyAfter
+            author: $historyAuthor
+            since: $historySince
+            until: $historyUntil
+          ) {
             totalCount
             pageInfo {
               hasNextPage
@@ -78,7 +87,15 @@ query CommitHistory(
   }
 }
 
-query CommitHistoryPage($owner: String!, $name: String!, $historyFirst: Int!, $historyAfter: String) {
+query CommitHistoryPage(
+  $owner: String!
+  $name: String!
+  $historyFirst: Int!
+  $historyAfter: String
+  $historyAuthor: CommitAuthor
+  $historySince: GitTimestamp
+  $historyUntil: GitTimestamp
+) {
   repository(owner: $owner, name: $name) {
     id
     name
@@ -88,7 +105,13 @@ query CommitHistoryPage($owner: String!, $name: String!, $historyFirst: Int!, $h
       target {
         __typename
         ... on Commit {
-          history(first: $historyFirst, after: $historyAfter) {
+          history(
+            first: $historyFirst
+            after: $historyAfter
+            author: $historyAuthor
+            since: $historySince
+            until: $historyUntil
+          ) {
             totalCount
             pageInfo {
               hasNextPage
