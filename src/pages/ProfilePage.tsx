@@ -220,8 +220,8 @@ export function ProfileScreen(): JSX.Element {
             {...describeGitHubError(profileQuery.error, "プロフィール情報の取得に失敗しました。")}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="text-center">
+          <div className="grid grid-cols-1 gap-3 md:flex md:items-start">
+            <div className="text-center md:w-48 md:shrink-0">
               <img
                 src={profile.avatarUrl}
                 alt={profile.login}
@@ -241,7 +241,7 @@ export function ProfileScreen(): JSX.Element {
                 GitHubで開く
               </a>
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <table className={TABLE_CLASS}>
                 <tbody>
                   <tr>
