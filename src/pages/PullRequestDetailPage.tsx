@@ -183,7 +183,7 @@ function getWorkflowSteps(pullRequest: GitHubPullRequestDetail) {
 }
 
 export function PullRequestDetailScreen({
-  prId = "conao3:github-jtc:1",
+  prId = "conao3/github-jtc/1",
 }: {
   readonly prId?: string;
 }): JSX.Element {
@@ -192,7 +192,7 @@ export function PullRequestDetailScreen({
   const commentsPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
+  const coordinates = parseRepositoryScopedNumberRouteId(prId);
   const detailQuery = useQuery(PullRequestDetailDocument, {
     skip: accessToken === undefined || coordinates === null,
     variables: {
@@ -749,7 +749,11 @@ export function PullRequestDetailScreen({
 }
 
 export default function PullRequestDetailPage(): JSX.Element {
-  const { prId } = useParams();
+  const { owner, name, number } = useParams();
+  const prId =
+    owner === undefined || name === undefined || number === undefined
+      ? "conao3/github-jtc/1"
+      : `${owner}/${name}/${number}`;
 
-  return <PullRequestDetailScreen prId={prId ?? "conao3:github-jtc:1"} />;
+  return <PullRequestDetailScreen prId={prId} />;
 }

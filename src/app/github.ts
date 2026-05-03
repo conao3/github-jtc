@@ -285,7 +285,7 @@ export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | str
     throw new Error("Repository route id requires both owner and name.");
   }
 
-  return `${encodeURIComponent(owner)}:${encodeURIComponent(name)}`;
+  return `${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
 }
 
 export function createRepositoryPath(input: GitHubRepositoryCoordinates | string): string {
@@ -315,51 +315,24 @@ export function createRepositoryScopedNumberRouteId(
       throw new Error("Repository scoped route id requires owner, repository, and positive number.");
     }
 
-    return `${encodeURIComponent(owner)}:${encodeURIComponent(name)}:${number}`;
+    return `${encodeURIComponent(owner)}/${encodeURIComponent(name)}/${number}`;
   }
 
   if (!Number.isInteger(input.number) || input.number <= 0) {
     throw new Error("Repository scoped route id requires a positive integer number.");
   }
 
-  return `${encodeURIComponent(input.owner)}:${encodeURIComponent(input.name)}:${input.number}`;
+  return `${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/${input.number}`;
 }
 
-export function parseRepositoryRouteId(
-  routeId: string | undefined,
-  fallbackOwner?: string,
-): GitHubRepositoryCoordinates | null {
+export function parseRepositoryRouteId(routeId: string | undefined): GitHubRepositoryCoordinates | null {
   if (routeId === undefined || routeId.length === 0) {
     return null;
   }
 
-  const slashParts = routeId.split("/", 2);
-  if (slashParts.length === 2) {
-    const owner = decodeURIComponent(slashParts[0] ?? "");
-    const name = decodeURIComponent(slashParts[1] ?? "");
-
-    if (owner.length === 0 || name.length === 0) {
-      return null;
-    }
-
-    return { owner, name };
-  }
-
-  const separatorIndex = routeId.indexOf(":");
-
-  if (separatorIndex < 0) {
-    if (fallbackOwner === undefined || fallbackOwner.length === 0) {
-      return null;
-    }
-
-    return {
-      owner: fallbackOwner,
-      name: decodeURIComponent(routeId),
-    };
-  }
-
-  const owner = decodeURIComponent(routeId.slice(0, separatorIndex));
-  const name = decodeURIComponent(routeId.slice(separatorIndex + 1));
+  const [ownerPart, namePart] = routeId.split("/", 2);
+  const owner = decodeURIComponent(ownerPart ?? "");
+  const name = decodeURIComponent(namePart ?? "");
 
   if (owner.length === 0 || name.length === 0) {
     return null;
@@ -370,40 +343,15 @@ export function parseRepositoryRouteId(
 
 export function parseRepositoryScopedNumberRouteId(
   routeId: string | undefined,
-  fallbackOwner?: string,
 ): GitHubRepositoryScopedNumberCoordinates | null {
   if (routeId === undefined || routeId.length === 0) {
     return null;
   }
 
-  const parts = routeId.split(":");
-
-  if (parts.length === 1) {
-    return null;
-  }
-
-  if (parts.length === 2) {
-    if (fallbackOwner === undefined || fallbackOwner.length === 0) {
-      return null;
-    }
-
-    const [namePart, numberPart] = parts;
-    const number = Number(decodeURIComponent(numberPart ?? ""));
-
-    if (namePart === undefined || !Number.isInteger(number) || number <= 0) {
-      return null;
-    }
-
-    return {
-      owner: fallbackOwner,
-      name: decodeURIComponent(namePart),
-      number,
-    };
-  }
-
-  const owner = decodeURIComponent(parts[0] ?? "");
-  const name = decodeURIComponent(parts[1] ?? "");
-  const number = Number(decodeURIComponent(parts[2] ?? ""));
+  const [ownerPart, namePart, numberPart] = routeId.split("/", 3);
+  const owner = decodeURIComponent(ownerPart ?? "");
+  const name = decodeURIComponent(namePart ?? "");
+  const number = Number(decodeURIComponent(numberPart ?? ""));
 
   if (owner.length === 0 || name.length === 0 || !Number.isInteger(number) || number <= 0) {
     return null;

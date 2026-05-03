@@ -31,13 +31,13 @@ export function AppRoutes(): JSX.Element {
         <Route path="/repositories" element={<RepositoriesPage />} />
         <Route path="/repositories/:owner/:name" element={<RepositoryDetailPage />} />
         <Route path="/pull-requests" element={<PullRequestsPage />} />
-        <Route path="/pull-requests/:prId" element={<PullRequestDetailPage />} />
-        <Route path="/pull-requests/:prId/diff" element={<PullRequestDiffPage />} />
+        <Route path="/pull-requests/:owner/:name/:number" element={<PullRequestDetailPage />} />
+        <Route path="/pull-requests/:owner/:name/:number/diff" element={<PullRequestDiffPage />} />
         <Route path="/issues" element={<IssuesPage />} />
-        <Route path="/issues/:issueId" element={<IssueDetailPage />} />
+        <Route path="/issues/:owner/:name/:number" element={<IssueDetailPage />} />
         <Route path="/commits" element={<CommitsPage />} />
         <Route path="/commits/:owner/:name" element={<CommitsPage />} />
-        <Route path="/commits/:repoId/:commitRef/diff" element={<CommitDiffPage />} />
+        <Route path="/commits/:owner/:name/:commitRef/diff" element={<CommitDiffPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

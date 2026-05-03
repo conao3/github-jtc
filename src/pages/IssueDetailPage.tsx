@@ -195,14 +195,14 @@ function buildTimelineRows(
 }
 
 export function IssueDetailScreen({
-  issueId = "conao3:github-jtc:1",
+  issueId = "conao3/github-jtc/1",
 }: {
   readonly issueId?: string;
 }): JSX.Element {
   const timelinePager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const coordinates = parseRepositoryScopedNumberRouteId(issueId, sessionQuery.data?.user.login);
+  const coordinates = parseRepositoryScopedNumberRouteId(issueId);
   const detailQuery = useQuery(IssueDetailDocument, {
     skip: accessToken === undefined || coordinates === null,
     variables: {
@@ -505,7 +505,11 @@ export function IssueDetailScreen({
 }
 
 export default function IssueDetailPage(): JSX.Element {
-  const { issueId } = useParams();
+  const { owner, name, number } = useParams();
+  const issueId =
+    owner === undefined || name === undefined || number === undefined
+      ? "conao3/github-jtc/1"
+      : `${owner}/${name}/${number}`;
 
-  return <IssueDetailScreen issueId={issueId ?? "conao3:github-jtc:1"} />;
+  return <IssueDetailScreen issueId={issueId} />;
 }

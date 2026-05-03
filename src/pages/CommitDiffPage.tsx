@@ -33,7 +33,7 @@ async function copyRevertCommand(oid: string): Promise<void> {
 }
 
 export function CommitDiffScreen({
-  repoId = "conao3:github-jtc",
+  repoId = "conao3/github-jtc",
   commitRef = "",
 }: {
   readonly repoId?: string;
@@ -41,7 +41,7 @@ export function CommitDiffScreen({
 }): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
+  const coordinates = parseRepositoryRouteId(repoId);
   const commitQuery = useQuery({
     queryKey: ["github", "commit-diff", coordinates?.owner, coordinates?.name, commitRef],
     enabled: accessToken !== undefined && coordinates !== null && commitRef.length > 0,
@@ -350,7 +350,8 @@ export function CommitDiffScreen({
 }
 
 export default function CommitDiffPage(): JSX.Element {
-  const { repoId, commitRef } = useParams();
+  const { owner, name, commitRef } = useParams();
+  const repoId = owner === undefined || name === undefined ? "conao3/github-jtc" : `${owner}/${name}`;
 
-  return <CommitDiffScreen repoId={repoId ?? "conao3:github-jtc"} commitRef={commitRef ?? ""} />;
+  return <CommitDiffScreen repoId={repoId} commitRef={commitRef ?? ""} />;
 }

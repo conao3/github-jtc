@@ -288,7 +288,7 @@ export function RepositoryDetailScreen({
   const languagesPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
+  const coordinates = parseRepositoryRouteId(repoId);
   const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
   const browserPath = normalizeRepositoryBrowserPath(searchParams.get("path"));
   const repositoryQuery = useQuery(RepositoryDetailDocument, {
