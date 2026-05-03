@@ -20,6 +20,7 @@ import {
 } from "../app/github.ts";
 import { ViewerIssuesDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   MUTED_CLASS,
   TABLE_CLASS,
@@ -359,7 +360,7 @@ export function IssuesScreen(): JSX.Element {
               <th className="w-24">状態</th>
               <th className="w-28">担当者</th>
               <th className="w-32">ラベル</th>
-              <th className="w-24">更新日時</th>
+              <th className="w-36">更新日時</th>
               <th className="w-16">コメント</th>
             </tr>
           </thead>
@@ -419,9 +420,7 @@ export function IssuesScreen(): JSX.Element {
                     </td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>{getAssigneeSummary(issue)}</td>
                     <td className="text-center">{renderLabelSummary(issue)}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(issue.updatedAt)}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(issue.updatedAt)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{issue.comments.totalCount}</td>
                   </tr>
                 );

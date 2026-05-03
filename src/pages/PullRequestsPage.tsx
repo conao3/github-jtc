@@ -20,6 +20,7 @@ import {
 } from "../app/github.ts";
 import { ViewerPullRequestsDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   MUTED_CLASS,
   TABLE_CLASS,
@@ -340,7 +341,7 @@ export function PullRequestsScreen(): JSX.Element {
               <th>件名</th>
               <th className="w-32">リポジトリ</th>
               <th className="w-16">状態</th>
-              <th className="w-24">更新日時</th>
+              <th className="w-36">更新日時</th>
               <th className="w-20">変更</th>
               <th className="w-16">コメント</th>
               <th className="w-16">操作</th>
@@ -402,9 +403,7 @@ export function PullRequestsScreen(): JSX.Element {
                     <td className="text-center">
                       <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
                     </td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(pullRequest.updatedAt)}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{getPullRequestDelta(pullRequest)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{pullRequest.comments.totalCount}</td>
                     <td className="text-center">

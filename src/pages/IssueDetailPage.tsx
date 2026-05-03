@@ -18,6 +18,7 @@ import {
 } from "../app/github.ts";
 import { IssueDetailDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   TABLE_CLASS,
   TEXT_LINK_CLASS,
@@ -419,7 +420,7 @@ export function IssueDetailScreen({
           <thead>
             <tr>
               <th className="w-10">No</th>
-              <th className="w-28">日時</th>
+              <th className="w-36">日時</th>
               <th className="w-24">対応者</th>
               <th className="w-24">区分</th>
               <th>内容</th>
@@ -456,7 +457,7 @@ export function IssueDetailScreen({
               timelineRows.map((row, index) => (
                 <tr key={row.id}>
                   <td className="text-center">{index + 1}</td>
-                  <td className={clsx("text-center", MONO_CLASS)}>{formatGitHubDateTime(row.date)}</td>
+                  <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(row.date)}</td>
                   <td className="text-center">{row.actor}</td>
                   <td className="text-center">
                     <JtcStatusTag tone={row.tone}>{row.label}</JtcStatusTag>

@@ -16,6 +16,7 @@ import {
 } from "../app/github.ts";
 import { ViewerProfileDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   KPI_CARD_CLASS,
   KPI_LABEL_CLASS,
   KPI_ROW_CLASS,
@@ -264,7 +265,7 @@ export function ProfileScreen(): JSX.Element {
               <th>リポジトリ</th>
               <th className="w-20">権限</th>
               <th className="w-20">公開</th>
-              <th className="w-32">最終更新</th>
+              <th className="w-36">最終更新</th>
             </tr>
           </thead>
           <tbody>
@@ -290,9 +291,7 @@ export function ProfileScreen(): JSX.Element {
                       {repository.isPrivate ? "非公開" : "公開"}
                     </JtcStatusTag>
                   </td>
-                  <td className={clsx("text-center", MONO_CLASS)}>
-                    {formatGitHubDateTime(repository.updatedAt)}
-                  </td>
+                  <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(repository.updatedAt)}</td>
                 </tr>
               ))
             )}

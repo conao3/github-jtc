@@ -49,6 +49,7 @@
     text-align: left;
     font-weight: 700;
     color: #1e293b;
+    white-space: nowrap;
   }
 
   & tbody tr:nth-child(even) {

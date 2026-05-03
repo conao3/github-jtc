@@ -20,6 +20,7 @@ import {
 } from "../app/github.ts";
 import { PullRequestDetailDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   TABLE_CLASS,
   TEXT_LINK_CLASS,
@@ -403,7 +404,7 @@ export function PullRequestDiffScreen({
               <th className="w-28">OID</th>
               <th>メッセージ</th>
               <th className="w-24">作成者</th>
-              <th className="w-28">日時</th>
+              <th className="w-36">日時</th>
             </tr>
           </thead>
           <tbody>
@@ -423,9 +424,7 @@ export function PullRequestDiffScreen({
                     <td className={MONO_CLASS}>{commit.commit.oid.slice(0, 12)}</td>
                     <td>{commit.commit.messageHeadline}</td>
                     <td className="text-center">{author?.user?.login ?? author?.name ?? "不明"}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(commit.commit.committedDate)}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(commit.commit.committedDate)}</td>
                   </tr>
                 );
               })

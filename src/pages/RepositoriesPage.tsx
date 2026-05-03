@@ -20,6 +20,7 @@ import {
 } from "../app/github.ts";
 import { ViewerRepositoriesDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   MUTED_CLASS,
   PAGER_CLASS,
@@ -434,7 +435,7 @@ export function RepositoriesScreen(): JSX.Element {
               <th className="w-20">主要言語</th>
               <th className="w-16">権限</th>
               <th className="w-16">公開</th>
-              <th className="w-28">最終プッシュ</th>
+              <th className="w-36">最終プッシュ</th>
               <th className="w-16">操作</th>
             </tr>
           </thead>
@@ -491,9 +492,7 @@ export function RepositoriesScreen(): JSX.Element {
                   <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
                   <td className="text-center">{formatGitHubPermission(repository.viewerPermission)}</td>
                   <td className="text-center">{formatGitHubVisibility(repository.visibility)}</td>
-                  <td className={clsx("text-center", MONO_CLASS)}>
-                    {formatGitHubDateTime(repository.pushedAt)}
-                  </td>
+                  <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(repository.pushedAt)}</td>
                   <td className="text-center">
                     <a href={repository.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
                       GitHub

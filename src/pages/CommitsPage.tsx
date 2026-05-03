@@ -22,6 +22,7 @@ import {
 } from "../app/github.ts";
 import { CommitHistoryDocument, ViewerRepositoriesDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   MONO_CLASS,
   MUTED_CLASS,
   TABLE_CLASS,
@@ -685,7 +686,7 @@ export function CommitsScreen(): JSX.Element {
               <th>コミットメッセージ</th>
               <th className="w-28">ブランチ</th>
               <th className="w-24">作成者</th>
-              <th className="w-32">日時</th>
+              <th className="w-36">日時</th>
               <th className="w-28">変更</th>
               <th className="w-24">関連</th>
               <th className="w-24">操作</th>
@@ -767,9 +768,7 @@ export function CommitsScreen(): JSX.Element {
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
                       {getCommitAuthorLabel(commit)}
                     </td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(commit.committedDate)}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(commit.committedDate)}</td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
                       <span className="text-green-700">+{commit.additions}</span> /{" "}
                       <span className="text-red-700">-{commit.deletions}</span> ({changedFiles}件)

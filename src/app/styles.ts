@@ -4,6 +4,7 @@ import type { FontScale } from "./state.tsx";
 
 export const FONT_FAMILY_CLASS = "font-sans";
 export const MONO_CLASS = "font-mono";
+export const DATE_CELL_CLASS = clsx("text-center whitespace-nowrap", MONO_CLASS);
 export const MUTED_CLASS = "text-slate-600";
 export const TEXT_LINK_CLASS =
   "text-blue-700 underline underline-offset-2 visited:text-violet-700 hover:text-blue-900";

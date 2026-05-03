@@ -15,6 +15,7 @@ import {
 } from "../app/github.ts";
 import { DashboardDocument } from "../gql/graphql.ts";
 import {
+  DATE_CELL_CLASS,
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
   FLOW_STEP_NO_CLASS,
@@ -531,8 +532,8 @@ export function DashboardScreen(): JSX.Element {
             <tr>
               <th className="w-16">種別</th>
               <th>件名</th>
-              <th className="w-32">掲載日時</th>
-              <th className="w-32">掲載期限</th>
+              <th className="w-36">掲載日時</th>
+              <th className="w-36">掲載期限</th>
               <th className="w-24">発行元</th>
               <th className="w-12">添付</th>
             </tr>
@@ -549,8 +550,8 @@ export function DashboardScreen(): JSX.Element {
                     <span className="ml-1 font-bold text-red-700">★</span>
                   )}
                 </td>
-                <td className={clsx("text-center", MONO_CLASS)}>{posted}</td>
-                <td className={clsx("text-center", MONO_CLASS)}>{deadline}</td>
+                <td className={DATE_CELL_CLASS}>{posted}</td>
+                <td className={DATE_CELL_CLASS}>{deadline}</td>
                 <td className="text-center">{owner}</td>
                 <td className="text-center">
                   {attachment === "－" ? "－" : <span className={TEXT_LINK_CLASS}>{attachment}</span>}

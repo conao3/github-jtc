@@ -26,6 +26,7 @@ import { CommitHistoryDocument, RepositoryDetailDocument } from "../gql/graphql.
 import {
   MONO_CLASS,
   MUTED_CLASS,
+  DATE_CELL_CLASS,
   PAGER_CLASS,
   PAGER_LINK_ACTIVE_CLASS,
   PAGER_LINK_CLASS,
@@ -479,7 +480,7 @@ export function RepositoryDetailScreen({
                 <th className="w-24">コミットID</th>
                 <th>メッセージ</th>
                 <th className="w-20">作成者</th>
-                <th className="w-40">日時</th>
+                <th className="w-36">日時</th>
                 <th className="w-20">関連</th>
                 <th className="w-16">操作</th>
               </tr>
@@ -518,9 +519,7 @@ export function RepositoryDetailScreen({
                       <td className="text-center">
                         {commit.author?.user?.login ?? commit.author?.name ?? "不明"}
                       </td>
-                      <td className={clsx("text-center", MONO_CLASS)}>
-                        {formatGitHubDateTime(commit.committedDate)}
-                      </td>
+                      <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(commit.committedDate)}</td>
                       <td className="text-center">
                         {relatedPullRequest === null ? (
                           "－"
@@ -621,7 +620,7 @@ export function RepositoryDetailScreen({
                 <th className="w-20">作成者</th>
                 <th className="w-16">状態</th>
                 <th className="w-16">コメント</th>
-                <th className="w-32">更新日時</th>
+                <th className="w-36">更新日時</th>
                 <th className="w-16">操作</th>
               </tr>
             </thead>
@@ -641,9 +640,7 @@ export function RepositoryDetailScreen({
                     <td className="text-center">{pullRequest.author?.login ?? "不明"}</td>
                     <td className="text-center">{getPullRequestStatusLabel(pullRequest)}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{pullRequest.comments.totalCount}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(pullRequest.updatedAt)}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
                     <td className="text-center">
                       {coordinates === null ? (
                         <a
@@ -694,7 +691,7 @@ export function RepositoryDetailScreen({
             <thead>
               <tr>
                 <th>ブランチ名</th>
-                <th className="w-32">最終コミット日時</th>
+                <th className="w-40">最終コミット日時</th>
               </tr>
             </thead>
             <tbody>
@@ -710,9 +707,7 @@ export function RepositoryDetailScreen({
                   branch.target?.__typename === "Commit" ? (
                     <tr key={branch.id}>
                       <td className={MONO_CLASS}>{branch.name}</td>
-                      <td className={clsx("text-center", MONO_CLASS)}>
-                        {formatGitHubDateTime(branch.target.committedDate)}
-                      </td>
+                      <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(branch.target.committedDate)}</td>
                     </tr>
                   ) : null,
                 )
@@ -737,7 +732,7 @@ export function RepositoryDetailScreen({
             <thead>
               <tr>
                 <th>タグ名</th>
-                <th className="w-32">対象日時</th>
+                <th className="w-40">対象日時</th>
               </tr>
             </thead>
             <tbody>
@@ -752,9 +747,7 @@ export function RepositoryDetailScreen({
                 tagRefs.map((tag) => (
                   <tr key={tag.id}>
                     <td className={MONO_CLASS}>{tag.name}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(getTagDate(tag))}
-                    </td>
+                    <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(getTagDate(tag))}</td>
                   </tr>
                 ))
               )}
