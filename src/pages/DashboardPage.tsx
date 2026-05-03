@@ -142,7 +142,7 @@ const flowSteps = [
 const shortcuts = [
   ["変", "変更登録"],
   ["PR", "PR作成"],
-  ["課", "課題票作成"],
+  ["課", "チケット作成"],
   ["🔍", "リポジトリ検索"],
   ["人", "ユーザー検索"],
   ["📖", "操作マニュアル"],
@@ -282,21 +282,21 @@ export function DashboardScreen(): JSX.Element {
       note: "search review-requested",
     },
     {
-      label: "自分担当Issue",
+      label: "自分担当チケット",
       value: String(dashboard?.issueAssignments.issueCount ?? 0),
       note: "search assignee",
     },
   ] as const;
   const todoItems = [
     ["レビュー依頼中", `${dashboard?.reviewRequests.issueCount ?? 0} 件`],
-    ["自分担当Issue", `${dashboard?.issueAssignments.issueCount ?? 0} 件`],
+    ["自分担当チケット", `${dashboard?.issueAssignments.issueCount ?? 0} 件`],
     ["自分が開いているPR", `${dashboard?.authoredPullRequests.issueCount ?? 0} 件`],
     ["最近更新したRepo", `${recentRepositories.length} 件`],
     [
       "直近30日レビュー",
       `${dashboard?.viewer.contributionsCollection.totalPullRequestReviewContributions ?? 0} 件`,
     ],
-    ["直近30日Issue", `${dashboard?.viewer.contributionsCollection.totalIssueContributions ?? 0} 件`],
+    ["直近30日チケット", `${dashboard?.viewer.contributionsCollection.totalIssueContributions ?? 0} 件`],
   ] as const;
 
   return (
@@ -307,11 +307,7 @@ export function DashboardScreen(): JSX.Element {
       activeSideItem="ダッシュボード"
       rightColumn={
         <>
-          <Panel
-            title="クイックショートカット"
-            action={<span className={MUTED_CLASS}>※ JTC ポータル演出用ショートカット</span>}
-            bodyClassName="p-0"
-          >
+          <Panel title="クイックショートカット" bodyClassName="p-0">
             <div className={SHORTCUT_GRID_CLASS}>
               {shortcuts.map(([icon, label]) => (
                 <div key={label} className={SHORTCUT_CLASS}>
@@ -383,20 +379,20 @@ export function DashboardScreen(): JSX.Element {
             )}
           </Panel>
 
-          <Panel title="自分の担当Issue" bodyClassName="p-0">
+          <Panel title="自分の担当チケット" bodyClassName="p-0">
             {dashboardQuery.isPending ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.isError ? (
               <GitHubInlineState
                 tone="error"
                 className="px-2 py-3 text-xs"
-                {...describeGitHubError(dashboardQuery.error, "Issue 一覧を取得できませんでした。")}
+                {...describeGitHubError(dashboardQuery.error, "チケット一覧を取得できませんでした。")}
               />
             ) : assignedIssues.length === 0 ? (
               <GitHubInlineState
                 tone="empty"
-                title="担当中の open issue はありません。"
-                detail="assignee search に一致する Issue がありません。"
+                title="担当中の open チケットはありません。"
+                detail="assignee search に一致するチケットがありません。"
                 className="px-2 py-3 text-xs"
               />
             ) : (
@@ -408,7 +404,7 @@ export function DashboardScreen(): JSX.Element {
                     <div key={issue.id} className="space-y-1 px-2 py-2 text-xs">
                       <div className="font-bold">
                         <a href={issue.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                          Issue #{issue.number}
+                          チケット #{issue.number}
                         </a>
                       </div>
                       <div>{issue.title}</div>

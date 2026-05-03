@@ -129,7 +129,7 @@ export function RepositoryDetailScreen({
                 ["ブランチ数", String(repository?.refs?.totalCount ?? 0)],
                 ["Watchers", String(repository?.watchers.totalCount ?? 0)],
                 ["Stars", String(repository?.stargazerCount ?? 0)],
-                ["Open Issue", `${repository?.issues.totalCount ?? 0} 件`],
+                ["Open チケット", `${repository?.issues.totalCount ?? 0} 件`],
                 ["Open PR", `${repository?.pullRequests.totalCount ?? 0} 件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>

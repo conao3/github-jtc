@@ -224,11 +224,11 @@ export function IssueDetailScreen({
       screenId="JTC-ISS-004"
       crumbs={[
         { label: "開発管理", to: "/repositories" },
-        { label: "課題（Issue）一覧", to: "/issues" },
-        { label: "課題詳細" },
+        { label: "チケット一覧", to: "/issues" },
+        { label: "チケット詳細" },
       ]}
       activeTopMenu="開発管理"
-      activeSideItem="課題（Issue）一覧"
+      activeSideItem="チケット一覧"
       rightColumn={
         <>
           <Panel title="担当 / 作成者" bodyClassName="p-0">
@@ -252,7 +252,7 @@ export function IssueDetailScreen({
             </table>
           </Panel>
 
-          <Panel title="Issueサマリ" bodyClassName="p-0">
+          <Panel title="チケットサマリ" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
                 ["state", issue?.state ?? "－"],
@@ -295,7 +295,7 @@ export function IssueDetailScreen({
                 rel="noreferrer"
                 className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
               >
-                GitHubでIssueを開く
+                GitHubでチケットを開く
               </a>
               <a
                 href={issue?.repository.url ?? "https://github.com"}
@@ -315,14 +315,14 @@ export function IssueDetailScreen({
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>参照専用：</b>この画面は GitHub GraphQL の issue 詳細を表示しています。ラベル変更・コメント投稿・
+        <b>参照専用：</b>この画面は GitHub GraphQL のチケット詳細を表示しています。ラベル変更・コメント投稿・
         クローズ操作は
         <span className={TEXT_LINK_CLASS}> GitHub 本体 </span>
         で実施してください。
       </div>
 
       <Panel
-        title={`Issue基本情報 ${coordinates?.number ?? "?"}`}
+        title={`チケット基本情報 ${coordinates?.number ?? "?"}`}
         action={
           <span>
             {issue === undefined || issue === null
@@ -335,23 +335,23 @@ export function IssueDetailScreen({
         {coordinates === null ? (
           <GitHubInlineState
             tone="error"
-            title="Issue 識別子を解釈できませんでした。"
-            detail="一覧画面から対象 Issue を選び直してください。"
+            title="チケット識別子を解釈できませんでした。"
+            detail="一覧画面から対象チケットを選び直してください。"
             className="py-8"
           />
         ) : detailQuery.isPending ? (
-          <div className="py-8 text-center text-slate-600">GitHub から Issue 詳細を取得しています。</div>
+          <div className="py-8 text-center text-slate-600">GitHub からチケット詳細を取得しています。</div>
         ) : detailQuery.isError ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
-            {...describeGitHubError(detailQuery.error, "Issue 詳細の取得に失敗しました。")}
+            {...describeGitHubError(detailQuery.error, "チケット詳細の取得に失敗しました。")}
           />
         ) : issue === null || issue === undefined ? (
           <GitHubInlineState
             tone="empty"
-            title="対象 Issue を表示できません。"
-            detail={`${coordinates.owner}/${coordinates.name} の Issue #${coordinates.number} は存在しないか、現在の token では参照できません。`}
+            title="対象チケットを表示できません。"
+            detail={`${coordinates.owner}/${coordinates.name} のチケット #${coordinates.number} は存在しないか、現在の token では参照できません。`}
             className="py-8"
           />
         ) : (
@@ -436,8 +436,8 @@ export function IssueDetailScreen({
               <GitHubTableStateRow
                 colSpan={5}
                 tone="error"
-                title="Issue 識別子を解釈できませんでした。"
-                detail="一覧画面から対象 Issue を選び直してください。"
+                title="チケット識別子を解釈できませんでした。"
+                detail="一覧画面から対象チケットを選び直してください。"
               />
             ) : detailQuery.isPending ? (
               <tr>

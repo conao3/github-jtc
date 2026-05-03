@@ -112,7 +112,7 @@ const sections: SectionDefinition[] = [
   },
   {
     id: "pr-issue",
-    title: "プルリク・課題",
+    title: "プルリク・チケット",
     subtitle: "変更管理プロセスの中核",
     artboards: [
       {
@@ -133,7 +133,7 @@ const sections: SectionDefinition[] = [
       },
       {
         id: "issue-detail",
-        label: "⑥ 課題（Issue）詳細",
+        label: "⑥ チケット詳細",
         route: "/issues/conao3:github-jtc:1",
         width: 1280,
         height: 992,

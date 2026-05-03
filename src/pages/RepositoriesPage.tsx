@@ -80,7 +80,7 @@ function getRepositoryState(repository: GitHubViewerRepository): {
   }
 
   if (repository.issues.totalCount > 0) {
-    return { tone: "pending", label: "課題あり" };
+    return { tone: "pending", label: "チケットあり" };
   }
 
   return { tone: "done", label: "運用中" };
@@ -273,7 +273,7 @@ export function RepositoriesScreen(): JSX.Element {
                   ["組織内", String(internalCount)],
                   ["公開", String(publicCount)],
                   ["Open PR", String(pullRequestTotal)],
-                  ["Open Issue", String(issueTotal)],
+                  ["Open チケット", String(issueTotal)],
                   ["合計", String(filteredRepositories.length)],
                 ].map(([label, value]) => (
                   <tr key={label}>
@@ -485,7 +485,7 @@ export function RepositoriesScreen(): JSX.Element {
               <th className="w-20">主要言語</th>
               <th className="w-16">Commit</th>
               <th className="w-16">PR</th>
-              <th className="w-16">Issue</th>
+              <th className="w-16">チケット</th>
               <th className="w-20">状態</th>
               <th className="w-16">権限</th>
               <th className="w-16">公開</th>

@@ -287,7 +287,7 @@ export function ProfileScreen(): JSX.Element {
               "レビュー対応",
               String(profile?.contributionsCollection.totalPullRequestReviewContributions ?? 0),
             ],
-            ["Issue対応数", String(profile?.contributionsCollection.totalIssueContributions ?? 0)],
+            ["チケット対応数", String(profile?.contributionsCollection.totalIssueContributions ?? 0)],
           ].map(([label, value]) => (
             <div key={label} className={KPI_CARD_CLASS}>
               <div className={KPI_LABEL_CLASS}>{label}</div>

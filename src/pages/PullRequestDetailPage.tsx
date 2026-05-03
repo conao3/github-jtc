@@ -218,15 +218,15 @@ export function PullRequestDetailScreen({
             </table>
           </Panel>
 
-          <Panel title="関連Issue" bodyClassName="p-0">
+          <Panel title="関連チケット" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 {closingIssues.length === 0 ? (
                   <GitHubTableStateRow
                     colSpan={2}
                     tone="empty"
-                    title="関連 Issue はありません。"
-                    detail="closingIssuesReferences に紐づく Issue が見つかりません。"
+                    title="関連チケットはありません。"
+                    detail="closingIssuesReferences に紐づくチケットが見つかりません。"
                   />
                 ) : (
                   closingIssues.map((issue) => (
@@ -347,7 +347,7 @@ export function PullRequestDetailScreen({
                 <td>{reviewerLabels.length === 0 ? "なし" : reviewerLabels.join(" / ")}</td>
               </tr>
               <tr>
-                <th>関連Issue</th>
+                <th>関連チケット</th>
                 <td>
                   {closingIssues.length === 0
                     ? "なし"

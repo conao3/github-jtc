@@ -207,12 +207,12 @@ export function IssuesScreen(): JSX.Element {
   return (
     <JtcChrome
       screenId="JTC-ISS-001"
-      crumbs={[{ label: "開発管理", to: "/repositories" }, { label: "課題（Issue）一覧" }]}
+      crumbs={[{ label: "開発管理", to: "/repositories" }, { label: "チケット一覧" }]}
       activeTopMenu="開発管理"
-      activeSideItem="課題（Issue）一覧"
+      activeSideItem="チケット一覧"
       rightColumn={
         <>
-          <Panel title="課題サマリ" bodyClassName="p-0">
+          <Panel title="チケットサマリ" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
                 ["Open", `${openCount}件`],
@@ -236,7 +236,7 @@ export function IssuesScreen(): JSX.Element {
                 rel="noreferrer"
                 className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
               >
-                GitHubでIssue作成
+                GitHubでチケット作成
               </a>
               <button
                 type="button"
@@ -270,7 +270,7 @@ export function IssuesScreen(): JSX.Element {
             void form.handleSubmit();
           }}
         >
-          <label>Issue番号/件名</label>
+          <label>チケット番号/件名</label>
           <form.Field name="query" validators={zodValidators(issueFilterFieldValidators.query)}>
             {(field) => (
               <input
@@ -340,7 +340,7 @@ export function IssuesScreen(): JSX.Element {
       </Panel>
 
       <Panel
-        title="課題一覧"
+        title="チケット一覧"
         action={
           <span className={MUTED_CLASS}>
             {issuesQuery.isPending
@@ -353,7 +353,7 @@ export function IssuesScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-24">Issue</th>
+              <th className="w-24">チケット</th>
               <th>件名</th>
               <th className="w-32">リポジトリ</th>
               <th className="w-24">状態</th>
@@ -367,14 +367,14 @@ export function IssuesScreen(): JSX.Element {
             {issuesQuery.isPending ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
-                  GitHub から Issue 一覧を取得しています。
+                  GitHub からチケット一覧を取得しています。
                 </td>
               </tr>
             ) : issuesQuery.isError ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="error"
-                {...describeGitHubError(issuesQuery.error, "Issue 一覧の取得に失敗しました。")}
+                {...describeGitHubError(issuesQuery.error, "チケット一覧の取得に失敗しました。")}
               />
             ) : pagedIssues.length === 0 ? (
               <GitHubTableStateRow
@@ -382,13 +382,13 @@ export function IssuesScreen(): JSX.Element {
                 tone="empty"
                 title={
                   hasActiveIssueFilters(appliedFilters)
-                    ? "条件に一致する Issue はありません。"
-                    : "viewer に紐づく Issue はありません。"
+                    ? "条件に一致するチケットはありません。"
+                    : "viewer に紐づくチケットはありません。"
                 }
                 detail={
                   hasActiveIssueFilters(appliedFilters)
                     ? "件名・担当者・状態を見直して再検索してください。"
-                    : "viewer に関連する issue が見つかりませんでした。"
+                    : "viewer に関連するチケットが見つかりませんでした。"
                 }
               />
             ) : (

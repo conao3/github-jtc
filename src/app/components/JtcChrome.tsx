@@ -100,7 +100,7 @@ const sideGroups: NavGroup[] = [
       { label: "リポジトリ一覧", to: "/repositories" },
       { label: "リポジトリ登録申請", to: "/repositories/new" },
       { label: "プルリクエスト一覧", to: "/pull-requests" },
-      { label: "課題（Issue）一覧", to: "/issues" },
+      { label: "チケット一覧", to: "/issues" },
       { label: "ブランチ一覧" },
       { label: "コミット履歴", to: "/commits" },
       { label: "マージ申請" },
