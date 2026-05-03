@@ -2,6 +2,9 @@ import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client";
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 
 import {
+  CommitHistoryDocument,
+  type CommitHistoryQuery,
+  type CommitHistoryQueryVariables,
   DashboardDocument,
   type DashboardQuery,
   type DashboardQueryVariables,
@@ -43,6 +46,7 @@ export type GitHubViewerPullRequest = NonNullable<
 export type GitHubViewerIssuesConnection = ViewerIssuesQuery["viewer"]["issues"];
 export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnection["nodes"]>[number]>;
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
+export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
 export type GitHubDashboardPayload = DashboardQuery;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
@@ -125,6 +129,14 @@ export async function fetchGitHubRepositoryDetail(
   variables: RepositoryDetailQueryVariables,
 ): Promise<GitHubRepositoryDetail | null> {
   const data = await executeGitHubQuery(accessToken, RepositoryDetailDocument, variables);
+  return data.repository ?? null;
+}
+
+export async function fetchGitHubCommitHistory(
+  accessToken: string,
+  variables: CommitHistoryQueryVariables,
+): Promise<GitHubCommitHistoryRepository | null> {
+  const data = await executeGitHubQuery(accessToken, CommitHistoryDocument, variables);
   return data.repository ?? null;
 }
 
