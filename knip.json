@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["electrobun.config.ts", "src/bun/index.ts"],
+  "entry": ["electrobun.config.ts", "src/bun/index.ts", "workers/github-auth-broker/src/index.ts"],
   "ignore": [
     ".direnv/**",
     "src/gql/graphql.ts",

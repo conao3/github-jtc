@@ -18,5 +18,5 @@
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": true
   },
-  "include": ["src", "scripts", "codegen.ts"]
+  "include": ["src", "scripts", "workers", "codegen.ts"]
 }

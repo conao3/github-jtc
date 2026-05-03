@@ -1,4 +1,8 @@
-export {};
+interface Env {
+  readonly GITHUB_APP_CLIENT_ID: string;
+  readonly GITHUB_APP_CLIENT_SECRET: string;
+  readonly ALLOWED_ORIGINS?: string;
+}
 
 interface ExchangeRequestBody {
   readonly code?: string;
@@ -18,41 +22,10 @@ interface GitHubTokenSuccess {
 interface GitHubTokenError {
   readonly error?: string;
   readonly error_description?: string;
-  readonly error_uri?: string;
 }
 
 const GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
-const DEFAULT_PORT = 3000;
-
-function readRequiredEnv(name: string, fallbackName?: string): string {
-  const primary = Bun.env[name]?.trim();
-  if (primary !== undefined && primary.length > 0) {
-    return primary;
-  }
-
-  if (fallbackName !== undefined) {
-    const fallback = Bun.env[fallbackName]?.trim();
-    if (fallback !== undefined && fallback.length > 0) {
-      return fallback;
-    }
-  }
-
-  throw new Error(`Missing required environment variable: ${name}`);
-}
-
-function getPort(): number {
-  const raw = Bun.env["GITHUB_AUTH_PORT"]?.trim();
-  if (raw === undefined || raw.length === 0) {
-    return DEFAULT_PORT;
-  }
-
-  const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error("GITHUB_AUTH_PORT must be a positive integer.");
-  }
-
-  return parsed;
-}
+const EXCHANGE_PATH = "/api/auth/github/exchange";
 
 function isLocalOrigin(origin: string): boolean {
   try {
@@ -63,17 +36,20 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
-function getAllowedOrigin(origin: string | null): string | null {
-  const configured = Bun.env["GITHUB_AUTH_ALLOWED_ORIGIN"]?.trim();
-  if (configured !== undefined && configured.length > 0) {
-    return origin === configured ? configured : null;
+function getAllowedOrigin(origin: string | null, env: Env): string | null {
+  if (origin === null) {
+    return null;
   }
 
-  if (origin !== null && isLocalOrigin(origin)) {
-    return origin;
+  const configuredOrigins = env.ALLOWED_ORIGINS?.split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (configuredOrigins !== undefined && configuredOrigins.length > 0) {
+    return configuredOrigins.includes(origin) ? origin : null;
   }
 
-  return null;
+  return isLocalOrigin(origin) ? origin : null;
 }
 
 function jsonResponse(
@@ -86,9 +62,9 @@ function jsonResponse(
 
   if (init?.origin !== undefined && init.origin !== null) {
     headers.set("Access-Control-Allow-Origin", init.origin);
-    headers.set("Vary", "Origin");
     headers.set("Access-Control-Allow-Headers", "Content-Type, Accept");
     headers.set("Access-Control-Allow-Methods", "OPTIONS, POST");
+    headers.set("Vary", "Origin");
   }
 
   return Response.json(payload, {
@@ -105,7 +81,10 @@ async function parseRequestBody(request: Request): Promise<ExchangeRequestBody> 
   }
 }
 
-async function exchangeCode(body: ExchangeRequestBody): Promise<GitHubTokenSuccess | GitHubTokenError> {
+async function exchangeCode(
+  body: ExchangeRequestBody,
+  env: Env,
+): Promise<GitHubTokenSuccess | GitHubTokenError> {
   if (body.code === undefined || body.code.length === 0) {
     throw new Error("`code` is required.");
   }
@@ -118,21 +97,19 @@ async function exchangeCode(body: ExchangeRequestBody): Promise<GitHubTokenSucce
     throw new Error("`codeVerifier` is required.");
   }
 
-  const params = new URLSearchParams({
-    client_id: readRequiredEnv("GITHUB_APP_CLIENT_ID", "VITE_GITHUB_APP_CLIENT_ID"),
-    client_secret: readRequiredEnv("GITHUB_APP_CLIENT_SECRET"),
-    code: body.code,
-    redirect_uri: body.redirectUri,
-    code_verifier: body.codeVerifier,
-  });
-
   const response = await fetch(GITHUB_TOKEN_URL, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: params,
+    body: new URLSearchParams({
+      client_id: env.GITHUB_APP_CLIENT_ID,
+      client_secret: env.GITHUB_APP_CLIENT_SECRET,
+      code: body.code,
+      redirect_uri: body.redirectUri,
+      code_verifier: body.codeVerifier,
+    }),
   });
 
   const payload = (await response.json()) as GitHubTokenSuccess | GitHubTokenError;
@@ -148,33 +125,29 @@ async function exchangeCode(body: ExchangeRequestBody): Promise<GitHubTokenSucce
   return payload;
 }
 
-const port = getPort();
-
-console.log(`[github-auth-broker] listening on http://localhost:${port}`);
-
-Bun.serve({
-  port,
-  async fetch(request) {
+const worker = {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const origin = getAllowedOrigin(request.headers.get("Origin"));
+    const origin = getAllowedOrigin(request.headers.get("Origin"), env);
 
-    if (request.method === "OPTIONS" && url.pathname === "/api/auth/github/exchange") {
-      return new Response(null, {
-        status: 204,
-        headers:
-          origin === null
-            ? undefined
-            : {
-                "Access-Control-Allow-Origin": origin,
-                "Access-Control-Allow-Headers": "Content-Type, Accept",
-                "Access-Control-Allow-Methods": "OPTIONS, POST",
-                Vary: "Origin",
-              },
-      });
+    if (url.pathname !== EXCHANGE_PATH) {
+      return jsonResponse({ message: "Not found." }, { origin, status: 404 });
     }
 
-    if (url.pathname !== "/api/auth/github/exchange") {
-      return jsonResponse({ message: "Not found." }, { origin, status: 404 });
+    if (request.method === "OPTIONS") {
+      if (origin === null) {
+        return jsonResponse({ message: "Origin is not allowed." }, { status: 403 });
+      }
+
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Headers": "Content-Type, Accept",
+          "Access-Control-Allow-Methods": "OPTIONS, POST",
+          Vary: "Origin",
+        },
+      });
     }
 
     if (origin === null) {
@@ -187,7 +160,7 @@ Bun.serve({
 
     try {
       const body = await parseRequestBody(request);
-      const payload = await exchangeCode(body);
+      const payload = await exchangeCode(body, env);
 
       if ("access_token" in payload && payload.access_token.length > 0) {
         return jsonResponse(
@@ -221,4 +194,6 @@ Bun.serve({
       );
     }
   },
-});
+};
+
+export default worker;
