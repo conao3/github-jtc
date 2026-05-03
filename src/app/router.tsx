@@ -36,6 +36,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/issues" element={<IssuesPage />} />
         <Route path="/issues/:issueId" element={<IssueDetailPage />} />
         <Route path="/commits" element={<CommitsPage />} />
+        <Route path="/commits/:owner/:name" element={<CommitsPage />} />
         <Route path="/commits/:repoId/:commitRef/diff" element={<CommitDiffPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

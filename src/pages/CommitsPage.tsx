@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -330,6 +330,14 @@ async function copyRevertCommand(oid: string): Promise<void> {
 export function CommitsScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
+  const { owner: routeOwner, name: routeName } = useParams();
+  const routeSelectedRepoId =
+    routeOwner === undefined || routeName === undefined
+      ? ""
+      : createRepositoryRouteId({
+          owner: routeOwner,
+          name: routeName,
+        });
   const repositoriesQuery = useQuery({
     queryKey: ["github", "viewer-repositories", "commits", REPOSITORY_PAGE_SIZE],
     enabled: accessToken !== undefined,
@@ -340,7 +348,7 @@ export function CommitsScreen(): JSX.Element {
       }),
   });
   const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
-  const [selectedRepoId, setSelectedRepoId] = useState("");
+  const [selectedRepoId, setSelectedRepoId] = useState(routeSelectedRepoId);
   const [appliedFilters, setAppliedFilters] = useState<CommitFilterValues>(initialCommitFilterValues);
   const [currentPage, setCurrentPage] = useState(1);
   const form = useForm({
@@ -350,6 +358,14 @@ export function CommitsScreen(): JSX.Element {
       setCurrentPage(1);
     },
   });
+
+  useEffect(() => {
+    if (routeSelectedRepoId.length === 0 || routeSelectedRepoId === selectedRepoId) {
+      return;
+    }
+
+    setSelectedRepoId(routeSelectedRepoId);
+  }, [routeSelectedRepoId, selectedRepoId]);
 
   useEffect(() => {
     if (selectedRepoId.length > 0 || repositories.length === 0) {
@@ -376,6 +392,11 @@ export function CommitsScreen(): JSX.Element {
   }, [selectedRepoId]);
 
   const selectedCoordinates = parseRepositoryRouteId(selectedRepoId);
+  const selectedRepoListed = repositories.some(
+    (repositoryOption) =>
+      repositoryOption.owner.login === selectedCoordinates?.owner &&
+      repositoryOption.name === selectedCoordinates?.name,
+  );
   const selectedRepositoryMeta =
     selectedCoordinates === null
       ? null
@@ -519,17 +540,24 @@ export function CommitsScreen(): JSX.Element {
             {repositories.length === 0 ? (
               <option value="">{repositoriesQuery.isPending ? "取得中" : "対象なし"}</option>
             ) : (
-              repositories.map((repositoryOption: GitHubViewerRepository) => (
-                <option
-                  key={repositoryOption.id}
-                  value={createRepositoryRouteId({
-                    owner: repositoryOption.owner.login,
-                    name: repositoryOption.name,
-                  })}
-                >
-                  {repositoryOption.nameWithOwner}
-                </option>
-              ))
+              <>
+                {selectedCoordinates !== null && !selectedRepoListed ? (
+                  <option value={selectedRepoId}>
+                    {repository?.nameWithOwner ?? `${selectedCoordinates.owner}/${selectedCoordinates.name}`}
+                  </option>
+                ) : null}
+                {repositories.map((repositoryOption: GitHubViewerRepository) => (
+                  <option
+                    key={repositoryOption.id}
+                    value={createRepositoryRouteId({
+                      owner: repositoryOption.owner.login,
+                      name: repositoryOption.name,
+                    })}
+                  >
+                    {repositoryOption.nameWithOwner}
+                  </option>
+                ))}
+              </>
             )}
           </select>
 

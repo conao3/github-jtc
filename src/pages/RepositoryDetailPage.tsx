@@ -1,12 +1,13 @@
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  createRepositoryPath,
   describeGitHubError,
   fetchGitHubRepositoryDetail,
   formatGitHubByteSize,
@@ -295,9 +296,19 @@ export function RepositoryDetailScreen({
 
         <div className={TABS_ROW_CLASS}>
           <span className={clsx(TAB_CLASS, TAB_ACTIVE_CLASS)}>ファイル一覧</span>
-          <span className={TAB_CLASS}>
+          <Link
+            to={
+              coordinates === null
+                ? "/commits"
+                : `/commits/${createRepositoryPath({
+                    owner: coordinates.owner,
+                    name: coordinates.name,
+                  })}`
+            }
+            className={clsx(TAB_CLASS, "no-underline")}
+          >
             コミット履歴 <span className={TAB_BADGE_CLASS}>{latestCommit?.history.totalCount ?? 0}</span>
-          </span>
+          </Link>
           <span className={TAB_CLASS}>
             プルリクエスト <span className={TAB_BADGE_CLASS}>{repository?.pullRequests.totalCount ?? 0}</span>
           </span>
