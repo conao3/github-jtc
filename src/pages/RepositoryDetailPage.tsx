@@ -617,7 +617,7 @@ export function RepositoryDetailScreen({
                 <thead>
                   <tr>
                     <th>名前</th>
-                    <th className="w-20">種別</th>
+                    <th className="w-24 whitespace-nowrap">種別</th>
                     <th className="w-20">サイズ</th>
                     <th className="w-16">モード</th>
                     <th className="w-32">オブジェクトID</th>
@@ -631,7 +631,7 @@ export function RepositoryDetailScreen({
                           ↩ ..
                         </Link>
                       </td>
-                      <td className="text-center">上位</td>
+                      <td className="text-center whitespace-nowrap">上位</td>
                       <td className={clsx("text-right", MONO_CLASS)}>－</td>
                       <td className={clsx("text-center", MONO_CLASS)}>－</td>
                       <td className={MONO_CLASS}>－</td>
@@ -655,7 +655,7 @@ export function RepositoryDetailScreen({
                               {entry.type === "tree" ? `📁 ${entry.name}` : `📄 ${entry.name}`}
                             </Link>
                           </td>
-                          <td className="text-center">{getEntryKindLabel(entry.type)}</td>
+                          <td className="text-center whitespace-nowrap">{getEntryKindLabel(entry.type)}</td>
                           <td className={clsx("text-right", MONO_CLASS)}>
                             {entry.object?.__typename === "Blob"
                               ? formatGitHubByteSize(entry.object.byteSize)
