@@ -43,31 +43,31 @@
 }
 
 @utility jtc-font-medium {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
 
   & .text-xs {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.4;
   }
 
   & .text-sm {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.45;
   }
 
   & .text-base {
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.5;
   }
 
   & .text-lg {
-    font-size: 19px;
+    font-size: 18px;
     line-height: 1.35;
   }
 
   & .text-3xl {
-    font-size: 34px;
+    font-size: 32px;
     line-height: 1.1;
   }
 
@@ -80,7 +80,7 @@
 
   & .jtc-user-info-table td,
   & .jtc-data-table {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
