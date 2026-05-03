@@ -696,6 +696,8 @@ export type RepositoryDetailQueryVariables = Exact<{
   name: string;
   rootExpression: string;
   readmeExpression: string;
+  commitHistoryFirst: number;
+  commitHistoryAfter?: string | null | undefined;
 }>;
 
 export type RepositoryDetailQuery = {
@@ -755,6 +757,7 @@ export type RepositoryDetailQuery = {
             messageHeadline: string;
             history: {
               totalCount: number;
+              pageInfo: { hasNextPage: boolean; endCursor: string | null };
               nodes: Array<{
                 id: string;
                 oid: string;
@@ -3041,6 +3044,16 @@ export const RepositoryDetailDocument = {
           variable: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
         },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "commitHistoryFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "commitHistoryAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -3307,13 +3320,35 @@ export const RepositoryDetailDocument = {
                                       {
                                         kind: "Argument",
                                         name: { kind: "Name", value: "first" },
-                                        value: { kind: "IntValue", value: "10" },
+                                        value: {
+                                          kind: "Variable",
+                                          name: { kind: "Name", value: "commitHistoryFirst" },
+                                        },
+                                      },
+                                      {
+                                        kind: "Argument",
+                                        name: { kind: "Name", value: "after" },
+                                        value: {
+                                          kind: "Variable",
+                                          name: { kind: "Name", value: "commitHistoryAfter" },
+                                        },
                                       },
                                     ],
                                     selectionSet: {
                                       kind: "SelectionSet",
                                       selections: [
                                         { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "pageInfo" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                              { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                            ],
+                                          },
+                                        },
                                         {
                                           kind: "Field",
                                           name: { kind: "Name", value: "nodes" },

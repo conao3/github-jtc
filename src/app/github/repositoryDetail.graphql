@@ -3,6 +3,8 @@ query RepositoryDetail(
   $name: String!
   $rootExpression: String!
   $readmeExpression: String!
+  $commitHistoryFirst: Int!
+  $commitHistoryAfter: String
 ) {
   repository(owner: $owner, name: $name) {
     id
@@ -76,8 +78,12 @@ query RepositoryDetail(
       target {
         __typename
         ... on Commit {
-          history(first: 10) {
+          history(first: $commitHistoryFirst, after: $commitHistoryAfter) {
             totalCount
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             nodes {
               id
               oid

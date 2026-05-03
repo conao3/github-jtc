@@ -25,6 +25,9 @@ import {
 import {
   MONO_CLASS,
   MUTED_CLASS,
+  PAGER_CLASS,
+  PAGER_LINK_ACTIVE_CLASS,
+  PAGER_LINK_CLASS,
   TABLE_CLASS,
   TABS_ROW_CLASS,
   TAB_ACTIVE_CLASS,
@@ -38,6 +41,7 @@ import {
 
 type RepositoryDetailTab = "files" | "commits" | "pullRequests" | "refs";
 type PullRequestStateFilter = "open" | "all" | "merged" | "closed";
+const REPOSITORY_DETAIL_COMMIT_PAGE_SIZE = 10;
 
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
@@ -158,6 +162,25 @@ function parsePullRequestStateFilter(value: string | null): PullRequestStateFilt
   return isPullRequestStateFilter(value) ? value : "open";
 }
 
+function parseCommitCursorHistory(searchParams: URLSearchParams): Array<string | null> {
+  return [null, ...searchParams.getAll("commitCursor").filter((value) => value.length > 0)];
+}
+
+function parsePositivePage(value: string | null): number {
+  if (value === null) {
+    return 1;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function parseCommitPage(searchParams: URLSearchParams): number {
+  const page = parsePositivePage(searchParams.get("commitPage"));
+  const availablePageCount = parseCommitCursorHistory(searchParams).length;
+  return Math.min(page, availablePageCount);
+}
+
 export function RepositoryDetailScreen({
   repoId = "payment-system-core",
 }: {
@@ -170,11 +193,16 @@ export function RepositoryDetailScreen({
   const [pullRequestStateFilter, setPullRequestStateFilter] = useState<PullRequestStateFilter>(() =>
     parsePullRequestStateFilter(searchParams.get("prState")),
   );
+  const [commitCursorHistory, setCommitCursorHistory] = useState<Array<string | null>>(() =>
+    parseCommitCursorHistory(searchParams),
+  );
+  const [commitPage, setCommitPage] = useState<number>(() => parseCommitPage(searchParams));
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
+  const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
   const repositoryQuery = useQuery({
-    queryKey: ["github", "repository-detail", coordinates?.owner, coordinates?.name],
+    queryKey: ["github", "repository-detail", coordinates?.owner, coordinates?.name, currentCommitCursor],
     enabled: accessToken !== undefined && coordinates !== null,
     queryFn: () =>
       fetchGitHubRepositoryDetail(accessToken ?? "", {
@@ -182,6 +210,8 @@ export function RepositoryDetailScreen({
         name: coordinates?.name ?? "",
         rootExpression: "HEAD:",
         readmeExpression: "HEAD:README.md",
+        commitHistoryFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
+        commitHistoryAfter: currentCommitCursor,
       }),
   });
   const repository = repositoryQuery.data;
@@ -220,9 +250,16 @@ export function RepositoryDetailScreen({
   useEffect(() => {
     setActiveTab(parseRepositoryDetailTab(searchParams.get("tab"), searchParams.get("prState")));
     setPullRequestStateFilter(parsePullRequestStateFilter(searchParams.get("prState")));
+    setCommitCursorHistory(parseCommitCursorHistory(searchParams));
+    setCommitPage(parseCommitPage(searchParams));
   }, [searchParams]);
 
-  function updateTabSearchParams(tab: RepositoryDetailTab, pullRequestState: PullRequestStateFilter): void {
+  function applyRepositoryDetailSearchParams(
+    tab: RepositoryDetailTab,
+    pullRequestState: PullRequestStateFilter,
+    nextCommitPage: number,
+    nextCommitCursorHistory: Array<string | null>,
+  ): void {
     const nextSearchParams = new URLSearchParams(searchParams);
 
     if (tab === "files") {
@@ -237,7 +274,68 @@ export function RepositoryDetailScreen({
       nextSearchParams.delete("prState");
     }
 
+    nextSearchParams.delete("commitPage");
+    nextSearchParams.delete("commitCursor");
+
+    if (tab === "commits" && nextCommitPage > 1) {
+      nextSearchParams.set("commitPage", String(nextCommitPage));
+
+      for (const cursor of nextCommitCursorHistory.slice(1, nextCommitPage)) {
+        if (cursor !== null) {
+          nextSearchParams.append("commitCursor", cursor);
+        }
+      }
+    }
+
     setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function updateTabSearchParams(tab: RepositoryDetailTab, pullRequestState: PullRequestStateFilter): void {
+    applyRepositoryDetailSearchParams(tab, pullRequestState, commitPage, commitCursorHistory);
+  }
+
+  function goToPreviousCommitPage(): void {
+    if (commitPage <= 1 || repositoryQuery.isPending) {
+      return;
+    }
+
+    applyRepositoryDetailSearchParams("commits", pullRequestStateFilter, commitPage - 1, commitCursorHistory);
+  }
+
+  function goToNextCommitPage(): void {
+    if (repositoryQuery.isPending) {
+      return;
+    }
+
+    const endCursor = latestCommit?.history.pageInfo.endCursor;
+    if (
+      latestCommit?.history.pageInfo.hasNextPage !== true ||
+      endCursor === null ||
+      endCursor === undefined
+    ) {
+      return;
+    }
+
+    const nextCommitCursorHistory = [...commitCursorHistory.slice(0, commitPage), endCursor];
+    applyRepositoryDetailSearchParams(
+      "commits",
+      pullRequestStateFilter,
+      commitPage + 1,
+      nextCommitCursorHistory,
+    );
+  }
+
+  function renderCommitPagerButton(label: string, disabled: boolean, onClick: () => void): JSX.Element {
+    return (
+      <button
+        type="button"
+        className={clsx(PAGER_LINK_CLASS, disabled && "cursor-default text-slate-400")}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {label}
+      </button>
+    );
   }
 
   function renderTabButton(tab: RepositoryDetailTab, label: string, badge?: number): JSX.Element {
@@ -328,7 +426,7 @@ export function RepositoryDetailScreen({
         <>
           <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
             <span className="text-xs text-slate-600">
-              既定ブランチ {repository?.defaultBranchRef?.name ?? "HEAD"} の最新 {recentCommits.length} 件
+              既定ブランチ {repository?.defaultBranchRef?.name ?? "HEAD"} のコミット履歴 / ページ {commitPage}
             </span>
             {repositoryPath === null ? null : (
               <Link
@@ -346,7 +444,7 @@ export function RepositoryDetailScreen({
                 <th className="w-24">コミットID</th>
                 <th>メッセージ</th>
                 <th className="w-20">作成者</th>
-                <th className="w-32">日時</th>
+                <th className="w-40">日時</th>
                 <th className="w-20">関連</th>
                 <th className="w-16">操作</th>
               </tr>
@@ -411,6 +509,27 @@ export function RepositoryDetailScreen({
               )}
             </tbody>
           </table>
+          <div className={PAGER_CLASS}>
+            <span className={MUTED_CLASS}>
+              {repositoryQuery.isPending
+                ? `ページ ${commitPage} を取得中...`
+                : `全 ${latestCommit?.history.totalCount ?? 0}件中 ページ ${commitPage} / 1ページ ${REPOSITORY_DETAIL_COMMIT_PAGE_SIZE}件`}
+            </span>
+            {renderCommitPagerButton("≪先頭", commitPage === 1 || repositoryQuery.isPending, () =>
+              applyRepositoryDetailSearchParams("commits", pullRequestStateFilter, 1, [null]),
+            )}
+            {renderCommitPagerButton(
+              "＜前",
+              commitPage === 1 || repositoryQuery.isPending,
+              goToPreviousCommitPage,
+            )}
+            <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>現在 {commitPage}</span>
+            {renderCommitPagerButton(
+              "次＞",
+              latestCommit?.history.pageInfo.hasNextPage !== true || repositoryQuery.isPending,
+              goToNextCommitPage,
+            )}
+          </div>
         </>
       );
     }
