@@ -1,11 +1,16 @@
 import clsx from "clsx";
+import { useEffect, useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { ClientPager } from "../app/components/ClientPager.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
   fetchGitHubViewerIssues,
@@ -22,7 +27,30 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const PAGE_SIZE = 12;
+const QUERY_SIZE = 60;
+const pageSizeOptions = ["10", "20", "50"] as const;
+const issueStateOptions = ["all", "OPEN", "CLOSED"] as const;
+
+const issueFilterFieldValidators = {
+  query: z.string(),
+  state: z.enum(issueStateOptions),
+  assignee: z.string(),
+  pageSize: z.enum(pageSizeOptions),
+} as const;
+
+type IssueFilterValues = {
+  query: string;
+  state: (typeof issueStateOptions)[number];
+  assignee: string;
+  pageSize: (typeof pageSizeOptions)[number];
+};
+
+const initialIssueFilterValues: IssueFilterValues = {
+  query: "",
+  state: "all",
+  assignee: "",
+  pageSize: "10",
+};
 
 function getIssueState(issue: GitHubViewerIssue): {
   readonly tone: "pending" | "done";
@@ -89,24 +117,90 @@ function renderLabelSummary(issue: GitHubViewerIssue): JSX.Element {
   );
 }
 
+function hasActiveIssueFilters(filters: IssueFilterValues): boolean {
+  return filters.query.trim().length > 0 || filters.state !== "all" || filters.assignee.trim().length > 0;
+}
+
+function filterIssues(issues: readonly GitHubViewerIssue[], filters: IssueFilterValues): GitHubViewerIssue[] {
+  const query = filters.query.trim().toLowerCase();
+  const assignee = filters.assignee.trim().toLowerCase();
+
+  return issues.filter((issue) => {
+    if (
+      query.length > 0 &&
+      !issue.title.toLowerCase().includes(query) &&
+      !`${issue.number}`.includes(query) &&
+      !issue.repository.nameWithOwner.toLowerCase().includes(query)
+    ) {
+      return false;
+    }
+
+    if (filters.state !== "all" && issue.state !== filters.state) {
+      return false;
+    }
+
+    if (assignee.length > 0) {
+      const assignees = (issue.assignees.nodes ?? []).flatMap((node) =>
+        node?.login === undefined ? [] : [node.login.toLowerCase()],
+      );
+
+      if (!assignees.some((login) => login.includes(assignee))) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 export function IssuesScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const issuesQuery = useQuery({
-    queryKey: ["github", "viewer-issues", PAGE_SIZE],
+    queryKey: ["github", "viewer-issues", QUERY_SIZE],
     enabled: accessToken !== undefined,
     queryFn: () =>
       fetchGitHubViewerIssues(accessToken ?? "", {
-        first: PAGE_SIZE,
+        first: QUERY_SIZE,
         after: null,
         states: ["OPEN", "CLOSED"],
       }),
   });
   const issues = (issuesQuery.data?.nodes ?? []).filter((value) => value !== null);
-  const openCount = issues.filter((issue) => issue.state === "OPEN").length;
-  const closedCount = issues.filter((issue) => issue.state === "CLOSED").length;
-  const assignedCount = issues.filter((issue) => issue.assignees.totalCount > 0).length;
-  const unlabeledCount = issues.filter((issue) => (issue.labels?.totalCount ?? 0) === 0).length;
+  const [appliedFilters, setAppliedFilters] = useState<IssueFilterValues>(initialIssueFilterValues);
+  const [currentPage, setCurrentPage] = useState(1);
+  const form = useForm({
+    defaultValues: initialIssueFilterValues,
+    onSubmit: async ({ value }) => {
+      setAppliedFilters(value);
+      setCurrentPage(1);
+    },
+  });
+
+  function applyPreset(next: IssueFilterValues): void {
+    form.reset(next);
+    setAppliedFilters(next);
+    setCurrentPage(1);
+  }
+
+  const filteredIssues = filterIssues(issues, appliedFilters);
+  const openCount = filteredIssues.filter((issue) => issue.state === "OPEN").length;
+  const closedCount = filteredIssues.filter((issue) => issue.state === "CLOSED").length;
+  const assignedCount = filteredIssues.filter((issue) => issue.assignees.totalCount > 0).length;
+  const unlabeledCount = filteredIssues.filter((issue) => (issue.labels?.totalCount ?? 0) === 0).length;
+  const pageSize = Number(appliedFilters.pageSize);
+  const pageCount = Math.max(1, Math.ceil(Math.max(filteredIssues.length, 1) / pageSize));
+
+  useEffect(() => {
+    if (currentPage <= pageCount) {
+      return;
+    }
+
+    setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedIssues = filteredIssues.slice(startIndex, startIndex + pageSize);
 
   return (
     <JtcChrome
@@ -142,7 +236,11 @@ export function IssuesScreen(): JSX.Element {
               >
                 GitHubでIssue作成
               </a>
-              <button type="button" className={buttonClassName()}>
+              <button
+                type="button"
+                className={buttonClassName()}
+                onClick={() => applyPreset({ ...initialIssueFilterValues, state: "OPEN" })}
+              >
                 Openのみ表示
               </button>
               <button type="button" className={buttonClassName()}>
@@ -159,27 +257,84 @@ export function IssuesScreen(): JSX.Element {
     >
       <Panel
         title="照会条件"
-        action={<span className={MUTED_CLASS}>※ 絞込 UI は次工程で client-side filter に接続予定</span>}
+        action={<span className={MUTED_CLASS}>client-side filter / pagination</span>}
         bodyClassName="p-0"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
+        <form
+          className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void form.handleSubmit();
+          }}
+        >
           <label>Issue番号/件名</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="repo #123" />
+          <form.Field name="query" validators={zodValidators(issueFilterFieldValidators.query)}>
+            {(field) => (
+              <input
+                className="border border-slate-400 px-1.5 py-0.5"
+                placeholder="repo #123"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
           <label>状態</label>
-          <select className="border border-slate-400 px-1 py-0.5">
-            <option>──全て──</option>
-            <option>Open</option>
-            <option>Closed</option>
-          </select>
+          <form.Field name="state" validators={zodValidators(issueFilterFieldValidators.state)}>
+            {(field) => (
+              <select
+                className="border border-slate-400 px-1 py-0.5"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value as IssueFilterValues["state"])}
+              >
+                <option value="all">──全て──</option>
+                <option value="OPEN">Open</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            )}
+          </form.Field>
           <label>担当者</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="assignee login" />
-          <button type="button" className={buttonClassName({ tone: "primary" })}>
+          <form.Field name="assignee" validators={zodValidators(issueFilterFieldValidators.assignee)}>
+            {(field) => (
+              <input
+                className="border border-slate-400 px-1.5 py-0.5"
+                placeholder="assignee login"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+          <label>表示件数</label>
+          <form.Field name="pageSize" validators={zodValidators(issueFilterFieldValidators.pageSize)}>
+            {(field) => (
+              <select
+                className="border border-slate-400 px-1 py-0.5"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value as IssueFilterValues["pageSize"])}
+              >
+                {pageSizeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            )}
+          </form.Field>
+          <button type="submit" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
-          <button type="button" className={buttonClassName()}>
+          <button
+            type="button"
+            className={buttonClassName()}
+            onClick={() => applyPreset(initialIssueFilterValues)}
+          >
             クリア
           </button>
-        </div>
+        </form>
       </Panel>
 
       <Panel
@@ -188,7 +343,7 @@ export function IssuesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {issuesQuery.isPending
               ? "GitHub から読込中..."
-              : `viewer.issues ${issuesQuery.data?.totalCount ?? issues.length}件`}
+              : `絞込 ${filteredIssues.length}件 / 全 ${issuesQuery.data?.totalCount ?? issues.length}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -221,14 +376,16 @@ export function IssuesScreen(): JSX.Element {
                     : "Issue 一覧の取得に失敗しました。"}
                 </td>
               </tr>
-            ) : issues.length === 0 ? (
+            ) : pagedIssues.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
-                  viewer に紐づく Issue はありません。
+                  {hasActiveIssueFilters(appliedFilters)
+                    ? "条件に一致する Issue はありません。"
+                    : "viewer に紐づく Issue はありません。"}
                 </td>
               </tr>
             ) : (
-              issues.map((issue) => {
+              pagedIssues.map((issue) => {
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: issue.repository.owner.login,
                   name: issue.repository.name,
@@ -265,6 +422,12 @@ export function IssuesScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <ClientPager
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={filteredIssues.length}
+          onPageChange={setCurrentPage}
+        />
       </Panel>
     </JtcChrome>
   );

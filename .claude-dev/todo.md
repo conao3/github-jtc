@@ -7,6 +7,6 @@
 - [x] Replace issue list/detail screens with real `issues` queries.
 - [x] Replace commit history screen with default branch `history` data.
 - [x] Remove remaining static JTC-only tables or clearly mark them as non-GitHub placeholders.
-- [ ] Add pagination and client-side filters on repository / PR / issue lists.
+- [x] Add pagination and client-side filters on repository / PR / issue lists.
 - [ ] Add empty / permission-denied / rate-limit states for every GitHub-backed screen.
 - [ ] Revisit repository creation flow and decide whether to keep it as a mock or wire it to a real GitHub mutation flow.

@@ -1,11 +1,16 @@
 import clsx from "clsx";
+import { useEffect, useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { ClientPager } from "../app/components/ClientPager.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
   fetchGitHubViewerPullRequests,
@@ -21,7 +26,30 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const PAGE_SIZE = 10;
+const QUERY_SIZE = 60;
+const pageSizeOptions = ["10", "20", "50"] as const;
+const pullRequestStateOptions = ["all", "OPEN", "MERGED", "CLOSED", "DRAFT"] as const;
+
+const pullRequestFilterFieldValidators = {
+  query: z.string(),
+  state: z.enum(pullRequestStateOptions),
+  repository: z.string(),
+  pageSize: z.enum(pageSizeOptions),
+} as const;
+
+type PullRequestFilterValues = {
+  query: string;
+  state: (typeof pullRequestStateOptions)[number];
+  repository: string;
+  pageSize: (typeof pageSizeOptions)[number];
+};
+
+const initialPullRequestFilterValues: PullRequestFilterValues = {
+  query: "",
+  state: "all",
+  repository: "",
+  pageSize: "10",
+};
 
 function getPullRequestState(pullRequest: GitHubViewerPullRequest): {
   readonly tone: "new" | "review" | "pending" | "done" | "rejected";
@@ -55,24 +83,98 @@ function getPullRequestDelta(pullRequest: GitHubViewerPullRequest): string {
   return `${pullRequest.changedFiles}ファイル / +${pullRequest.additions} -${pullRequest.deletions}`;
 }
 
+function hasActivePullRequestFilters(filters: PullRequestFilterValues): boolean {
+  return filters.query.trim().length > 0 || filters.state !== "all" || filters.repository.trim().length > 0;
+}
+
+function filterPullRequests(
+  pullRequests: readonly GitHubViewerPullRequest[],
+  filters: PullRequestFilterValues,
+): GitHubViewerPullRequest[] {
+  const query = filters.query.trim().toLowerCase();
+  const repository = filters.repository.trim().toLowerCase();
+
+  return pullRequests.filter((pullRequest) => {
+    if (
+      query.length > 0 &&
+      !pullRequest.title.toLowerCase().includes(query) &&
+      !`${pullRequest.number}`.includes(query) &&
+      !pullRequest.repository.nameWithOwner.toLowerCase().includes(query)
+    ) {
+      return false;
+    }
+
+    if (repository.length > 0 && !pullRequest.repository.nameWithOwner.toLowerCase().includes(repository)) {
+      return false;
+    }
+
+    switch (filters.state) {
+      case "OPEN":
+        return pullRequest.state === "OPEN" && !pullRequest.isDraft;
+      case "MERGED":
+        return pullRequest.state === "MERGED";
+      case "CLOSED":
+        return pullRequest.state === "CLOSED";
+      case "DRAFT":
+        return pullRequest.isDraft;
+      default:
+        return true;
+    }
+  });
+}
+
 export function PullRequestsScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const pullRequestsQuery = useQuery({
-    queryKey: ["github", "viewer-pull-requests", PAGE_SIZE],
+    queryKey: ["github", "viewer-pull-requests", QUERY_SIZE],
     enabled: accessToken !== undefined,
     queryFn: () =>
       fetchGitHubViewerPullRequests(accessToken ?? "", {
-        first: PAGE_SIZE,
+        first: QUERY_SIZE,
         after: null,
         states: ["OPEN", "MERGED", "CLOSED"],
       }),
   });
   const pullRequests = (pullRequestsQuery.data?.nodes ?? []).filter((value) => value !== null);
-  const openCount = pullRequests.filter((pullRequest) => pullRequest.state === "OPEN").length;
-  const mergedCount = pullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
-  const closedCount = pullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
-  const draftCount = pullRequests.filter((pullRequest) => pullRequest.isDraft).length;
+  const [appliedFilters, setAppliedFilters] = useState<PullRequestFilterValues>(
+    initialPullRequestFilterValues,
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const form = useForm({
+    defaultValues: initialPullRequestFilterValues,
+    onSubmit: async ({ value }) => {
+      setAppliedFilters(value);
+      setCurrentPage(1);
+    },
+  });
+
+  function applyPreset(next: PullRequestFilterValues): void {
+    form.reset(next);
+    setAppliedFilters(next);
+    setCurrentPage(1);
+  }
+
+  const filteredPullRequests = filterPullRequests(pullRequests, appliedFilters);
+  const openCount = filteredPullRequests.filter(
+    (pullRequest) => pullRequest.state === "OPEN" && !pullRequest.isDraft,
+  ).length;
+  const mergedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
+  const closedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
+  const draftCount = filteredPullRequests.filter((pullRequest) => pullRequest.isDraft).length;
+  const pageSize = Number(appliedFilters.pageSize);
+  const pageCount = Math.max(1, Math.ceil(Math.max(filteredPullRequests.length, 1) / pageSize));
+
+  useEffect(() => {
+    if (currentPage <= pageCount) {
+      return;
+    }
+
+    setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedPullRequests = filteredPullRequests.slice(startIndex, startIndex + pageSize);
 
   return (
     <JtcChrome
@@ -108,7 +210,11 @@ export function PullRequestsScreen(): JSX.Element {
               >
                 GitHubでPR作成
               </a>
-              <button type="button" className={buttonClassName()}>
+              <button
+                type="button"
+                className={buttonClassName()}
+                onClick={() => applyPreset({ ...initialPullRequestFilterValues, state: "OPEN" })}
+              >
                 Openのみ表示
               </button>
               <button type="button" className={buttonClassName()}>
@@ -125,29 +231,93 @@ export function PullRequestsScreen(): JSX.Element {
     >
       <Panel
         title="照会条件"
-        action={<span className={MUTED_CLASS}>※ 絞込 UI は次工程で client-side filter に接続予定</span>}
+        action={<span className={MUTED_CLASS}>client-side filter / pagination</span>}
         bodyClassName="p-0"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
+        <form
+          className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void form.handleSubmit();
+          }}
+        >
           <label>PR番号/件名</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="github-jtc #1" />
+          <form.Field name="query" validators={zodValidators(pullRequestFilterFieldValidators.query)}>
+            {(field) => (
+              <input
+                className="border border-slate-400 px-1.5 py-0.5"
+                placeholder="github-jtc #1"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
           <label>状態</label>
-          <select className="border border-slate-400 px-1 py-0.5">
-            <option>──全て──</option>
-            <option>Open</option>
-            <option>Merged</option>
-            <option>Closed</option>
-            <option>Draft</option>
-          </select>
+          <form.Field name="state" validators={zodValidators(pullRequestFilterFieldValidators.state)}>
+            {(field) => (
+              <select
+                className="border border-slate-400 px-1 py-0.5"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) =>
+                  field.handleChange(event.target.value as PullRequestFilterValues["state"])
+                }
+              >
+                <option value="all">──全て──</option>
+                <option value="OPEN">Open</option>
+                <option value="MERGED">Merged</option>
+                <option value="CLOSED">Closed</option>
+                <option value="DRAFT">Draft</option>
+              </select>
+            )}
+          </form.Field>
           <label>リポジトリ</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="owner/repo" />
-          <button type="button" className={buttonClassName({ tone: "primary" })}>
+          <form.Field
+            name="repository"
+            validators={zodValidators(pullRequestFilterFieldValidators.repository)}
+          >
+            {(field) => (
+              <input
+                className="border border-slate-400 px-1.5 py-0.5"
+                placeholder="owner/repo"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+          <label>表示件数</label>
+          <form.Field name="pageSize" validators={zodValidators(pullRequestFilterFieldValidators.pageSize)}>
+            {(field) => (
+              <select
+                className="border border-slate-400 px-1 py-0.5"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) =>
+                  field.handleChange(event.target.value as PullRequestFilterValues["pageSize"])
+                }
+              >
+                {pageSizeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            )}
+          </form.Field>
+          <button type="submit" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
-          <button type="button" className={buttonClassName()}>
+          <button
+            type="button"
+            className={buttonClassName()}
+            onClick={() => applyPreset(initialPullRequestFilterValues)}
+          >
             クリア
           </button>
-        </div>
+        </form>
       </Panel>
 
       <Panel
@@ -156,7 +326,7 @@ export function PullRequestsScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {pullRequestsQuery.isPending
               ? "GitHub から読込中..."
-              : `viewer.pullRequests ${pullRequestsQuery.data?.totalCount ?? pullRequests.length}件`}
+              : `絞込 ${filteredPullRequests.length}件 / 全 ${pullRequestsQuery.data?.totalCount ?? pullRequests.length}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -189,14 +359,16 @@ export function PullRequestsScreen(): JSX.Element {
                     : "PR 一覧の取得に失敗しました。"}
                 </td>
               </tr>
-            ) : pullRequests.length === 0 ? (
+            ) : pagedPullRequests.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
-                  viewer に紐づく PR はありません。
+                  {hasActivePullRequestFilters(appliedFilters)
+                    ? "条件に一致する PR はありません。"
+                    : "viewer に紐づく PR はありません。"}
                 </td>
               </tr>
             ) : (
-              pullRequests.map((pullRequest) => {
+              pagedPullRequests.map((pullRequest) => {
                 const state = getPullRequestState(pullRequest);
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: pullRequest.repository.owner.login,
@@ -244,6 +416,12 @@ export function PullRequestsScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <ClientPager
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={filteredPullRequests.length}
+          onPageChange={setCurrentPage}
+        />
       </Panel>
     </JtcChrome>
   );
