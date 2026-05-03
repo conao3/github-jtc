@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useGitHubCallbackMutation } from "../app/auth.tsx";
@@ -12,15 +12,67 @@ import {
   TEXT_LINK_CLASS,
 } from "../app/styles.ts";
 
+const LOGIN_CALLBACK_STORAGE_KEY = "github-jtc:login-callback";
+
+interface LoginCallbackParams {
+  readonly code: string | null;
+  readonly returnedState: string | null;
+  readonly error: string | null;
+  readonly errorDescription: string | null;
+}
+
+function readStoredCallbackParams(): LoginCallbackParams | null {
+  const payload = sessionStorage.getItem(LOGIN_CALLBACK_STORAGE_KEY);
+
+  if (payload === null) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(payload) as {
+      code?: string | null;
+      state?: string | null;
+      error?: string | null;
+      errorDescription?: string | null;
+    };
+
+    return {
+      code: parsed.code ?? null,
+      returnedState: parsed.state ?? null,
+      error: parsed.error ?? null,
+      errorDescription: parsed.errorDescription ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readCallbackParams(searchParams: URLSearchParams): LoginCallbackParams {
+  const stored = readStoredCallbackParams();
+
+  if (stored !== null) {
+    return stored;
+  }
+
+  return {
+    code: searchParams.get("code"),
+    returnedState: searchParams.get("state"),
+    error: searchParams.get("error"),
+    errorDescription: searchParams.get("error_description"),
+  };
+}
+
 export function LoginCallbackScreen(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const callbackMutation = useGitHubCallbackMutation();
   const startedRef = useRef(false);
-  const code = searchParams.get("code");
-  const returnedState = searchParams.get("state");
-  const error = searchParams.get("error");
-  const errorDescription = searchParams.get("error_description");
+  const [callbackParams] = useState(() => readCallbackParams(searchParams));
+  const { code, returnedState, error, errorDescription } = callbackParams;
+
+  useEffect(() => {
+    sessionStorage.removeItem(LOGIN_CALLBACK_STORAGE_KEY);
+  }, []);
 
   useEffect(() => {
     if (startedRef.current || error !== null || code === null || returnedState === null) {
@@ -77,8 +129,7 @@ export function LoginCallbackScreen(): JSX.Element {
                   <div className="border border-amber-500 bg-amber-100 px-3 py-2">
                     GitHub 認証コードを交換し、GraphQL で利用者情報を取得しています。
                   </div>
-                  <div className={MONO_CLASS}>code: {code}</div>
-                  <div className={MONO_CLASS}>state: {returnedState}</div>
+                  <div>認証情報の処理中です。完了までそのままお待ちください。</div>
                 </div>
               ) : callbackMutation.isError ? (
                 <div className="space-y-2 text-xs">
