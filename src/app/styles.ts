@@ -72,7 +72,7 @@ export const IE_NOTICE_CLASS =
 
 export const MAIN_COL_CLASS = "min-w-0 flex-1 overflow-auto bg-slate-50 p-2";
 export const RIGHT_COL_CLASS =
-  "w-52 shrink-0 overflow-auto border-l border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 p-2 xl:w-60";
+  "w-70 shrink-0 overflow-auto border-l border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 p-2 xl:w-60";
 
 export const FOOTER_CLASS = clsx(
   "flex shrink-0 items-center justify-between gap-2 overflow-x-auto whitespace-nowrap border-t border-slate-400",
