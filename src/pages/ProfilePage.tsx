@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -27,6 +28,9 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
+const PROFILE_ORGANIZATIONS_PAGE_SIZE = 10;
+const PROFILE_REPOSITORIES_PAGE_SIZE = 5;
+
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
 }
@@ -45,13 +49,21 @@ function getProfileQueryRange(): { readonly from: string; readonly to: string } 
 export function ProfileScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
+  const organizationsPager = useCursorPagerState();
+  const repositoriesPager = useCursorPagerState();
   const range = getProfileQueryRange();
   const profileQuery = useQuery(ViewerProfileDocument, {
     skip: accessToken === undefined,
-    variables: range,
+    variables: {
+      ...range,
+      organizationsFirst: PROFILE_ORGANIZATIONS_PAGE_SIZE,
+      organizationsAfter: organizationsPager.currentCursor,
+      repositoriesFirst: PROFILE_REPOSITORIES_PAGE_SIZE,
+      repositoriesAfter: repositoriesPager.currentCursor,
+    },
     fetchPolicy: "network-only",
   });
-  const profile = profileQuery.data?.viewer;
+  const profile = profileQuery.data?.viewer ?? profileQuery.previousData?.viewer;
   const organizations = (profile?.organizations.nodes ?? []).filter(isPresent);
   const repositories = (profile?.repositories.nodes ?? []).filter(isPresent);
 
@@ -121,6 +133,17 @@ export function ProfileScreen(): JSX.Element {
                 )}
               </tbody>
             </table>
+            <CursorPager
+              currentPage={repositoriesPager.currentPage}
+              pageSize={PROFILE_REPOSITORIES_PAGE_SIZE}
+              visibleCount={repositories.length}
+              totalCount={profile?.repositories.totalCount}
+              hasNextPage={profile?.repositories.pageInfo.hasNextPage ?? false}
+              isLoading={profileQuery.loading}
+              onFirstPage={repositoriesPager.goToFirstPage}
+              onPreviousPage={repositoriesPager.goToPreviousPage}
+              onNextPage={() => repositoriesPager.goToNextPage(profile?.repositories.pageInfo.endCursor)}
+            />
           </Panel>
 
           <Panel title="お問い合わせ">
@@ -139,7 +162,7 @@ export function ProfileScreen(): JSX.Element {
           </span>
         }
       >
-        {profileQuery.loading ? (
+        {profileQuery.loading && profile === undefined ? (
           <div className="py-8 text-center text-slate-600">GitHub プロフィール情報を取得しています。</div>
         ) : profileQuery.error || profile === undefined ? (
           <GitHubInlineState
@@ -275,6 +298,17 @@ export function ProfileScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={repositoriesPager.currentPage}
+          pageSize={PROFILE_REPOSITORIES_PAGE_SIZE}
+          visibleCount={repositories.length}
+          totalCount={profile?.repositories.totalCount}
+          hasNextPage={profile?.repositories.pageInfo.hasNextPage ?? false}
+          isLoading={profileQuery.loading}
+          onFirstPage={repositoriesPager.goToFirstPage}
+          onPreviousPage={repositoriesPager.goToPreviousPage}
+          onNextPage={() => repositoriesPager.goToNextPage(profile?.repositories.pageInfo.endCursor)}
+        />
       </Panel>
 
       <Panel title="活動実績（直近30日）">
@@ -336,6 +370,17 @@ export function ProfileScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={organizationsPager.currentPage}
+          pageSize={PROFILE_ORGANIZATIONS_PAGE_SIZE}
+          visibleCount={organizations.length}
+          totalCount={profile?.organizations.totalCount}
+          hasNextPage={profile?.organizations.pageInfo.hasNextPage ?? false}
+          isLoading={profileQuery.loading}
+          onFirstPage={organizationsPager.goToFirstPage}
+          onPreviousPage={organizationsPager.goToPreviousPage}
+          onNextPage={() => organizationsPager.goToNextPage(profile?.organizations.pageInfo.endCursor)}
+        />
       </Panel>
     </JtcChrome>
   );

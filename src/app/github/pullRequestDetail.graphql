@@ -3,9 +3,13 @@ query PullRequestDetail(
   $name: String!
   $number: Int!
   $filesFirst: Int!
+  $filesAfter: String
   $reviewsFirst: Int!
   $threadsFirst: Int!
   $commitsFirst: Int!
+  $commitsAfter: String
+  $closingIssuesFirst: Int!
+  $closingIssuesAfter: String
 ) {
   repository(owner: $owner, name: $name) {
     id
@@ -35,8 +39,12 @@ query PullRequestDetail(
       comments {
         totalCount
       }
-      commits(first: $commitsFirst) {
+      commits(first: $commitsFirst, after: $commitsAfter) {
         totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           commit {
@@ -57,8 +65,12 @@ query PullRequestDetail(
           }
         }
       }
-      files(first: $filesFirst) {
+      files(first: $filesFirst, after: $filesAfter) {
         totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           additions
           deletions
@@ -148,7 +160,12 @@ query PullRequestDetail(
           }
         }
       }
-      closingIssuesReferences(first: 5) {
+      closingIssuesReferences(first: $closingIssuesFirst, after: $closingIssuesAfter) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           number

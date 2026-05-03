@@ -2,6 +2,7 @@ query Dashboard(
   $from: DateTime!
   $to: DateTime!
   $recentReposFirst: Int!
+  $recentReposAfter: String
   $todoFirst: Int!
   $reviewRequestQuery: String!
   $issueAssignmentQuery: String!
@@ -14,11 +15,16 @@ query Dashboard(
     company
     repositories(
       first: $recentReposFirst
+      after: $recentReposAfter
       affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
       orderBy: { field: PUSHED_AT, direction: DESC }
       isFork: false
     ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         name

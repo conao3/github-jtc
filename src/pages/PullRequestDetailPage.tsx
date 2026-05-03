@@ -3,6 +3,7 @@ import { useQuery } from "@apollo/client/react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -33,6 +34,9 @@ import {
   buttonClassName,
   flowStepClassName,
 } from "../app/styles.ts";
+
+const PULL_REQUEST_DETAIL_FILES_PAGE_SIZE = 20;
+const PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE = 5;
 
 function getPullRequestState(pullRequest: GitHubPullRequestDetail): {
   readonly tone: "new" | "review" | "pending" | "done" | "rejected";
@@ -148,6 +152,8 @@ export function PullRequestDetailScreen({
 }: {
   readonly prId?: string;
 }): JSX.Element {
+  const filesPager = useCursorPagerState();
+  const closingIssuesPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
@@ -157,14 +163,19 @@ export function PullRequestDetailScreen({
       owner: coordinates?.owner ?? "",
       name: coordinates?.name ?? "",
       number: coordinates?.number ?? 0,
-      filesFirst: 20,
+      filesFirst: PULL_REQUEST_DETAIL_FILES_PAGE_SIZE,
+      filesAfter: filesPager.currentCursor,
       reviewsFirst: 10,
       threadsFirst: 20,
       commitsFirst: 10,
+      commitsAfter: null,
+      closingIssuesFirst: PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE,
+      closingIssuesAfter: closingIssuesPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
-  const pullRequest = detailQuery.data?.repository?.pullRequest;
+  const pullRequest =
+    detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;
   const state = pullRequest === null || pullRequest === undefined ? null : getPullRequestState(pullRequest);
   const workflow = pullRequest === null || pullRequest === undefined ? [] : getWorkflowSteps(pullRequest);
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
@@ -244,6 +255,19 @@ export function PullRequestDetailScreen({
                 )}
               </tbody>
             </table>
+            <CursorPager
+              currentPage={closingIssuesPager.currentPage}
+              pageSize={PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE}
+              visibleCount={closingIssues.length}
+              totalCount={pullRequest?.closingIssuesReferences?.totalCount}
+              hasNextPage={pullRequest?.closingIssuesReferences?.pageInfo.hasNextPage ?? false}
+              isLoading={detailQuery.loading}
+              onFirstPage={closingIssuesPager.goToFirstPage}
+              onPreviousPage={closingIssuesPager.goToPreviousPage}
+              onNextPage={() =>
+                closingIssuesPager.goToNextPage(pullRequest?.closingIssuesReferences?.pageInfo.endCursor)
+              }
+            />
           </Panel>
 
           <Panel title="レビュー投稿一覧" bodyClassName="p-0">
@@ -304,7 +328,7 @@ export function PullRequestDetailScreen({
             detail="一覧画面から対象プルリクエストを選び直してください。"
             className="py-8"
           />
-        ) : detailQuery.loading ? (
+        ) : detailQuery.loading && pullRequest == null ? (
           <div className="py-8 text-center text-slate-600">
             GitHub からプルリクエスト詳細を取得しています。
           </div>
@@ -457,6 +481,17 @@ export function PullRequestDetailScreen({
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={filesPager.currentPage}
+          pageSize={PULL_REQUEST_DETAIL_FILES_PAGE_SIZE}
+          visibleCount={files.length}
+          totalCount={pullRequest?.files?.totalCount}
+          hasNextPage={pullRequest?.files?.pageInfo.hasNextPage ?? false}
+          isLoading={detailQuery.loading}
+          onFirstPage={filesPager.goToFirstPage}
+          onPreviousPage={filesPager.goToPreviousPage}
+          onNextPage={() => filesPager.goToNextPage(pullRequest?.files?.pageInfo.endCursor)}
+        />
       </Panel>
 
       <Panel

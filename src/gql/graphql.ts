@@ -265,6 +265,7 @@ export type DashboardQueryVariables = Exact<{
   from: string;
   to: string;
   recentReposFirst: number;
+  recentReposAfter?: string | null | undefined;
   todoFirst: number;
   reviewRequestQuery: string;
   issueAssignmentQuery: string;
@@ -279,6 +280,7 @@ export type DashboardQuery = {
     company: string | null;
     repositories: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         name: string;
@@ -364,6 +366,7 @@ export type IssueDetailQueryVariables = Exact<{
   labelsFirst: number;
   assigneesFirst: number;
   timelineFirst: number;
+  timelineAfter?: string | null | undefined;
 }>;
 
 export type IssueDetailQuery = {
@@ -396,6 +399,7 @@ export type IssueDetailQuery = {
       } | null;
       assignees: { totalCount: number; nodes: Array<{ login: string; url: string } | null> | null };
       timelineItems: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
         nodes: Array<
           | { __typename: "AddedToProjectEvent" }
           | { __typename: "AddedToProjectV2Event" }
@@ -555,9 +559,13 @@ export type PullRequestDetailQueryVariables = Exact<{
   name: string;
   number: number;
   filesFirst: number;
+  filesAfter?: string | null | undefined;
   reviewsFirst: number;
   threadsFirst: number;
   commitsFirst: number;
+  commitsAfter?: string | null | undefined;
+  closingIssuesFirst: number;
+  closingIssuesAfter?: string | null | undefined;
 }>;
 
 export type PullRequestDetailQuery = {
@@ -589,6 +597,7 @@ export type PullRequestDetailQuery = {
       comments: { totalCount: number };
       commits: {
         totalCount: number;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
         nodes: Array<{
           id: string;
           commit: {
@@ -607,6 +616,7 @@ export type PullRequestDetailQuery = {
       };
       files: {
         totalCount: number;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
         nodes: Array<{
           additions: number;
           deletions: number;
@@ -679,6 +689,8 @@ export type PullRequestDetailQuery = {
         } | null> | null;
       };
       closingIssuesReferences: {
+        totalCount: number;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
         nodes: Array<{
           id: string;
           number: number;
@@ -696,6 +708,14 @@ export type RepositoryDetailQueryVariables = Exact<{
   name: string;
   rootExpression: string;
   readmeExpression: string;
+  pullRequestsFirst: number;
+  pullRequestsAfter?: string | null | undefined;
+  branchesFirst: number;
+  branchesAfter?: string | null | undefined;
+  tagsFirst: number;
+  tagsAfter?: string | null | undefined;
+  languagesFirst: number;
+  languagesAfter?: string | null | undefined;
 }>;
 
 export type RepositoryDetailQuery = {
@@ -719,6 +739,7 @@ export type RepositoryDetailQuery = {
     openPullRequests: { totalCount: number };
     pullRequests: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         number: number;
@@ -740,6 +761,7 @@ export type RepositoryDetailQuery = {
     };
     primaryLanguage: { name: string; color: string | null } | null;
     languages: {
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       edges: Array<{ size: number; node: { id: string; name: string; color: string | null } } | null> | null;
     } | null;
     owner:
@@ -765,6 +787,7 @@ export type RepositoryDetailQuery = {
     } | null;
     refs: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         name: string;
@@ -783,6 +806,7 @@ export type RepositoryDetailQuery = {
     } | null;
     tagRefs: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         name: string;
@@ -878,6 +902,10 @@ export type ViewerIssuesQuery = {
 export type ViewerProfileQueryVariables = Exact<{
   from: string;
   to: string;
+  organizationsFirst: number;
+  organizationsAfter?: string | null | undefined;
+  repositoriesFirst: number;
+  repositoriesAfter?: string | null | undefined;
 }>;
 
 export type ViewerProfileQuery = {
@@ -897,6 +925,7 @@ export type ViewerProfileQuery = {
     following: { totalCount: number };
     organizations: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         login: string;
@@ -907,6 +936,7 @@ export type ViewerProfileQuery = {
     };
     repositories: {
       totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
       nodes: Array<{
         id: string;
         name: string;
@@ -1489,6 +1519,11 @@ export const DashboardDocument = {
         },
         {
           kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "recentReposAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
           variable: { kind: "Variable", name: { kind: "Name", value: "todoFirst" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
         },
@@ -1532,6 +1567,11 @@ export const DashboardDocument = {
                     },
                     {
                       kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "recentReposAfter" } },
+                    },
+                    {
+                      kind: "Argument",
                       name: { kind: "Name", value: "affiliations" },
                       value: {
                         kind: "ListValue",
@@ -1571,6 +1611,17 @@ export const DashboardDocument = {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },
@@ -1880,6 +1931,11 @@ export const IssueDetailDocument = {
           variable: { kind: "Variable", name: { kind: "Name", value: "timelineFirst" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
         },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "timelineAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2040,6 +2096,11 @@ export const IssueDetailDocument = {
                           },
                           {
                             kind: "Argument",
+                            name: { kind: "Name", value: "after" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "timelineAfter" } },
+                          },
+                          {
+                            kind: "Argument",
                             name: { kind: "Name", value: "itemTypes" },
                             value: {
                               kind: "ListValue",
@@ -2058,6 +2119,17 @@ export const IssueDetailDocument = {
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pageInfo" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                  { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                ],
+                              },
+                            },
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "nodes" },
@@ -2430,6 +2502,11 @@ export const PullRequestDetailDocument = {
         },
         {
           kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "filesAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
           variable: { kind: "Variable", name: { kind: "Name", value: "reviewsFirst" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
         },
@@ -2442,6 +2519,21 @@ export const PullRequestDetailDocument = {
           kind: "VariableDefinition",
           variable: { kind: "Variable", name: { kind: "Name", value: "commitsFirst" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "commitsAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "closingIssuesFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "closingIssuesAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
       ],
       selectionSet: {
@@ -2518,11 +2610,27 @@ export const PullRequestDetailDocument = {
                             name: { kind: "Name", value: "first" },
                             value: { kind: "Variable", name: { kind: "Name", value: "commitsFirst" } },
                           },
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "after" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "commitsAfter" } },
+                          },
                         ],
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
                             { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pageInfo" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                  { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                ],
+                              },
+                            },
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "nodes" },
@@ -2612,11 +2720,27 @@ export const PullRequestDetailDocument = {
                             name: { kind: "Name", value: "first" },
                             value: { kind: "Variable", name: { kind: "Name", value: "filesFirst" } },
                           },
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "after" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "filesAfter" } },
+                          },
                         ],
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
                             { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pageInfo" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                  { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                ],
+                              },
+                            },
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "nodes" },
@@ -2965,12 +3089,29 @@ export const PullRequestDetailDocument = {
                           {
                             kind: "Argument",
                             name: { kind: "Name", value: "first" },
-                            value: { kind: "IntValue", value: "5" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "closingIssuesFirst" } },
+                          },
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "after" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "closingIssuesAfter" } },
                           },
                         ],
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
+                            { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pageInfo" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                  { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                ],
+                              },
+                            },
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "nodes" },
@@ -3026,6 +3167,46 @@ export const RepositoryDetailDocument = {
           kind: "VariableDefinition",
           variable: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "pullRequestsFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "pullRequestsAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "branchesFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "branchesAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "tagsFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "tagsAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "languagesFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "languagesAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
       ],
       selectionSet: {
@@ -3109,7 +3290,12 @@ export const RepositoryDetailDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "30" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "pullRequestsFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "pullRequestsAfter" } },
                     },
                     {
                       kind: "Argument",
@@ -3135,6 +3321,17 @@ export const RepositoryDetailDocument = {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },
@@ -3189,7 +3386,12 @@ export const RepositoryDetailDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "6" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "languagesFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "languagesAfter" } },
                     },
                     {
                       kind: "Argument",
@@ -3214,6 +3416,17 @@ export const RepositoryDetailDocument = {
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "edges" },
@@ -3358,7 +3571,12 @@ export const RepositoryDetailDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "10" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "branchesFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "branchesAfter" } },
                     },
                     {
                       kind: "Argument",
@@ -3384,6 +3602,17 @@ export const RepositoryDetailDocument = {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },
@@ -3455,7 +3684,12 @@ export const RepositoryDetailDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "10" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "tagsFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "tagsAfter" } },
                     },
                     {
                       kind: "Argument",
@@ -3481,6 +3715,17 @@ export const RepositoryDetailDocument = {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },
@@ -3924,6 +4169,26 @@ export const ViewerProfileDocument = {
             type: { kind: "NamedType", name: { kind: "Name", value: "DateTime" } },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "organizationsFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "organizationsAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "repositoriesFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "repositoriesAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -3978,13 +4243,29 @@ export const ViewerProfileDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "10" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "organizationsFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "organizationsAfter" } },
                     },
                   ],
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },
@@ -4019,7 +4300,12 @@ export const ViewerProfileDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },
-                      value: { kind: "IntValue", value: "5" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "repositoriesFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "repositoriesAfter" } },
                     },
                     {
                       kind: "Argument",
@@ -4062,6 +4348,17 @@ export const ViewerProfileDocument = {
                     kind: "SelectionSet",
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "nodes" },

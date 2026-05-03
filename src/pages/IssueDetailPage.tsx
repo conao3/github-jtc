@@ -3,6 +3,7 @@ import { useQuery } from "@apollo/client/react";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -188,6 +189,7 @@ export function IssueDetailScreen({
 }: {
   readonly issueId?: string;
 }): JSX.Element {
+  const timelinePager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(issueId, sessionQuery.data?.user.login);
@@ -200,14 +202,16 @@ export function IssueDetailScreen({
       labelsFirst: 10,
       assigneesFirst: 10,
       timelineFirst: 20,
+      timelineAfter: timelinePager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
-  const issue = detailQuery.data?.repository?.issue;
+  const issue = detailQuery.data?.repository?.issue ?? detailQuery.previousData?.repository?.issue;
   const state = issue === null || issue === undefined ? null : getIssueState(issue);
   const assignees = issue === null || issue === undefined ? [] : getAssigneeLabels(issue);
   const labels = (issue?.labels?.nodes ?? []).filter((label) => label !== null);
   const timelineRows = issue === null || issue === undefined ? [] : buildTimelineRows(issue);
+  const timelineConnection = issue?.timelineItems;
 
   return (
     <JtcChrome
@@ -329,7 +333,7 @@ export function IssueDetailScreen({
             detail="一覧画面から対象チケットを選び直してください。"
             className="py-8"
           />
-        ) : detailQuery.loading ? (
+        ) : detailQuery.loading && issue == null ? (
           <div className="py-8 text-center text-slate-600">GitHub からチケット詳細を取得しています。</div>
         ) : detailQuery.error ? (
           <GitHubInlineState
@@ -429,7 +433,7 @@ export function IssueDetailScreen({
                 title="チケット識別子を解釈できませんでした。"
                 detail="一覧画面から対象チケットを選び直してください。"
               />
-            ) : detailQuery.loading ? (
+            ) : detailQuery.loading && timelineRows.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-6 text-center text-slate-600">
                   GitHub から更新履歴を取得しています。
@@ -463,6 +467,16 @@ export function IssueDetailScreen({
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={timelinePager.currentPage}
+          pageSize={20}
+          visibleCount={timelineRows.length}
+          hasNextPage={timelineConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={detailQuery.loading}
+          onFirstPage={timelinePager.goToFirstPage}
+          onPreviousPage={timelinePager.goToPreviousPage}
+          onNextPage={() => timelinePager.goToNextPage(timelineConnection?.pageInfo.endCursor)}
+        />
       </Panel>
     </JtcChrome>
   );

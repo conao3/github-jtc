@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
@@ -42,6 +43,10 @@ import {
 type RepositoryDetailTab = "files" | "commits" | "pullRequests" | "refs";
 type PullRequestStateFilter = "open" | "all" | "merged" | "closed";
 const REPOSITORY_DETAIL_COMMIT_PAGE_SIZE = 10;
+const REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE = 20;
+const REPOSITORY_DETAIL_BRANCH_PAGE_SIZE = 10;
+const REPOSITORY_DETAIL_TAG_PAGE_SIZE = 10;
+const REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE = 6;
 
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
@@ -197,6 +202,10 @@ export function RepositoryDetailScreen({
     parseCommitCursorHistory(searchParams),
   );
   const [commitPage, setCommitPage] = useState<number>(() => parseCommitPage(searchParams));
+  const pullRequestsPager = useCursorPagerState();
+  const branchesPager = useCursorPagerState();
+  const tagsPager = useCursorPagerState();
+  const languagesPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
@@ -208,6 +217,14 @@ export function RepositoryDetailScreen({
       name: coordinates?.name ?? "",
       rootExpression: "HEAD:",
       readmeExpression: "HEAD:README.md",
+      pullRequestsFirst: REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE,
+      pullRequestsAfter: pullRequestsPager.currentCursor,
+      branchesFirst: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
+      branchesAfter: branchesPager.currentCursor,
+      tagsFirst: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
+      tagsAfter: tagsPager.currentCursor,
+      languagesFirst: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
+      languagesAfter: languagesPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
@@ -222,7 +239,7 @@ export function RepositoryDetailScreen({
     },
     fetchPolicy: "network-only",
   });
-  const repository = repositoryQuery.data?.repository;
+  const repository = repositoryQuery.data?.repository ?? repositoryQuery.previousData?.repository;
   const latestCommit =
     repository?.defaultBranchRef?.target?.__typename === "Commit" ? repository.defaultBranchRef.target : null;
   const commitHistoryRepository =
@@ -236,7 +253,8 @@ export function RepositoryDetailScreen({
       ? (repository.rootEntries.entries ?? []).filter(isPresent)
       : [];
   const recentCommits = (commitHistoryTarget?.history.nodes ?? []).filter(isPresent);
-  const recentPullRequests = (repository?.pullRequests.nodes ?? []).filter(isPresent);
+  const pullRequestsConnection = repository?.pullRequests;
+  const recentPullRequests = (pullRequestsConnection?.nodes ?? []).filter(isPresent);
   const visiblePullRequests = recentPullRequests.filter((pullRequest) => {
     switch (pullRequestStateFilter) {
       case "all":
@@ -251,11 +269,14 @@ export function RepositoryDetailScreen({
         return true;
     }
   });
-  const branchRefs = (repository?.refs?.nodes ?? []).filter(isPresent);
-  const tagRefs = (repository?.tagRefs?.nodes ?? []).filter(isPresent);
+  const branchesConnection = repository?.refs;
+  const branchRefs = (branchesConnection?.nodes ?? []).filter(isPresent);
+  const tagRefsConnection = repository?.tagRefs;
+  const tagRefs = (tagRefsConnection?.nodes ?? []).filter(isPresent);
   const readmeText =
     repository?.readme?.__typename === "Blob" && !repository.readme.isBinary ? repository.readme.text : null;
-  const languageEdges = repository?.languages?.edges ?? [];
+  const languagesConnection = repository?.languages;
+  const languageEdges = languagesConnection?.edges ?? [];
   const totalLanguageSize = sumLanguageSizes(languageEdges);
   const repositoryPath =
     coordinates === null ? null : createRepositoryPath({ owner: coordinates.owner, name: coordinates.name });
@@ -651,6 +672,17 @@ export function RepositoryDetailScreen({
               )}
             </tbody>
           </table>
+          <CursorPager
+            currentPage={pullRequestsPager.currentPage}
+            pageSize={REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE}
+            visibleCount={visiblePullRequests.length}
+            totalCount={pullRequestsConnection?.totalCount}
+            hasNextPage={pullRequestsConnection?.pageInfo.hasNextPage ?? false}
+            isLoading={repositoryQuery.loading}
+            onFirstPage={pullRequestsPager.goToFirstPage}
+            onPreviousPage={pullRequestsPager.goToPreviousPage}
+            onNextPage={() => pullRequestsPager.goToNextPage(pullRequestsConnection?.pageInfo.endCursor)}
+          />
         </>
       );
     }
@@ -687,6 +719,17 @@ export function RepositoryDetailScreen({
               )}
             </tbody>
           </table>
+          <CursorPager
+            currentPage={branchesPager.currentPage}
+            pageSize={REPOSITORY_DETAIL_BRANCH_PAGE_SIZE}
+            visibleCount={branchRefs.length}
+            totalCount={branchesConnection?.totalCount}
+            hasNextPage={branchesConnection?.pageInfo.hasNextPage ?? false}
+            isLoading={repositoryQuery.loading}
+            onFirstPage={branchesPager.goToFirstPage}
+            onPreviousPage={branchesPager.goToPreviousPage}
+            onNextPage={() => branchesPager.goToNextPage(branchesConnection?.pageInfo.endCursor)}
+          />
         </Panel>
 
         <Panel title={`タグ一覧 (${repository?.tagRefs?.totalCount ?? 0})`} bodyClassName="p-0">
@@ -717,6 +760,17 @@ export function RepositoryDetailScreen({
               )}
             </tbody>
           </table>
+          <CursorPager
+            currentPage={tagsPager.currentPage}
+            pageSize={REPOSITORY_DETAIL_TAG_PAGE_SIZE}
+            visibleCount={tagRefs.length}
+            totalCount={tagRefsConnection?.totalCount}
+            hasNextPage={tagRefsConnection?.pageInfo.hasNextPage ?? false}
+            isLoading={repositoryQuery.loading}
+            onFirstPage={tagsPager.goToFirstPage}
+            onPreviousPage={tagsPager.goToPreviousPage}
+            onNextPage={() => tagsPager.goToNextPage(tagRefsConnection?.pageInfo.endCursor)}
+          />
         </Panel>
       </div>
     );
@@ -790,6 +844,17 @@ export function RepositoryDetailScreen({
                 )}
               </tbody>
             </table>
+            <CursorPager
+              currentPage={branchesPager.currentPage}
+              pageSize={REPOSITORY_DETAIL_BRANCH_PAGE_SIZE}
+              visibleCount={branchRefs.length}
+              totalCount={branchesConnection?.totalCount}
+              hasNextPage={branchesConnection?.pageInfo.hasNextPage ?? false}
+              isLoading={repositoryQuery.loading}
+              onFirstPage={branchesPager.goToFirstPage}
+              onPreviousPage={branchesPager.goToPreviousPage}
+              onNextPage={() => branchesPager.goToNextPage(branchesConnection?.pageInfo.endCursor)}
+            />
           </Panel>
 
           <Panel title="お問い合わせ">
@@ -816,7 +881,7 @@ export function RepositoryDetailScreen({
             detail="一覧画面から対象リポジトリを選び直してください。"
             className="py-8"
           />
-        ) : repositoryQuery.loading ? (
+        ) : repositoryQuery.loading && repository == null ? (
           <div className="py-8 text-center text-slate-600">GitHub からリポジトリ詳細を取得しています。</div>
         ) : repositoryQuery.error ? (
           <GitHubInlineState
@@ -930,7 +995,7 @@ export function RepositoryDetailScreen({
             detail="一覧画面から対象リポジトリを選び直してください。"
             className="py-8"
           />
-        ) : repositoryQuery.loading ? (
+        ) : repositoryQuery.loading && repository == null ? (
           <div className="py-8 text-center text-slate-600">GitHub からタブ内容を取得しています。</div>
         ) : repositoryQuery.error ? (
           <GitHubInlineState
@@ -999,6 +1064,18 @@ export function RepositoryDetailScreen({
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={languagesPager.currentPage}
+          pageSize={REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE}
+          visibleCount={
+            languageEdges.filter((edge) => edge?.node !== null && edge?.node !== undefined).length
+          }
+          hasNextPage={languagesConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={repositoryQuery.loading}
+          onFirstPage={languagesPager.goToFirstPage}
+          onPreviousPage={languagesPager.goToPreviousPage}
+          onNextPage={() => languagesPager.goToNextPage(languagesConnection?.pageInfo.endCursor)}
+        />
       </Panel>
     </JtcChrome>
   );

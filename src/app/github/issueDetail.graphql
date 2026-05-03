@@ -5,6 +5,7 @@ query IssueDetail(
   $labelsFirst: Int!
   $assigneesFirst: Int!
   $timelineFirst: Int!
+  $timelineAfter: String
 ) {
   repository(owner: $owner, name: $name) {
     issue(number: $number) {
@@ -53,6 +54,7 @@ query IssueDetail(
       }
       timelineItems(
         first: $timelineFirst
+        after: $timelineAfter
         itemTypes: [
           ISSUE_COMMENT
           CLOSED_EVENT
@@ -63,6 +65,10 @@ query IssueDetail(
           UNLABELED_EVENT
         ]
       ) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           __typename
           ... on IssueComment {

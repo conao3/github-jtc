@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -40,11 +41,14 @@ interface PullRequestDiffFileEntry {
   readonly previousFilename?: string;
 }
 
+const PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE = 10;
+
 export function PullRequestDiffScreen({
   prId = "conao3:github-jtc:1",
 }: {
   readonly prId?: string;
 }): JSX.Element {
+  const commitsPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
@@ -57,7 +61,11 @@ export function PullRequestDiffScreen({
       filesFirst: 50,
       reviewsFirst: 10,
       threadsFirst: 50,
-      commitsFirst: 10,
+      commitsFirst: PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE,
+      commitsAfter: commitsPager.currentCursor,
+      filesAfter: null,
+      closingIssuesFirst: 5,
+      closingIssuesAfter: null,
     },
     fetchPolicy: "network-only",
   });
@@ -77,7 +85,8 @@ export function PullRequestDiffScreen({
         number: coordinates?.number ?? 0,
       }),
   });
-  const pullRequest = detailQuery.data?.repository?.pullRequest;
+  const pullRequest =
+    detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
   const restFiles = restFilesQuery.data ?? [];
   const [selectedPath, setSelectedPath] = useState<string>("");
@@ -153,7 +162,7 @@ export function PullRequestDiffScreen({
     { label: "レビューコメントを確認", checked: threadComments.length > 0 },
     { label: "コミット履歴を確認", checked: commits.length > 0 },
   ] as const;
-  const isPending = detailQuery.loading || restFilesQuery.isPending;
+  const isPending = (detailQuery.loading && pullRequest == null) || restFilesQuery.isPending;
   const error = detailQuery.error ?? restFilesQuery.error;
   const isError = detailQuery.error !== undefined || restFilesQuery.isError;
 
@@ -423,6 +432,17 @@ export function PullRequestDiffScreen({
             )}
           </tbody>
         </table>
+        <CursorPager
+          currentPage={commitsPager.currentPage}
+          pageSize={PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE}
+          visibleCount={commits.length}
+          totalCount={pullRequest?.commits?.totalCount}
+          hasNextPage={pullRequest?.commits?.pageInfo.hasNextPage ?? false}
+          isLoading={detailQuery.loading}
+          onFirstPage={commitsPager.goToFirstPage}
+          onPreviousPage={commitsPager.goToPreviousPage}
+          onNextPage={() => commitsPager.goToNextPage(pullRequest?.commits?.pageInfo.endCursor)}
+        />
       </Panel>
 
       <Panel title="GitHubで完全差分を開く">

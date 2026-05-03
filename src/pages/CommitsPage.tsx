@@ -36,6 +36,7 @@ const HISTORY_PAGE_SIZE = 100;
 const TAG_PAGE_SIZE = 5;
 const BAR_DAYS = 30;
 const DISPLAY_PAGE_SIZE = 10;
+const AUTHOR_RANKING_PAGE_SIZE = 5;
 
 const commitFilterFieldValidators = {
   branch: z.string(),
@@ -184,8 +185,7 @@ function buildAuthorRanking(
 
   return [...counts.entries()]
     .map(([author, count]) => ({ author, count }))
-    .sort((left, right) => right.count - left.count || left.author.localeCompare(right.author))
-    .slice(0, 5);
+    .sort((left, right) => right.count - left.count || left.author.localeCompare(right.author));
 }
 
 function hasActiveCommitFilters(filters: CommitFilterValues): boolean {
@@ -344,11 +344,13 @@ export function CommitsScreen(): JSX.Element {
   const [selectedRepoId, setSelectedRepoId] = useState(routeSelectedRepoId);
   const [appliedFilters, setAppliedFilters] = useState<CommitFilterValues>(initialCommitFilterValues);
   const [currentPage, setCurrentPage] = useState(1);
+  const [authorRankingPage, setAuthorRankingPage] = useState(1);
   const form = useForm({
     defaultValues: initialCommitFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
       setCurrentPage(1);
+      setAuthorRankingPage(1);
     },
   });
 
@@ -381,6 +383,7 @@ export function CommitsScreen(): JSX.Element {
   useEffect(() => {
     setAppliedFilters(initialCommitFilterValues);
     setCurrentPage(1);
+    setAuthorRankingPage(1);
     form.reset(initialCommitFilterValues);
   }, [selectedRepoId]);
 
@@ -427,6 +430,10 @@ export function CommitsScreen(): JSX.Element {
   ].filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
   const historyCount = history?.totalCount ?? commits.length;
   const pageCount = Math.max(1, Math.ceil(Math.max(filteredCommits.length, 1) / DISPLAY_PAGE_SIZE));
+  const authorRankingPageCount = Math.max(
+    1,
+    Math.ceil(Math.max(authorRanking.length, 1) / AUTHOR_RANKING_PAGE_SIZE),
+  );
 
   useEffect(() => {
     if (currentPage <= pageCount) {
@@ -436,8 +443,21 @@ export function CommitsScreen(): JSX.Element {
     setCurrentPage(pageCount);
   }, [currentPage, pageCount]);
 
+  useEffect(() => {
+    if (authorRankingPage <= authorRankingPageCount) {
+      return;
+    }
+
+    setAuthorRankingPage(authorRankingPageCount);
+  }, [authorRankingPage, authorRankingPageCount]);
+
   const startIndex = (currentPage - 1) * DISPLAY_PAGE_SIZE;
   const pagedCommits = filteredCommits.slice(startIndex, startIndex + DISPLAY_PAGE_SIZE);
+  const authorRankingStartIndex = (authorRankingPage - 1) * AUTHOR_RANKING_PAGE_SIZE;
+  const pagedAuthorRanking = authorRanking.slice(
+    authorRankingStartIndex,
+    authorRankingStartIndex + AUTHOR_RANKING_PAGE_SIZE,
+  );
   const visibleFrom = filteredCommits.length === 0 ? 0 : startIndex + 1;
   const visibleTo = Math.min(filteredCommits.length, startIndex + DISPLAY_PAGE_SIZE);
   const barMax = Math.max(1, ...commitBars.map((bar) => bar.count));
@@ -447,6 +467,7 @@ export function CommitsScreen(): JSX.Element {
     form.reset(initialCommitFilterValues);
     setAppliedFilters(initialCommitFilterValues);
     setCurrentPage(1);
+    setAuthorRankingPage(1);
   }
 
   return (
@@ -474,10 +495,10 @@ export function CommitsScreen(): JSX.Element {
                     detail="履歴取得後に上位 5 名を表示します。"
                   />
                 ) : (
-                  authorRanking.map(({ author, count }, index) => (
+                  pagedAuthorRanking.map(({ author, count }, index) => (
                     <tr key={author}>
                       <td className={clsx("text-xs", MONO_CLASS)}>
-                        {index + 1}. {author}
+                        {authorRankingStartIndex + index + 1}. {author}
                       </td>
                       <td className={clsx("text-right font-bold", MONO_CLASS)}>{count}</td>
                     </tr>
@@ -485,6 +506,12 @@ export function CommitsScreen(): JSX.Element {
                 )}
               </tbody>
             </table>
+            <ClientPager
+              currentPage={authorRankingPage}
+              pageSize={AUTHOR_RANKING_PAGE_SIZE}
+              totalCount={authorRanking.length}
+              onPageChange={setAuthorRankingPage}
+            />
           </Panel>
 
           <Panel title="タグ一覧" bodyClassName="p-0">

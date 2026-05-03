@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -26,9 +27,6 @@ import {
   KPI_VALUE_CLASS,
   MONO_CLASS,
   MUTED_CLASS,
-  PAGER_CLASS,
-  PAGER_LINK_ACTIVE_CLASS,
-  PAGER_LINK_CLASS,
   SHORTCUT_CLASS,
   SHORTCUT_GRID_CLASS,
   SHORTCUT_ICON_CLASS,
@@ -245,6 +243,7 @@ export function DashboardScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const viewerLogin = sessionQuery.data?.user.login ?? "";
+  const recentRepositoriesPager = useCursorPagerState();
   const range = getDashboardQueryRange();
   const dashboardQuery = useQuery(DashboardDocument, {
     skip: accessToken === undefined || viewerLogin.length === 0,
@@ -252,6 +251,7 @@ export function DashboardScreen(): JSX.Element {
       from: range.from,
       to: range.to,
       recentReposFirst: 6,
+      recentReposAfter: recentRepositoriesPager.currentCursor,
       todoFirst: 5,
       reviewRequestQuery: `is:open is:pr archived:false review-requested:${viewerLogin} sort:updated-desc`,
       issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
@@ -259,10 +259,12 @@ export function DashboardScreen(): JSX.Element {
     },
     fetchPolicy: "network-only",
   });
-  const dashboard = dashboardQuery.data;
-  const reviewRequests = getReviewRequestNodes(dashboard?.reviewRequests.nodes);
-  const assignedIssues = getAssignedIssueNodes(dashboard?.issueAssignments.nodes);
+  const dashboard = dashboardQuery.data ?? dashboardQuery.previousData;
+  const isDashboardInitialLoading = dashboardQuery.loading && dashboard === undefined;
+  const reviewRequests = getReviewRequestNodes(dashboard?.reviewRequests?.nodes);
+  const assignedIssues = getAssignedIssueNodes(dashboard?.issueAssignments?.nodes);
   const recentRepositories = (dashboard?.viewer.repositories.nodes ?? []).filter(isPresent);
+  const repositoriesConnection = dashboard?.viewer.repositories;
   const kpis = [
     {
       label: "担当リポジトリ数",
@@ -330,7 +332,7 @@ export function DashboardScreen(): JSX.Element {
           </Panel>
 
           <Panel title="レビュー依頼中プルリクエスト" bodyClassName="p-0">
-            {dashboardQuery.loading ? (
+            {isDashboardInitialLoading ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.error ? (
               <GitHubInlineState
@@ -378,7 +380,7 @@ export function DashboardScreen(): JSX.Element {
           </Panel>
 
           <Panel title="自分の担当チケット" bodyClassName="p-0">
-            {dashboardQuery.loading ? (
+            {isDashboardInitialLoading ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
             ) : dashboardQuery.error ? (
               <GitHubInlineState
@@ -443,6 +445,19 @@ export function DashboardScreen(): JSX.Element {
                 )}
               </tbody>
             </table>
+            <CursorPager
+              currentPage={recentRepositoriesPager.currentPage}
+              pageSize={6}
+              visibleCount={recentRepositories.length}
+              totalCount={repositoriesConnection?.totalCount}
+              hasNextPage={repositoriesConnection?.pageInfo.hasNextPage ?? false}
+              isLoading={dashboardQuery.loading}
+              onFirstPage={recentRepositoriesPager.goToFirstPage}
+              onPreviousPage={recentRepositoriesPager.goToPreviousPage}
+              onNextPage={() =>
+                recentRepositoriesPager.goToNextPage(repositoriesConnection?.pageInfo.endCursor)
+              }
+            />
           </Panel>
 
           <Panel title="システムからのお知らせ">
@@ -463,7 +478,7 @@ export function DashboardScreen(): JSX.Element {
         title={`本日のサマリ（${formatJapaneseEraDateTime(new Date())} 時点）`}
         action={
           <span className={MUTED_CLASS}>
-            {dashboardQuery.loading
+            {isDashboardInitialLoading
               ? "GitHub から集計中..."
               : dashboardQuery.error
                 ? "GitHub 集計の取得に失敗"
@@ -544,16 +559,6 @@ export function DashboardScreen(): JSX.Element {
             ))}
           </tbody>
         </table>
-        <div className={PAGER_CLASS}>
-          <span className={MUTED_CLASS}>全 18件中 1～6件を表示</span>
-          <span className={PAGER_LINK_CLASS}>≪先頭</span>
-          <span className={PAGER_LINK_CLASS}>＜前</span>
-          <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>1</span>
-          <span className={PAGER_LINK_CLASS}>2</span>
-          <span className={PAGER_LINK_CLASS}>3</span>
-          <span className={PAGER_LINK_CLASS}>次＞</span>
-          <span className={PAGER_LINK_CLASS}>末尾≫</span>
-        </div>
       </Panel>
 
       <Panel title="変更登録フロー：CHG-2025-00472 「決済例外処理の修正」">

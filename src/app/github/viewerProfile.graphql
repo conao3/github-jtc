@@ -1,4 +1,11 @@
-query ViewerProfile($from: DateTime!, $to: DateTime!) {
+query ViewerProfile(
+  $from: DateTime!
+  $to: DateTime!
+  $organizationsFirst: Int!
+  $organizationsAfter: String
+  $repositoriesFirst: Int!
+  $repositoriesAfter: String
+) {
   viewer {
     id
     login
@@ -17,8 +24,12 @@ query ViewerProfile($from: DateTime!, $to: DateTime!) {
     following {
       totalCount
     }
-    organizations(first: 10) {
+    organizations(first: $organizationsFirst, after: $organizationsAfter) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         login
@@ -28,12 +39,17 @@ query ViewerProfile($from: DateTime!, $to: DateTime!) {
       }
     }
     repositories(
-      first: 5
+      first: $repositoriesFirst
+      after: $repositoriesAfter
       affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
       orderBy: { field: PUSHED_AT, direction: DESC }
       isFork: false
     ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         name

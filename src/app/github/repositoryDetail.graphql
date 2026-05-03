@@ -3,6 +3,14 @@ query RepositoryDetail(
   $name: String!
   $rootExpression: String!
   $readmeExpression: String!
+  $pullRequestsFirst: Int!
+  $pullRequestsAfter: String
+  $branchesFirst: Int!
+  $branchesAfter: String
+  $tagsFirst: Int!
+  $tagsAfter: String
+  $languagesFirst: Int!
+  $languagesAfter: String
 ) {
   repository(owner: $owner, name: $name) {
     id
@@ -28,8 +36,16 @@ query RepositoryDetail(
     openPullRequests: pullRequests(states: OPEN) {
       totalCount
     }
-    pullRequests(first: 30, orderBy: { field: UPDATED_AT, direction: DESC }) {
+    pullRequests(
+      first: $pullRequestsFirst
+      after: $pullRequestsAfter
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         number
@@ -51,7 +67,11 @@ query RepositoryDetail(
       name
       color
     }
-    languages(first: 6, orderBy: { field: SIZE, direction: DESC }) {
+    languages(first: $languagesFirst, after: $languagesAfter, orderBy: { field: SIZE, direction: DESC }) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       edges {
         size
         node {
@@ -92,8 +112,17 @@ query RepositoryDetail(
         }
       }
     }
-    refs(refPrefix: "refs/heads/", first: 10, orderBy: { field: ALPHABETICAL, direction: ASC }) {
+    refs(
+      refPrefix: "refs/heads/"
+      first: $branchesFirst
+      after: $branchesAfter
+      orderBy: { field: ALPHABETICAL, direction: ASC }
+    ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         name
@@ -112,8 +141,17 @@ query RepositoryDetail(
         }
       }
     }
-    tagRefs: refs(refPrefix: "refs/tags/", first: 10, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
+    tagRefs: refs(
+      refPrefix: "refs/tags/"
+      first: $tagsFirst
+      after: $tagsAfter
+      orderBy: { field: TAG_COMMIT_DATE, direction: DESC }
+    ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         name
