@@ -280,25 +280,28 @@ export function DashboardScreen(): JSX.Element {
   const recentRepositoriesPayload = recentRepositoriesQuery.data ?? recentRepositoriesQuery.previousData;
   const recentRepositories = (recentRepositoriesPayload?.viewer.repositories.nodes ?? []).filter(isPresent);
   const repositoriesConnection = recentRepositoriesPayload?.viewer.repositories;
+  const isKpiPending = dashboard === undefined && dashboardQuery.loading;
   const kpis = [
     {
       label: "担当リポジトリ数",
-      value: String(dashboard?.viewer.repositoryCount.totalCount ?? 0),
+      value: isKpiPending ? "-" : String(dashboard?.viewer.repositoryCount.totalCount ?? 0),
       note: "利用可能リポジトリ参照",
     },
     {
       label: "直近30日コミット",
-      value: String(dashboard?.viewer.contributionsCollection.totalCommitContributions ?? 0),
+      value: isKpiPending
+        ? "-"
+        : String(dashboard?.viewer.contributionsCollection.totalCommitContributions ?? 0),
       note: "直近30日集計",
     },
     {
       label: "レビュー依頼中プルリクエスト",
-      value: String(dashboard?.reviewRequests.issueCount ?? 0),
+      value: isKpiPending ? "-" : String(dashboard?.reviewRequests.issueCount ?? 0),
       note: "レビュー依頼検索",
     },
     {
       label: "自分担当チケット",
-      value: String(dashboard?.issueAssignments.issueCount ?? 0),
+      value: isKpiPending ? "-" : String(dashboard?.issueAssignments.issueCount ?? 0),
       note: "担当者検索",
     },
   ] as const;
@@ -576,7 +579,7 @@ export function DashboardScreen(): JSX.Element {
                 <div className={KPI_LABEL_CLASS}>{item.label}</div>
                 <div className={KPI_VALUE_CLASS}>
                   {item.value}
-                  <span className={KPI_UNIT_CLASS}>件</span>
+                  {item.value === "-" ? null : <span className={KPI_UNIT_CLASS}>件</span>}
                 </div>
                 <div className={KPI_DELTA_CLASS}>{item.note}</div>
               </div>
