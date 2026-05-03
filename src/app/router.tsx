@@ -29,7 +29,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/repositories/new" element={<RepositoryCreatePage />} />
         <Route path="/repositories" element={<RepositoriesPage />} />
-        <Route path="/repositories/:repoId" element={<RepositoryDetailPage />} />
+        <Route path="/repositories/:owner/:name" element={<RepositoryDetailPage />} />
         <Route path="/pull-requests" element={<PullRequestsPage />} />
         <Route path="/pull-requests/:prId" element={<PullRequestDetailPage />} />
         <Route path="/pull-requests/:prId/diff" element={<PullRequestDiffPage />} />

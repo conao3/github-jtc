@@ -95,10 +95,10 @@ const sections: SectionDefinition[] = [
       {
         id: "repo-detail",
         label: "④ リポジトリ詳細（ファイルツリー）",
-        route: "/repositories/payment-system-core",
+        route: "/repositories/conao3/payment-system-core",
         width: 1280,
         height: 1102,
-        render: () => <RepositoryDetailScreen repoId="payment-system-core" />,
+        render: () => <RepositoryDetailScreen repoId="conao3/payment-system-core" />,
       },
       {
         id: "commits",

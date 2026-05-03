@@ -422,6 +422,16 @@ export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | str
   return `${encodeURIComponent(owner)}:${encodeURIComponent(name)}`;
 }
 
+export function createRepositoryPath(input: GitHubRepositoryCoordinates | string): string {
+  const [owner, name] = typeof input === "string" ? input.split("/", 2) : [input.owner, input.name];
+
+  if (owner === undefined || name === undefined || owner.length === 0 || name.length === 0) {
+    throw new Error("Repository path requires both owner and name.");
+  }
+
+  return `${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+}
+
 export function createRepositoryScopedNumberRouteId(
   input: GitHubRepositoryScopedNumberCoordinates | string,
 ): string {
@@ -455,6 +465,18 @@ export function parseRepositoryRouteId(
 ): GitHubRepositoryCoordinates | null {
   if (routeId === undefined || routeId.length === 0) {
     return null;
+  }
+
+  const slashParts = routeId.split("/", 2);
+  if (slashParts.length === 2) {
+    const owner = decodeURIComponent(slashParts[0] ?? "");
+    const name = decodeURIComponent(slashParts[1] ?? "");
+
+    if (owner.length === 0 || name.length === 0) {
+      return null;
+    }
+
+    return { owner, name };
   }
 
   const separatorIndex = routeId.indexOf(":");

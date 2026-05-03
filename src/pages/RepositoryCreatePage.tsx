@@ -13,7 +13,7 @@ import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
   createGitHubRepository,
-  createRepositoryRouteId,
+  createRepositoryPath,
   describeGitHubError,
   fetchGitHubViewer,
 } from "../app/github.ts";
@@ -175,7 +175,7 @@ export function RepositoryCreateScreen(): JSX.Element {
   const createdRepositoryRouteId =
     createdRepository === undefined
       ? null
-      : createRepositoryRouteId({
+      : createRepositoryPath({
           owner: createdRepository.owner.login,
           name: createdRepository.name,
         });

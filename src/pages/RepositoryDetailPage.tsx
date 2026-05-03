@@ -408,7 +408,11 @@ export function RepositoryDetailScreen({
 }
 
 export default function RepositoryDetailPage(): JSX.Element {
-  const { repoId } = useParams();
+  const { owner, name } = useParams();
 
-  return <RepositoryDetailScreen repoId={repoId ?? "payment-system-core"} />;
+  return (
+    <RepositoryDetailScreen
+      repoId={owner === undefined || name === undefined ? "payment-system-core" : `${owner}/${name}`}
+    />
+  );
 }

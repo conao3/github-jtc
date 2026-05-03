@@ -11,7 +11,7 @@ import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
-  createRepositoryRouteId,
+  createRepositoryPath,
   describeGitHubError,
   fetchGitHubViewerRepositories,
   formatGitHubDateTime,
@@ -423,7 +423,7 @@ export function RepositoriesScreen(): JSX.Element {
                   <td>
                     <div className={MONO_CLASS}>
                       <Link
-                        to={`/repositories/${createRepositoryRouteId(repository.nameWithOwner)}`}
+                        to={`/repositories/${createRepositoryPath(repository.nameWithOwner)}`}
                         className={TEXT_LINK_CLASS}
                       >
                         {repository.nameWithOwner}

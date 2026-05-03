@@ -8,7 +8,7 @@ import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHub
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
-  createRepositoryRouteId,
+  createRepositoryPath,
   describeGitHubError,
   fetchGitHubCommitDiff,
   formatGitHubDateTime,
@@ -168,7 +168,7 @@ export function CommitDiffScreen({
               </button>
               {coordinates === null ? null : (
                 <Link
-                  to={`/repositories/${createRepositoryRouteId({
+                  to={`/repositories/${createRepositoryPath({
                     owner: coordinates.owner,
                     name: coordinates.name,
                   })}`}
