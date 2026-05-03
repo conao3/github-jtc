@@ -1,21 +1,23 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
-import { ClientPager } from "../app/components/ClientPager.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
+  createRepositoryPath,
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
+  type GitHubViewerIssuesConnection,
   type GitHubViewerIssue,
 } from "../app/github.ts";
 import { ViewerIssuesDocument } from "../gql/graphql.ts";
@@ -124,6 +126,20 @@ function hasActiveIssueFilters(filters: IssueFilterValues): boolean {
   return filters.query.trim().length > 0 || filters.state !== "all" || filters.assignee.trim().length > 0;
 }
 
+function hasClientSideIssueFilters(filters: IssueFilterValues): boolean {
+  return filters.query.trim().length > 0 || filters.assignee.trim().length > 0;
+}
+
+function getIssueQueryStates(state: IssueFilterValues["state"]): Array<"OPEN" | "CLOSED"> {
+  switch (state) {
+    case "OPEN":
+    case "CLOSED":
+      return [state];
+    default:
+      return ["OPEN", "CLOSED"];
+  }
+}
+
 function filterIssues(issues: readonly GitHubViewerIssue[], filters: IssueFilterValues): GitHubViewerIssue[] {
   const query = filters.query.trim().toLowerCase();
   const assignee = filters.assignee.trim().toLowerCase();
@@ -159,31 +175,34 @@ function filterIssues(issues: readonly GitHubViewerIssue[], filters: IssueFilter
 export function IssuesScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
+  const [appliedFilters, setAppliedFilters] = useState<IssueFilterValues>(initialIssueFilterValues);
+  const pageSize = Number(appliedFilters.pageSize);
+  const pager = useCursorPagerState();
   const issuesQuery = useQuery(ViewerIssuesDocument, {
     skip: accessToken === undefined,
     variables: {
-      first: QUERY_SIZE,
-      after: null,
-      states: ["OPEN", "CLOSED"],
+      first: Math.min(pageSize, QUERY_SIZE),
+      after: pager.currentCursor,
+      states: getIssueQueryStates(appliedFilters.state),
     },
     fetchPolicy: "network-only",
   });
-  const issueConnection = issuesQuery.data?.viewer.issues;
+  const issueConnection = (issuesQuery.data?.viewer?.issues ?? issuesQuery.previousData?.viewer?.issues) as
+    | GitHubViewerIssuesConnection
+    | undefined;
   const issues = (issueConnection?.nodes ?? []).filter((value) => value !== null);
-  const [appliedFilters, setAppliedFilters] = useState<IssueFilterValues>(initialIssueFilterValues);
-  const [currentPage, setCurrentPage] = useState(1);
   const form = useForm({
     defaultValues: initialIssueFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
-      setCurrentPage(1);
+      pager.resetPager();
     },
   });
 
   function applyPreset(next: IssueFilterValues): void {
     form.reset(next);
     setAppliedFilters(next);
-    setCurrentPage(1);
+    pager.resetPager();
   }
 
   const filteredIssues = filterIssues(issues, appliedFilters);
@@ -191,19 +210,11 @@ export function IssuesScreen(): JSX.Element {
   const closedCount = filteredIssues.filter((issue) => issue.state === "CLOSED").length;
   const assignedCount = filteredIssues.filter((issue) => issue.assignees.totalCount > 0).length;
   const unlabeledCount = filteredIssues.filter((issue) => (issue.labels?.totalCount ?? 0) === 0).length;
-  const pageSize = Number(appliedFilters.pageSize);
-  const pageCount = Math.max(1, Math.ceil(Math.max(filteredIssues.length, 1) / pageSize));
-
-  useEffect(() => {
-    if (currentPage <= pageCount) {
-      return;
-    }
-
-    setCurrentPage(pageCount);
-  }, [currentPage, pageCount]);
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const pagedIssues = filteredIssues.slice(startIndex, startIndex + pageSize);
+  const hasClientFilters = hasClientSideIssueFilters(appliedFilters);
+  const totalIssueCount = issueConnection?.totalCount ?? issues.length;
+  const pagerSummary = hasClientFilters
+    ? `取得 ${issues.length}件中 ${filteredIssues.length}件を表示 / ページ ${pager.currentPage}`
+    : undefined;
 
   return (
     <JtcChrome
@@ -346,7 +357,7 @@ export function IssuesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {issuesQuery.loading
               ? "GitHub から読込中..."
-              : `絞込 ${filteredIssues.length}件 / 全 ${issueConnection?.totalCount ?? issues.length}件`}
+              : `表示 ${filteredIssues.length}件 / 取得 ${issues.length}件 / 全 ${totalIssueCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -377,7 +388,7 @@ export function IssuesScreen(): JSX.Element {
                 tone="error"
                 {...describeGitHubError(issuesQuery.error, "チケット一覧の取得に失敗しました。")}
               />
-            ) : pagedIssues.length === 0 ? (
+            ) : filteredIssues.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="empty"
@@ -393,7 +404,7 @@ export function IssuesScreen(): JSX.Element {
                 }
               />
             ) : (
-              pagedIssues.map((issue) => {
+              filteredIssues.map((issue) => {
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: issue.repository.owner.login,
                   name: issue.repository.name,
@@ -411,7 +422,12 @@ export function IssuesScreen(): JSX.Element {
                       <div className={clsx("text-xs text-slate-600", MONO_CLASS)}>{issue.url}</div>
                     </td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
-                      {issue.repository.nameWithOwner}
+                      <Link
+                        to={`/repositories/${createRepositoryPath(issue.repository.nameWithOwner)}`}
+                        className={TEXT_LINK_CLASS}
+                      >
+                        {issue.repository.nameWithOwner}
+                      </Link>
                     </td>
                     <td className="text-center">
                       <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
@@ -426,11 +442,17 @@ export function IssuesScreen(): JSX.Element {
             )}
           </tbody>
         </table>
-        <ClientPager
-          currentPage={currentPage}
+        <CursorPager
+          currentPage={pager.currentPage}
           pageSize={pageSize}
-          totalCount={filteredIssues.length}
-          onPageChange={setCurrentPage}
+          visibleCount={filteredIssues.length}
+          totalCount={hasClientFilters ? undefined : totalIssueCount}
+          summary={pagerSummary}
+          hasNextPage={issueConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={issuesQuery.loading}
+          onFirstPage={pager.goToFirstPage}
+          onPreviousPage={pager.goToPreviousPage}
+          onNextPage={() => pager.goToNextPage(issueConnection?.pageInfo.endCursor)}
         />
       </Panel>
     </JtcChrome>

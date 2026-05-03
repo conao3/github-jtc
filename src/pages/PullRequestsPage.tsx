@@ -1,12 +1,12 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
-import { ClientPager } from "../app/components/ClientPager.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
@@ -17,6 +17,7 @@ import {
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
+  type GitHubViewerPullRequestsConnection,
   type GitHubViewerPullRequest,
 } from "../app/github.ts";
 import { ViewerPullRequestsDocument } from "../gql/graphql.ts";
@@ -92,6 +93,25 @@ function hasActivePullRequestFilters(filters: PullRequestFilterValues): boolean 
   return filters.query.trim().length > 0 || filters.state !== "all" || filters.repository.trim().length > 0;
 }
 
+function hasClientSidePullRequestFilters(filters: PullRequestFilterValues): boolean {
+  return filters.query.trim().length > 0 || filters.repository.trim().length > 0 || filters.state === "DRAFT";
+}
+
+function getPullRequestQueryStates(
+  state: PullRequestFilterValues["state"],
+): Array<"OPEN" | "MERGED" | "CLOSED"> {
+  switch (state) {
+    case "OPEN":
+    case "MERGED":
+    case "CLOSED":
+      return [state];
+    case "DRAFT":
+      return ["OPEN"];
+    default:
+      return ["OPEN", "MERGED", "CLOSED"];
+  }
+}
+
 function filterPullRequests(
   pullRequests: readonly GitHubViewerPullRequest[],
   filters: PullRequestFilterValues,
@@ -131,33 +151,35 @@ function filterPullRequests(
 export function PullRequestsScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const pullRequestsQuery = useQuery(ViewerPullRequestsDocument, {
-    skip: accessToken === undefined,
-    variables: {
-      first: QUERY_SIZE,
-      after: null,
-      states: ["OPEN", "MERGED", "CLOSED"],
-    },
-    fetchPolicy: "network-only",
-  });
-  const pullRequestConnection = pullRequestsQuery.data?.viewer.pullRequests;
-  const pullRequests = (pullRequestConnection?.nodes ?? []).filter((value) => value !== null);
   const [appliedFilters, setAppliedFilters] = useState<PullRequestFilterValues>(
     initialPullRequestFilterValues,
   );
-  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = Number(appliedFilters.pageSize);
+  const pager = useCursorPagerState();
+  const pullRequestsQuery = useQuery(ViewerPullRequestsDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: Math.min(pageSize, QUERY_SIZE),
+      after: pager.currentCursor,
+      states: getPullRequestQueryStates(appliedFilters.state),
+    },
+    fetchPolicy: "network-only",
+  });
+  const pullRequestConnection = (pullRequestsQuery.data?.viewer?.pullRequests ??
+    pullRequestsQuery.previousData?.viewer?.pullRequests) as GitHubViewerPullRequestsConnection | undefined;
+  const pullRequests = (pullRequestConnection?.nodes ?? []).filter((value) => value !== null);
   const form = useForm({
     defaultValues: initialPullRequestFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
-      setCurrentPage(1);
+      pager.resetPager();
     },
   });
 
   function applyPreset(next: PullRequestFilterValues): void {
     form.reset(next);
     setAppliedFilters(next);
-    setCurrentPage(1);
+    pager.resetPager();
   }
 
   const filteredPullRequests = filterPullRequests(pullRequests, appliedFilters);
@@ -167,19 +189,11 @@ export function PullRequestsScreen(): JSX.Element {
   const mergedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
   const closedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
   const draftCount = filteredPullRequests.filter((pullRequest) => pullRequest.isDraft).length;
-  const pageSize = Number(appliedFilters.pageSize);
-  const pageCount = Math.max(1, Math.ceil(Math.max(filteredPullRequests.length, 1) / pageSize));
-
-  useEffect(() => {
-    if (currentPage <= pageCount) {
-      return;
-    }
-
-    setCurrentPage(pageCount);
-  }, [currentPage, pageCount]);
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const pagedPullRequests = filteredPullRequests.slice(startIndex, startIndex + pageSize);
+  const hasClientFilters = hasClientSidePullRequestFilters(appliedFilters);
+  const totalPullRequestCount = pullRequestConnection?.totalCount ?? pullRequests.length;
+  const pagerSummary = hasClientFilters
+    ? `取得 ${pullRequests.length}件中 ${filteredPullRequests.length}件を表示 / ページ ${pager.currentPage}`
+    : undefined;
 
   return (
     <JtcChrome
@@ -331,7 +345,7 @@ export function PullRequestsScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {pullRequestsQuery.loading
               ? "GitHub から読込中..."
-              : `絞込 ${filteredPullRequests.length}件 / 全 ${pullRequestConnection?.totalCount ?? pullRequests.length}件`}
+              : `表示 ${filteredPullRequests.length}件 / 取得 ${pullRequests.length}件 / 全 ${totalPullRequestCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -361,7 +375,7 @@ export function PullRequestsScreen(): JSX.Element {
                 tone="error"
                 {...describeGitHubError(pullRequestsQuery.error, "プルリクエスト一覧の取得に失敗しました。")}
               />
-            ) : pagedPullRequests.length === 0 ? (
+            ) : filteredPullRequests.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={7}
                 tone="empty"
@@ -377,7 +391,7 @@ export function PullRequestsScreen(): JSX.Element {
                 }
               />
             ) : (
-              pagedPullRequests.map((pullRequest) => {
+              filteredPullRequests.map((pullRequest) => {
                 const state = getPullRequestState(pullRequest);
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: pullRequest.repository.owner.login,
@@ -420,11 +434,17 @@ export function PullRequestsScreen(): JSX.Element {
             )}
           </tbody>
         </table>
-        <ClientPager
-          currentPage={currentPage}
+        <CursorPager
+          currentPage={pager.currentPage}
           pageSize={pageSize}
-          totalCount={filteredPullRequests.length}
-          onPageChange={setCurrentPage}
+          visibleCount={filteredPullRequests.length}
+          totalCount={hasClientFilters ? undefined : totalPullRequestCount}
+          summary={pagerSummary}
+          hasNextPage={pullRequestConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={pullRequestsQuery.loading}
+          onFirstPage={pager.goToFirstPage}
+          onPreviousPage={pager.goToPreviousPage}
+          onNextPage={() => pager.goToNextPage(pullRequestConnection?.pageInfo.endCursor)}
         />
       </Panel>
     </JtcChrome>

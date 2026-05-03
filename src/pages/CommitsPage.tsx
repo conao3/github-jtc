@@ -6,7 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
-import { ClientPager } from "../app/components/ClientPager.tsx";
+import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
@@ -19,9 +19,14 @@ import {
   formatJapaneseEraDate,
   parseRepositoryRouteId,
   type GitHubCommitHistoryRepository,
+  type GitHubCommitHistoryPageRepository,
   type GitHubViewerRepository,
 } from "../app/github.ts";
-import { CommitHistoryDocument, ViewerRepositoriesDocument } from "../gql/graphql.ts";
+import {
+  CommitHistoryDocument,
+  CommitHistoryPageDocument,
+  ViewerRepositoriesDocument,
+} from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -38,7 +43,7 @@ const HISTORY_PAGE_SIZE = 100;
 const TAG_PAGE_SIZE = 5;
 const BAR_DAYS = 30;
 const DISPLAY_PAGE_SIZE = 10;
-const AUTHOR_RANKING_PAGE_SIZE = 5;
+const AUTHOR_RANKING_LIMIT = 5;
 
 const commitFilterFieldValidators = {
   branch: z.string(),
@@ -67,7 +72,11 @@ const initialCommitFilterValues: CommitFilterValues = {
 type GitHubCommitTarget = NonNullable<
   NonNullable<GitHubCommitHistoryRepository["defaultBranchRef"]>["target"]
 >;
+type GitHubCommitPageQueryTarget = NonNullable<
+  NonNullable<GitHubCommitHistoryPageRepository["defaultBranchRef"]>["target"]
+>;
 type GitHubCommitHistoryTarget = Extract<GitHubCommitTarget, { __typename: "Commit" }>;
+type GitHubCommitPageTarget = Extract<GitHubCommitPageQueryTarget, { __typename: "Commit" }>;
 type GitHubHistoryCommit = NonNullable<NonNullable<GitHubCommitHistoryTarget["history"]["nodes"]>[number]>;
 type GitHubTagRef = NonNullable<
   NonNullable<NonNullable<GitHubCommitHistoryRepository["refs"]>["nodes"]>[number]
@@ -80,6 +89,18 @@ function isPresent<T>(value: T | null | undefined): value is T {
 function getCommitTarget(
   repository: GitHubCommitHistoryRepository | null | undefined,
 ): GitHubCommitHistoryTarget | null {
+  const target = repository?.defaultBranchRef?.target;
+
+  if (target?.__typename !== "Commit") {
+    return null;
+  }
+
+  return target;
+}
+
+function getCommitPageTarget(
+  repository: GitHubCommitHistoryPageRepository | null | undefined,
+): GitHubCommitPageTarget | null {
   const target = repository?.defaultBranchRef?.target;
 
   if (target?.__typename !== "Commit") {
@@ -345,14 +366,12 @@ export function CommitsScreen(): JSX.Element {
   const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
   const [selectedRepoId, setSelectedRepoId] = useState(routeSelectedRepoId);
   const [appliedFilters, setAppliedFilters] = useState<CommitFilterValues>(initialCommitFilterValues);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [authorRankingPage, setAuthorRankingPage] = useState(1);
+  const commitPager = useCursorPagerState();
   const form = useForm({
     defaultValues: initialCommitFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
-      setCurrentPage(1);
-      setAuthorRankingPage(1);
+      commitPager.resetPager();
     },
   });
 
@@ -384,8 +403,7 @@ export function CommitsScreen(): JSX.Element {
 
   useEffect(() => {
     setAppliedFilters(initialCommitFilterValues);
-    setCurrentPage(1);
-    setAuthorRankingPage(1);
+    commitPager.resetPager();
     form.reset(initialCommitFilterValues);
   }, [selectedRepoId]);
 
@@ -414,62 +432,55 @@ export function CommitsScreen(): JSX.Element {
     },
     fetchPolicy: "network-only",
   });
-  const repository = commitHistoryQuery.data?.repository;
+  const commitHistoryPageQuery = useQuery(CommitHistoryPageDocument, {
+    skip: accessToken === undefined || selectedCoordinates === null,
+    variables: {
+      owner: selectedCoordinates?.owner ?? "",
+      name: selectedCoordinates?.name ?? "",
+      historyFirst: DISPLAY_PAGE_SIZE,
+      historyAfter: commitPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const repository = commitHistoryQuery.data?.repository ?? commitHistoryQuery.previousData?.repository;
+  const commitPageRepository =
+    commitHistoryPageQuery.data?.repository ?? commitHistoryPageQuery.previousData?.repository;
   const commitTarget = getCommitTarget(repository);
+  const commitPageTarget = getCommitPageTarget(commitPageRepository);
   const history = commitTarget?.history ?? null;
+  const commitPageHistory = commitPageTarget?.history ?? null;
   const commits = (history?.nodes ?? []).filter(isPresent);
+  const pageCommits = (commitPageHistory?.nodes ?? []).filter(isPresent);
   const tags = (repository?.refs?.nodes ?? []).filter(isPresent);
   const defaultBranchName =
-    repository?.defaultBranchRef?.name ?? selectedRepositoryMeta?.defaultBranchRef?.name ?? "main";
+    repository?.defaultBranchRef?.name ??
+    commitPageRepository?.defaultBranchRef?.name ??
+    selectedRepositoryMeta?.defaultBranchRef?.name ??
+    "main";
   const repositoryNameWithOwner =
-    repository?.nameWithOwner ?? selectedRepositoryMeta?.nameWithOwner ?? "未選択";
+    repository?.nameWithOwner ??
+    commitPageRepository?.nameWithOwner ??
+    selectedRepositoryMeta?.nameWithOwner ??
+    "未選択";
   const filteredCommits = filterCommits(commits, appliedFilters, defaultBranchName);
-  const authorRanking = buildAuthorRanking(filteredCommits);
+  const filteredPageCommits = filterCommits(pageCommits, appliedFilters, defaultBranchName);
+  const authorRanking = buildAuthorRanking(filteredCommits).slice(0, AUTHOR_RANKING_LIMIT);
   const commitBars = buildCommitBars(filteredCommits);
   const branchOptions = [
     defaultBranchName,
     ...new Set(commits.map((commit) => getCommitBranchLabel(commit, defaultBranchName))),
   ].filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
-  const historyCount = history?.totalCount ?? commits.length;
-  const pageCount = Math.max(1, Math.ceil(Math.max(filteredCommits.length, 1) / DISPLAY_PAGE_SIZE));
-  const authorRankingPageCount = Math.max(
-    1,
-    Math.ceil(Math.max(authorRanking.length, 1) / AUTHOR_RANKING_PAGE_SIZE),
-  );
-
-  useEffect(() => {
-    if (currentPage <= pageCount) {
-      return;
-    }
-
-    setCurrentPage(pageCount);
-  }, [currentPage, pageCount]);
-
-  useEffect(() => {
-    if (authorRankingPage <= authorRankingPageCount) {
-      return;
-    }
-
-    setAuthorRankingPage(authorRankingPageCount);
-  }, [authorRankingPage, authorRankingPageCount]);
-
-  const startIndex = (currentPage - 1) * DISPLAY_PAGE_SIZE;
-  const pagedCommits = filteredCommits.slice(startIndex, startIndex + DISPLAY_PAGE_SIZE);
-  const authorRankingStartIndex = (authorRankingPage - 1) * AUTHOR_RANKING_PAGE_SIZE;
-  const pagedAuthorRanking = authorRanking.slice(
-    authorRankingStartIndex,
-    authorRankingStartIndex + AUTHOR_RANKING_PAGE_SIZE,
-  );
-  const visibleFrom = filteredCommits.length === 0 ? 0 : startIndex + 1;
-  const visibleTo = Math.min(filteredCommits.length, startIndex + DISPLAY_PAGE_SIZE);
+  const historyCount = commitPageHistory?.totalCount ?? history?.totalCount ?? commits.length;
   const barMax = Math.max(1, ...commitBars.map((bar) => bar.count));
   const hasActiveFilters = hasActiveCommitFilters(appliedFilters);
+  const pagerSummary = hasActiveFilters
+    ? `取得 ${pageCommits.length}件中 ${filteredPageCommits.length}件を表示 / ページ ${commitPager.currentPage}`
+    : undefined;
 
   function clearFilters(): void {
     form.reset(initialCommitFilterValues);
     setAppliedFilters(initialCommitFilterValues);
-    setCurrentPage(1);
-    setAuthorRankingPage(1);
+    commitPager.resetPager();
   }
 
   return (
@@ -480,7 +491,7 @@ export function CommitsScreen(): JSX.Element {
       activeSideItem="コミット履歴"
       rightColumn={
         <>
-          <Panel title="作成者別ランキング" bodyClassName="p-0">
+          <Panel title="作成者別ランキング（上位5名）" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <thead>
                 <tr>
@@ -497,10 +508,10 @@ export function CommitsScreen(): JSX.Element {
                     detail="履歴取得後に上位 5 名を表示します。"
                   />
                 ) : (
-                  pagedAuthorRanking.map(({ author, count }, index) => (
+                  authorRanking.map(({ author, count }, index) => (
                     <tr key={author}>
                       <td className={clsx("text-xs", MONO_CLASS)}>
-                        {authorRankingStartIndex + index + 1}. {author}
+                        {index + 1}. {author}
                       </td>
                       <td className={clsx("text-right font-bold", MONO_CLASS)}>{count}</td>
                     </tr>
@@ -508,12 +519,6 @@ export function CommitsScreen(): JSX.Element {
                 )}
               </tbody>
             </table>
-            <ClientPager
-              currentPage={authorRankingPage}
-              pageSize={AUTHOR_RANKING_PAGE_SIZE}
-              totalCount={authorRanking.length}
-              onPageChange={setAuthorRankingPage}
-            />
           </Panel>
 
           <Panel title="タグ一覧" bodyClassName="p-0">
@@ -672,9 +677,9 @@ export function CommitsScreen(): JSX.Element {
         title={`コミット履歴一覧（${repositoryNameWithOwner}）`}
         action={
           <span className={MUTED_CLASS}>
-            {commitHistoryQuery.loading
+            {commitHistoryPageQuery.loading
               ? "GitHub から読込中..."
-              : `該当 ${filteredCommits.length}件　／　${visibleFrom}～${visibleTo}件を表示`}
+              : `表示 ${filteredPageCommits.length}件 / 取得 ${pageCommits.length}件 / 履歴総数 ${historyCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -701,33 +706,33 @@ export function CommitsScreen(): JSX.Element {
                 title="対象リポジトリを選択してください。"
                 detail="一覧から参照対象のリポジトリを選ぶと履歴を表示します。"
               />
-            ) : commitHistoryQuery.loading ? (
+            ) : commitHistoryPageQuery.loading && commitPageRepository === undefined ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-600">
                   GitHub からコミット履歴を取得しています。
                 </td>
               </tr>
-            ) : commitHistoryQuery.error ? (
+            ) : commitHistoryPageQuery.error ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="error"
-                {...describeGitHubError(commitHistoryQuery.error, "コミット履歴の取得に失敗しました。")}
+                {...describeGitHubError(commitHistoryPageQuery.error, "コミット履歴の取得に失敗しました。")}
               />
-            ) : repository === null || repository === undefined ? (
+            ) : commitPageRepository === null || commitPageRepository === undefined ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
                 title={`${selectedCoordinates.owner}/${selectedCoordinates.name} は参照できません。`}
                 detail="リポジトリが存在しないか、利用者権限が不足しています。"
               />
-            ) : commitTarget === null ? (
+            ) : commitPageTarget === null ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
                 title="既定ブランチの履歴を取得できませんでした。"
                 detail="既定ブランチが未設定か、対象参照がコミットを指していません。"
               />
-            ) : pagedCommits.length === 0 ? (
+            ) : filteredPageCommits.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
@@ -743,7 +748,7 @@ export function CommitsScreen(): JSX.Element {
                 }
               />
             ) : (
-              pagedCommits.map((commit) => {
+              filteredPageCommits.map((commit) => {
                 const relatedPullRequest = getCommitRelatedPullRequest(commit);
                 const changedFiles = commit.changedFilesIfAvailable ?? 0;
                 const branchName = getCommitBranchLabel(commit, defaultBranchName);
@@ -820,11 +825,17 @@ export function CommitsScreen(): JSX.Element {
             )}
           </tbody>
         </table>
-        <ClientPager
-          currentPage={currentPage}
+        <CursorPager
+          currentPage={commitPager.currentPage}
           pageSize={DISPLAY_PAGE_SIZE}
-          totalCount={filteredCommits.length}
-          onPageChange={setCurrentPage}
+          visibleCount={filteredPageCommits.length}
+          totalCount={hasActiveFilters ? undefined : historyCount}
+          summary={pagerSummary}
+          hasNextPage={commitPageHistory?.pageInfo.hasNextPage ?? false}
+          isLoading={commitHistoryPageQuery.loading}
+          onFirstPage={commitPager.goToFirstPage}
+          onPreviousPage={commitPager.goToPreviousPage}
+          onNextPage={() => commitPager.goToNextPage(commitPageHistory?.pageInfo.endCursor)}
         />
       </Panel>
 

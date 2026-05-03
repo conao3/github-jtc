@@ -236,6 +236,58 @@ export type CommitHistoryQuery = {
   } | null;
 };
 
+export type CommitHistoryPageQueryVariables = Exact<{
+  owner: string;
+  name: string;
+  historyFirst: number;
+  historyAfter?: string | null | undefined;
+}>;
+
+export type CommitHistoryPageQuery = {
+  repository: {
+    id: string;
+    name: string;
+    nameWithOwner: string;
+    defaultBranchRef: {
+      name: string;
+      target:
+        | { __typename: "Blob" }
+        | {
+            __typename: "Commit";
+            history: {
+              totalCount: number;
+              pageInfo: { hasNextPage: boolean; endCursor: string | null };
+              nodes: Array<{
+                id: string;
+                oid: string;
+                abbreviatedOid: string;
+                messageHeadline: string;
+                committedDate: string;
+                authoredDate: string;
+                url: string;
+                additions: number;
+                deletions: number;
+                changedFilesIfAvailable: number | null;
+                author: { name: string | null; user: { login: string } | null } | null;
+                associatedPullRequests: {
+                  nodes: Array<{
+                    id: string;
+                    number: number;
+                    headRefName: string;
+                    url: string;
+                  } | null> | null;
+                } | null;
+                parents: { totalCount: number };
+              } | null> | null;
+            };
+          }
+        | { __typename: "Tag" }
+        | { __typename: "Tree" }
+        | null;
+    } | null;
+  } | null;
+};
+
 export type CreateRepositoryMutationVariables = Exact<{
   input: CreateRepositoryInput;
 }>;
@@ -1620,6 +1672,253 @@ export const CommitHistoryDocument = {
     },
   ],
 } as unknown as DocumentNode<CommitHistoryQuery, CommitHistoryQueryVariables>;
+export const CommitHistoryPageDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CommitHistoryPage" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "historyFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "historyAfter" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "repository" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "owner" },
+                value: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "defaultBranchRef" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "name" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "target" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                            {
+                              kind: "InlineFragment",
+                              typeCondition: { kind: "NamedType", name: { kind: "Name", value: "Commit" } },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "history" },
+                                    arguments: [
+                                      {
+                                        kind: "Argument",
+                                        name: { kind: "Name", value: "first" },
+                                        value: {
+                                          kind: "Variable",
+                                          name: { kind: "Name", value: "historyFirst" },
+                                        },
+                                      },
+                                      {
+                                        kind: "Argument",
+                                        name: { kind: "Name", value: "after" },
+                                        value: {
+                                          kind: "Variable",
+                                          name: { kind: "Name", value: "historyAfter" },
+                                        },
+                                      },
+                                    ],
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "pageInfo" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                              { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                            ],
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "nodes" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "id" } },
+                                              { kind: "Field", name: { kind: "Name", value: "oid" } },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "abbreviatedOid" },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "messageHeadline" },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "committedDate" },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "authoredDate" },
+                                              },
+                                              { kind: "Field", name: { kind: "Name", value: "url" } },
+                                              { kind: "Field", name: { kind: "Name", value: "additions" } },
+                                              { kind: "Field", name: { kind: "Name", value: "deletions" } },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "changedFilesIfAvailable" },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "author" },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "name" } },
+                                                    {
+                                                      kind: "Field",
+                                                      name: { kind: "Name", value: "user" },
+                                                      selectionSet: {
+                                                        kind: "SelectionSet",
+                                                        selections: [
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "login" },
+                                                          },
+                                                        ],
+                                                      },
+                                                    },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "associatedPullRequests" },
+                                                arguments: [
+                                                  {
+                                                    kind: "Argument",
+                                                    name: { kind: "Name", value: "first" },
+                                                    value: { kind: "IntValue", value: "1" },
+                                                  },
+                                                ],
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    {
+                                                      kind: "Field",
+                                                      name: { kind: "Name", value: "nodes" },
+                                                      selectionSet: {
+                                                        kind: "SelectionSet",
+                                                        selections: [
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "id" },
+                                                          },
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "number" },
+                                                          },
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "headRefName" },
+                                                          },
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "url" },
+                                                          },
+                                                        ],
+                                                      },
+                                                    },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "Field",
+                                                name: { kind: "Name", value: "parents" },
+                                                arguments: [
+                                                  {
+                                                    kind: "Argument",
+                                                    name: { kind: "Name", value: "first" },
+                                                    value: { kind: "IntValue", value: "2" },
+                                                  },
+                                                ],
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    {
+                                                      kind: "Field",
+                                                      name: { kind: "Name", value: "totalCount" },
+                                                    },
+                                                  ],
+                                                },
+                                              },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CommitHistoryPageQuery, CommitHistoryPageQueryVariables>;
 export const CreateRepositoryDocument = {
   kind: "Document",
   definitions: [

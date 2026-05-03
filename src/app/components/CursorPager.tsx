@@ -8,6 +8,7 @@ interface CursorPagerProps {
   readonly pageSize: number;
   readonly visibleCount: number;
   readonly totalCount?: number;
+  readonly summary?: string;
   readonly hasNextPage: boolean;
   readonly isLoading?: boolean;
   readonly onFirstPage: () => void;
@@ -70,6 +71,7 @@ export function CursorPager({
   pageSize,
   visibleCount,
   totalCount,
+  summary,
   hasNextPage,
   isLoading = false,
   onFirstPage,
@@ -104,11 +106,12 @@ export function CursorPager({
   return (
     <div className={PAGER_CLASS}>
       <span className={MUTED_CLASS}>
-        {isLoading
-          ? `ページ ${currentPage} を取得中...`
-          : totalCount === undefined
-            ? `${from}～${to}件を表示 / ページ ${currentPage}`
-            : `全 ${totalCount}件中 ${from}～${to}件を表示`}
+        {summary ??
+          (isLoading
+            ? `ページ ${currentPage} を取得中...`
+            : totalCount === undefined
+              ? `${from}～${to}件を表示 / ページ ${currentPage}`
+              : `全 ${totalCount}件中 ${from}～${to}件を表示`)}
       </span>
       {renderButton("≪先頭", currentPage === 1 || isLoading, onFirstPage)}
       {renderButton("＜前", currentPage === 1 || isLoading, onPreviousPage)}

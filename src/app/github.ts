@@ -3,6 +3,7 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import { githubApolloClient, setGitHubAccessToken } from "./apollo.ts";
 import {
   type CommitHistoryQuery,
+  type CommitHistoryPageQuery,
   type IssueDetailQuery,
   type PullRequestDetailQuery,
   ViewerDocument,
@@ -24,6 +25,7 @@ export type GitHubViewerPullRequest = NonNullable<
 export type GitHubViewerIssuesConnection = ViewerIssuesQuery["viewer"]["issues"];
 export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnection["nodes"]>[number]>;
 export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
+export type GitHubCommitHistoryPageRepository = NonNullable<CommitHistoryPageQuery["repository"]>;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;

@@ -77,3 +77,55 @@ query CommitHistory(
     }
   }
 }
+
+query CommitHistoryPage($owner: String!, $name: String!, $historyFirst: Int!, $historyAfter: String) {
+  repository(owner: $owner, name: $name) {
+    id
+    name
+    nameWithOwner
+    defaultBranchRef {
+      name
+      target {
+        __typename
+        ... on Commit {
+          history(first: $historyFirst, after: $historyAfter) {
+            totalCount
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            nodes {
+              id
+              oid
+              abbreviatedOid
+              messageHeadline
+              committedDate
+              authoredDate
+              url
+              additions
+              deletions
+              changedFilesIfAvailable
+              author {
+                name
+                user {
+                  login
+                }
+              }
+              associatedPullRequests(first: 1) {
+                nodes {
+                  id
+                  number
+                  headRefName
+                  url
+                }
+              }
+              parents(first: 2) {
+                totalCount
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
