@@ -651,8 +651,9 @@ export function RepositoryDetailScreen({
                       return (
                         <tr key={entry.oid}>
                           <td className={MONO_CLASS}>
+                            <span>{entry.type === "tree" ? "📁 " : "📄 "}</span>
                             <Link to={createFileBrowserSearch(nextPath)} className={TEXT_LINK_CLASS}>
-                              {entry.type === "tree" ? `📁 ${entry.name}` : `📄 ${entry.name}`}
+                              {entry.name}
                             </Link>
                           </td>
                           <td className="text-center whitespace-nowrap">{getEntryKindLabel(entry.type)}</td>
