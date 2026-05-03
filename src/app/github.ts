@@ -5,6 +5,9 @@ import {
   DashboardDocument,
   type DashboardQuery,
   type DashboardQueryVariables,
+  IssueDetailDocument,
+  type IssueDetailQuery,
+  type IssueDetailQueryVariables,
   PullRequestDetailDocument,
   type PullRequestDetailQuery,
   type PullRequestDetailQueryVariables,
@@ -14,8 +17,11 @@ import {
   ViewerDocument,
   type ViewerPullRequestsQuery,
   type ViewerPullRequestsQueryVariables,
+  type ViewerIssuesQuery,
+  type ViewerIssuesQueryVariables,
   type ViewerProfileQuery,
   type ViewerProfileQueryVariables,
+  ViewerIssuesDocument,
   ViewerProfileDocument,
   ViewerPullRequestsDocument,
   type ViewerQuery,
@@ -34,11 +40,14 @@ export type GitHubViewerPullRequestsConnection = ViewerPullRequestsQuery["viewer
 export type GitHubViewerPullRequest = NonNullable<
   NonNullable<GitHubViewerPullRequestsConnection["nodes"]>[number]
 >;
+export type GitHubViewerIssuesConnection = ViewerIssuesQuery["viewer"]["issues"];
+export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnection["nodes"]>[number]>;
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
 export type GitHubDashboardPayload = DashboardQuery;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;
+export type GitHubIssueDetail = NonNullable<NonNullable<IssueDetailQuery["repository"]>["issue"]>;
 
 export interface GitHubRepositoryCoordinates {
   readonly owner: string;
@@ -134,12 +143,28 @@ export async function fetchGitHubViewerPullRequests(
   return data.viewer.pullRequests;
 }
 
+export async function fetchGitHubViewerIssues(
+  accessToken: string,
+  variables: ViewerIssuesQueryVariables,
+): Promise<GitHubViewerIssuesConnection> {
+  const data = await executeGitHubQuery(accessToken, ViewerIssuesDocument, variables);
+  return data.viewer.issues;
+}
+
 export async function fetchGitHubPullRequestDetail(
   accessToken: string,
   variables: PullRequestDetailQueryVariables,
 ): Promise<GitHubPullRequestDetail | null> {
   const data = await executeGitHubQuery(accessToken, PullRequestDetailDocument, variables);
   return data.repository?.pullRequest ?? null;
+}
+
+export async function fetchGitHubIssueDetail(
+  accessToken: string,
+  variables: IssueDetailQueryVariables,
+): Promise<GitHubIssueDetail | null> {
+  const data = await executeGitHubQuery(accessToken, IssueDetailDocument, variables);
+  return data.repository?.issue ?? null;
 }
 
 export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | string): string {

@@ -108,8 +108,6 @@ export const KPI_DELTA_CLASS = "mt-1 text-xs text-slate-600";
 
 export const STATUS_TAG_BASE_CLASS =
   "inline-flex min-w-12 items-center justify-center border px-1.5 py-px text-xs font-bold";
-export const PRIORITY_TAG_BASE_CLASS =
-  "inline-flex min-w-6 items-center justify-center border px-1 py-px text-xs font-bold";
 
 export const FLOW_WRAP_CLASS = "flex flex-wrap gap-2 p-2";
 export const FLOW_STEP_BASE_CLASS = "relative min-h-32 flex-1 basis-40 border p-2 text-xs shadow-sm";
@@ -183,15 +181,6 @@ export function statusTagClassName(
     tone === "confirmed" && "border-sky-400 bg-sky-100 text-sky-900",
     tone === "required" && "border-slate-300 bg-slate-100 text-slate-700",
     tone === "warning" && "border-yellow-400 bg-yellow-100 text-yellow-900",
-  );
-}
-
-export function priorityTagClassName(priority: "high" | "medium" | "low"): string {
-  return clsx(
-    PRIORITY_TAG_BASE_CLASS,
-    priority === "high" && "border-red-400 bg-red-100 text-red-900",
-    priority === "medium" && "border-orange-400 bg-orange-100 text-orange-900",
-    priority === "low" && "border-blue-300 bg-blue-100 text-blue-900",
   );
 }
 

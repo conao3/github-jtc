@@ -134,10 +134,10 @@ const sections: SectionDefinition[] = [
       {
         id: "issue-detail",
         label: "⑥ 課題（Issue）詳細",
-        route: "/issues/ISS-2025-00125",
+        route: "/issues/conao3:github-jtc:1",
         width: 1280,
         height: 992,
-        render: () => <IssueDetailScreen issueId="ISS-2025-00125" />,
+        render: () => <IssueDetailScreen issueId="conao3:github-jtc:1" />,
       },
     ],
   },

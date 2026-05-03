@@ -1,9 +1,17 @@
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
-import { JtcPriorityTag, JtcStatusTag } from "../app/components/JtcIndicators.tsx";
+import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import {
+  fetchGitHubIssueDetail,
+  formatGitHubDateTime,
+  parseRepositoryScopedNumberRouteId,
+  type GitHubIssueDetail,
+} from "../app/github.ts";
 import {
   MONO_CLASS,
   TABLE_CLASS,
@@ -14,50 +22,200 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const timeline = [
-  ["1", "R8/04/28 10:15", "高橋健一", "new", "起票", "運用統括部より起票。優先度「高」にて担当者割当依頼。"],
-  ["2", "R8/04/28 14:30", "佐藤課長", "pending", "割当", "基盤開発二課・山田に対応指示。期限：5/30。"],
-  [
-    "3",
-    "R8/04/29 09:00",
-    "山田太郎",
-    "inProgress",
-    "調査",
-    "原因調査開始。ログ出力ロジックの確認、コードレビュー実施。",
-  ],
-  [
-    "4",
-    "R8/04/30 16:20",
-    "山田太郎",
-    "inProgress",
-    "調査",
-    "原因特定。PaymentService.java の例外処理に不備。修正方針を策定。",
-  ],
-  ["5", "R8/05/01 14:30", "山田太郎", "review", "PR申請", "修正コード作成完了。PR-2025-00089 申請。"],
-  [
-    "6",
-    "R8/05/02 11:48",
-    "山田太郎",
-    "review",
-    "レビュー対応",
-    "佐藤課長レビュー指摘対応完了。再レビュー依頼。",
-  ],
-] as const;
+function getIssueState(issue: GitHubIssueDetail): {
+  readonly tone: "pending" | "done";
+  readonly label: string;
+} {
+  if (issue.state === "OPEN") {
+    return { tone: "pending", label: "Open" };
+  }
+
+  switch (issue.stateReason) {
+    case "COMPLETED":
+      return { tone: "done", label: "Completed" };
+    case "DUPLICATE":
+      return { tone: "done", label: "Duplicate" };
+    case "NOT_PLANNED":
+      return { tone: "done", label: "Not planned" };
+    case "REOPENED":
+      return { tone: "pending", label: "Reopened" };
+    default:
+      return { tone: "done", label: "Closed" };
+  }
+}
+
+function getIssueStateReasonLabel(stateReason: GitHubIssueDetail["stateReason"] | null | undefined): string {
+  switch (stateReason) {
+    case "COMPLETED":
+      return "completed";
+    case "DUPLICATE":
+      return "duplicate";
+    case "NOT_PLANNED":
+      return "not planned";
+    case "REOPENED":
+      return "reopened";
+    default:
+      return "－";
+  }
+}
+
+function getAssigneeLabels(issue: GitHubIssueDetail): string[] {
+  return (issue.assignees.nodes ?? []).flatMap((assignee) =>
+    assignee?.login === undefined ? [] : [assignee.login],
+  );
+}
+
+function renderLabelChip(id: string, name: string, color: string): JSX.Element {
+  return (
+    <span
+      key={id}
+      className="inline-flex rounded-sm border px-1 py-0.5 text-xs font-bold"
+      style={{ borderColor: `#${color}`, color: `#${color}` }}
+    >
+      {name}
+    </span>
+  );
+}
+
+function buildTimelineRows(issue: GitHubIssueDetail): Array<{
+  readonly id: string;
+  readonly date: string | null;
+  readonly actor: string;
+  readonly tone: "new" | "pending" | "done" | "review" | "confirmed";
+  readonly label: string;
+  readonly body: string;
+}> {
+  const rows: Array<{
+    readonly id: string;
+    readonly date: string | null;
+    readonly actor: string;
+    readonly tone: "new" | "pending" | "done" | "review" | "confirmed";
+    readonly label: string;
+    readonly body: string;
+  }> = [
+    {
+      id: `created:${issue.id}`,
+      date: issue.createdAt,
+      actor: issue.author?.login ?? "unknown",
+      tone: "new" as const,
+      label: "作成",
+      body: issue.title,
+    },
+  ];
+
+  for (const item of issue.timelineItems.nodes ?? []) {
+    if (item === null) {
+      continue;
+    }
+
+    switch (item.__typename) {
+      case "IssueComment":
+        rows.push({
+          id: item.id,
+          date: item.publishedAt ?? null,
+          actor: item.author?.login ?? "unknown",
+          tone: "review",
+          label: "コメント",
+          body: item.bodyText.length > 200 ? `${item.bodyText.slice(0, 200)}…` : item.bodyText,
+        });
+        break;
+      case "ClosedEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "done",
+          label: "クローズ",
+          body: `stateReason: ${getIssueStateReasonLabel(item.stateReason)}`,
+        });
+        break;
+      case "ReopenedEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "pending",
+          label: "再オープン",
+          body: `stateReason: ${getIssueStateReasonLabel(item.stateReason)}`,
+        });
+        break;
+      case "AssignedEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "confirmed",
+          label: "割当",
+          body: `assignee: ${item.assignee?.login ?? "unknown"}`,
+        });
+        break;
+      case "UnassignedEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "confirmed",
+          label: "解除",
+          body: `assignee: ${item.assignee?.login ?? "unknown"}`,
+        });
+        break;
+      case "LabeledEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "confirmed",
+          label: "ラベル追加",
+          body: item.label.name,
+        });
+        break;
+      case "UnlabeledEvent":
+        rows.push({
+          id: item.id,
+          date: item.createdAt,
+          actor: item.actor?.login ?? "unknown",
+          tone: "confirmed",
+          label: "ラベル解除",
+          body: item.label.name,
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  return rows
+    .slice()
+    .sort((left, right) => (left.date ?? "").localeCompare(right.date ?? ""))
+    .map((row, index) => ({ ...row, id: `${row.id}:${index}` }));
+}
 
 export function IssueDetailScreen({
-  issueId = "ISS-2025-00125",
+  issueId = "conao3:github-jtc:1",
 }: {
   readonly issueId?: string;
 }): JSX.Element {
-  const statusHistory = [
-    { label: "新規", note: "→ 04/28", muted: false },
-    { label: "割当", note: "→ 04/28", muted: false },
-    { label: "調査中", note: "→ 04/29", muted: false },
-    { label: "対応中", note: "→ 05/01（現在）", muted: false },
-    { label: "レビュー待ち", note: "未到達", muted: true },
-    { label: "解決", note: "未到達", muted: true },
-    { label: "クローズ", note: "未到達", muted: true },
-  ] as const;
+  const sessionQuery = useAuthSession();
+  const accessToken = sessionQuery.data?.accessToken;
+  const coordinates = parseRepositoryScopedNumberRouteId(issueId, sessionQuery.data?.user.login);
+  const detailQuery = useQuery({
+    queryKey: ["github", "issue-detail", coordinates?.owner, coordinates?.name, coordinates?.number],
+    enabled: accessToken !== undefined && coordinates !== null,
+    queryFn: () =>
+      fetchGitHubIssueDetail(accessToken ?? "", {
+        owner: coordinates?.owner ?? "",
+        name: coordinates?.name ?? "",
+        number: coordinates?.number ?? 0,
+        labelsFirst: 10,
+        assigneesFirst: 10,
+        timelineFirst: 20,
+      }),
+  });
+  const issue = detailQuery.data;
+  const state = issue === null || issue === undefined ? null : getIssueState(issue);
+  const assignees = issue === null || issue === undefined ? [] : getAssigneeLabels(issue);
+  const labels = (issue?.labels?.nodes ?? []).filter((label) => label !== null);
+  const timelineRows = issue === null || issue === undefined ? [] : buildTimelineRows(issue);
 
   return (
     <JtcChrome
@@ -71,55 +229,80 @@ export function IssueDetailScreen({
       activeSideItem="課題（Issue）一覧"
       rightColumn={
         <>
-          <Panel title="担当者情報">
-            <div className="text-center">
-              <div
-                className={clsx(
-                  "mx-auto my-1 flex h-16 w-16 items-center justify-center border border-slate-600 bg-gradient-to-br from-slate-300 to-slate-400 text-3xl text-white",
-                  MONO_CLASS,
-                )}
-              >
-                山田
-              </div>
-              <div className="font-bold">山田 太郎</div>
-              <div className="text-xs text-slate-600">基盤開発二課</div>
-              <div className={clsx("text-xs", MONO_CLASS)}>yamada.taro</div>
-              <div className="mt-1">
-                <button type="button" className={buttonClassName({ size: "sm" })}>
-                  プロフィール
-                </button>
-              </div>
-            </div>
+          <Panel title="担当 / 作成者" bodyClassName="p-0">
+            <table className={TABLE_CLASS}>
+              <tbody>
+                <tr>
+                  <th>作成者</th>
+                  <td className={MONO_CLASS}>{issue?.author?.login ?? "－"}</td>
+                </tr>
+                <tr>
+                  <th>担当者</th>
+                  <td className={clsx("text-xs", MONO_CLASS)}>
+                    {assignees.length === 0 ? "未割当" : assignees.join(", ")}
+                  </td>
+                </tr>
+                <tr>
+                  <th>参加者</th>
+                  <td className={MONO_CLASS}>{issue?.participants.totalCount ?? 0}</td>
+                </tr>
+              </tbody>
+            </table>
           </Panel>
 
-          <Panel title="課題ステータス推移" bodyClassName="p-0">
+          <Panel title="Issueサマリ" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
-              {statusHistory.map(({ label, note, muted }) => (
+              {[
+                ["state", issue?.state ?? "－"],
+                ["stateReason", getIssueStateReasonLabel(issue?.stateReason)],
+                ["comments", `${issue?.comments.totalCount ?? 0}`],
+                ["labels", `${issue?.labels?.totalCount ?? 0}`],
+              ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
-                  <span className={muted ? "text-slate-400" : undefined}>{label}</span>
-                  <span className={muted ? "text-xs text-slate-400" : "text-xs"}>{note}</span>
+                  <span>{label}</span>
+                  <span className={clsx("text-xs", MONO_CLASS)}>{value}</span>
                 </li>
               ))}
             </ul>
           </Panel>
 
+          <Panel title="関連情報" bodyClassName="p-0">
+            <table className={TABLE_CLASS}>
+              <tbody>
+                <tr>
+                  <th>リポジトリ</th>
+                  <td className={clsx("text-xs", MONO_CLASS)}>{issue?.repository.nameWithOwner ?? "－"}</td>
+                </tr>
+                <tr>
+                  <th>Milestone</th>
+                  <td>{issue?.milestone?.title ?? "未設定"}</td>
+                </tr>
+                <tr>
+                  <th>期限</th>
+                  <td className={MONO_CLASS}>{formatGitHubDateTime(issue?.milestone?.dueOn)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </Panel>
+
           <Panel title="操作">
             <div className="flex flex-col gap-1">
-              <button type="button" className={buttonClassName()}>
-                担当者変更
-              </button>
-              <button type="button" className={buttonClassName()}>
-                優先度変更
-              </button>
-              <button type="button" className={buttonClassName()}>
-                期限変更
-              </button>
-              <button type="button" className={buttonClassName({ tone: "primary" })}>
-                解決報告
-              </button>
-              <button type="button" className={buttonClassName({ tone: "danger" })}>
-                課題取消（要承認）
-              </button>
+              <a
+                href={issue?.url ?? "https://github.com/issues"}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
+              >
+                GitHubでIssueを開く
+              </a>
+              <a
+                href={issue?.repository.url ?? "https://github.com"}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClassName({ className: "inline-flex justify-center" })}
+              >
+                リポジトリを開く
+              </a>
             </div>
           </Panel>
 
@@ -130,107 +313,101 @@ export function IssueDetailScreen({
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>対応期限注意：</b>本課題の対応期限は<b className="text-red-700">令和8年5月30日</b>
-        です。残日数27日。期限超過時は週次の課題進捗会議にて報告対象となります。
+        <b>参照専用：</b>この画面は GitHub GraphQL の issue 詳細を表示しています。ラベル変更・コメント投稿・
+        クローズ操作は
+        <span className={TEXT_LINK_CLASS}> GitHub 本体 </span>
+        で実施してください。
       </div>
 
       <Panel
-        title={`課題基本情報 ${issueId}`}
-        action={<span>起票日：R8/04/28 10:15 ／ 最終更新：R8/05/02 11:48</span>}
+        title={`Issue基本情報 ${coordinates?.number ?? "?"}`}
+        action={
+          <span>
+            {issue === undefined || issue === null
+              ? "GitHub から読込中..."
+              : `作成日：${formatGitHubDateTime(issue.createdAt)} ／ 更新日：${formatGitHubDateTime(issue.updatedAt)}`}
+          </span>
+        }
         bodyClassName="p-0"
       >
-        <table className={TABLE_CLASS}>
-          <tbody>
-            <tr>
-              <th>
-                件名<span className="font-bold text-red-700">※</span>
-              </th>
-              <td colSpan={3}>
-                <b>決済処理においてDB接続タイムアウト時にエラーログが出力されない事象について</b>
-              </td>
-            </tr>
-            <tr>
-              <th>区分</th>
-              <td>不具合（バグ）</td>
-              <th>分類</th>
-              <td>機能不具合 ／ ログ出力</td>
-            </tr>
-            <tr>
-              <th>状態</th>
-              <td>
-                <JtcStatusTag tone="inProgress">対応中</JtcStatusTag>
-              </td>
-              <th>優先度</th>
-              <td>
-                <JtcPriorityTag priority="high">高</JtcPriorityTag>
-              </td>
-            </tr>
-            <tr>
-              <th>影響度</th>
-              <td>大（顧客影響あり）</td>
-              <th>緊急度</th>
-              <td>中</td>
-            </tr>
-            <tr>
-              <th>対応リポジトリ</th>
-              <td className={MONO_CLASS}>payment-system-core</td>
-              <th>関連PR</th>
-              <td>
-                <span className={TEXT_LINK_CLASS}>PR-2025-00089</span>
-              </td>
-            </tr>
-            <tr>
-              <th>起票者</th>
-              <td>運用統括部 高橋 健一</td>
-              <th>担当者</th>
-              <td>山田 太郎（基盤開発二課）</td>
-            </tr>
-            <tr>
-              <th>起票日</th>
-              <td className={MONO_CLASS}>令和8年4月28日</td>
-              <th>対応期限</th>
-              <td className={MONO_CLASS}>
-                <b className="text-red-700">令和8年5月30日</b>
-              </td>
-            </tr>
-            <tr>
-              <th>発生環境</th>
-              <td>本番環境（PROD-01）／ サーバ：jtc-pay-srv-002</td>
-              <th>再現性</th>
-              <td>常時再現</td>
-            </tr>
-            <tr>
-              <th>事象内容</th>
-              <td colSpan={3}>
-                令和8年4月28日 03:15 頃、決済処理において DB
-                接続タイムアウト（30秒）が発生したが、エラーログが出力されず、業務担当者が事象を検知できなかった。詳細は別添「障害報告書_R8-0428.xlsx」を参照のこと。なお、本事象により業務影響として
-                12件の決済処理がリトライ対象となった（業務側で復旧済み）。
-              </td>
-            </tr>
-            <tr>
-              <th>原因（仮）</th>
-              <td colSpan={3}>
-                PaymentService.java の executePayment() メソッドにおいて、SQLException
-                発生時の例外伝播が適切に行われておらず、ログ出力がスキップされていた可能性が高い。
-              </td>
-            </tr>
-            <tr>
-              <th>対応方針</th>
-              <td colSpan={3}>
-                例外処理を全面的に見直し、PaymentException
-                でラップして上位に伝播するように修正する。テストケースについても境界値・異常系を追加する。
-              </td>
-            </tr>
-            <tr>
-              <th>添付資料</th>
-              <td colSpan={3}>
-                📄 <span className={TEXT_LINK_CLASS}>障害報告書_R8-0428.xlsx</span> ／ 📄{" "}
-                <span className={TEXT_LINK_CLASS}>ログ調査結果.txt</span> ／ 📄{" "}
-                <span className={TEXT_LINK_CLASS}>業務影響評価.docx</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {coordinates === null ? (
+          <div className="py-8 text-center text-red-800">Issue 識別子を解釈できませんでした。</div>
+        ) : detailQuery.isPending ? (
+          <div className="py-8 text-center text-slate-600">GitHub から Issue 詳細を取得しています。</div>
+        ) : detailQuery.isError ? (
+          <div className="py-8 text-center text-red-800">
+            {detailQuery.error instanceof Error
+              ? detailQuery.error.message
+              : "Issue 詳細の取得に失敗しました。"}
+          </div>
+        ) : issue === null || issue === undefined ? (
+          <div className="py-8 text-center text-slate-600">
+            {coordinates.owner}/{coordinates.name} の Issue #{coordinates.number} は参照できません。
+          </div>
+        ) : (
+          <table className={TABLE_CLASS}>
+            <tbody>
+              <tr>
+                <th>
+                  件名<span className="font-bold text-red-700">※</span>
+                </th>
+                <td colSpan={3}>
+                  <b>{issue.title}</b>
+                </td>
+              </tr>
+              <tr>
+                <th>リポジトリ</th>
+                <td className={MONO_CLASS}>{issue.repository.nameWithOwner}</td>
+                <th>状態</th>
+                <td>
+                  {state === null ? "－" : <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>}
+                </td>
+              </tr>
+              <tr>
+                <th>作成者</th>
+                <td className={MONO_CLASS}>{issue.author?.login ?? "unknown"}</td>
+                <th>担当者</th>
+                <td className={clsx("text-xs", MONO_CLASS)}>
+                  {assignees.length === 0 ? "未割当" : assignees.join(", ")}
+                </td>
+              </tr>
+              <tr>
+                <th>コメント</th>
+                <td className={MONO_CLASS}>{issue.comments.totalCount}</td>
+                <th>ラベル</th>
+                <td>
+                  <div className="flex flex-wrap gap-1">
+                    {labels.length === 0 ? (
+                      <span className="text-slate-500">未設定</span>
+                    ) : (
+                      labels.map((label) => renderLabelChip(label.id, label.name, label.color))
+                    )}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th>Milestone</th>
+                <td>{issue.milestone?.title ?? "未設定"}</td>
+                <th>期限</th>
+                <td className={MONO_CLASS}>{formatGitHubDateTime(issue.milestone?.dueOn)}</td>
+              </tr>
+              <tr>
+                <th>closedAt</th>
+                <td className={MONO_CLASS}>{formatGitHubDateTime(issue.closedAt)}</td>
+                <th>stateReason</th>
+                <td className={MONO_CLASS}>{getIssueStateReasonLabel(issue.stateReason)}</td>
+              </tr>
+              <tr>
+                <th>本文</th>
+                <td colSpan={3}>
+                  <div className="whitespace-pre-wrap">
+                    {issue.bodyText.trim().length === 0 ? "本文なし" : issue.bodyText}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </Panel>
 
       <Panel title="対応進捗（タイムライン）" bodyClassName="p-0">
@@ -245,65 +422,45 @@ export function IssueDetailScreen({
             </tr>
           </thead>
           <tbody>
-            {timeline.map(([no, date, actor, tone, label, body]) => (
-              <tr key={no}>
-                <td className="text-center">{no}</td>
-                <td className={clsx("text-center", MONO_CLASS)}>{date}</td>
-                <td className="text-center">{actor}</td>
-                <td className="text-center">
-                  <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
+            {coordinates === null ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-red-800">
+                  Issue 識別子を解釈できませんでした。
                 </td>
-                <td>{body}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-right">
-          <button type="button" className={buttonClassName()}>
-            ＋ 進捗を追加
-          </button>
-          <span className="px-1" />
-          <button type="button" className={buttonClassName({ tone: "primary" })}>
-            状態を変更
-          </button>
-        </div>
-      </Panel>
-
-      <Panel title="関連情報" bodyClassName="p-0">
-        <table className={TABLE_CLASS}>
-          <thead>
-            <tr>
-              <th className="w-32">種別</th>
-              <th>ID／件名</th>
-              <th className="w-32">状態</th>
-              <th className="w-24">担当</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="text-center">プルリク</td>
-              <td className={MONO_CLASS}>PR-2025-00089 決済処理の例外ハンドリング追加対応</td>
-              <td className="text-center">
-                <JtcStatusTag tone="review">レビュー中</JtcStatusTag>
-              </td>
-              <td className="text-center">山田太郎</td>
-            </tr>
-            <tr>
-              <td className="text-center">変更管理</td>
-              <td className={MONO_CLASS}>CHG-2025-00472 決済例外処理の修正</td>
-              <td className="text-center">
-                <JtcStatusTag tone="review">レビュー中</JtcStatusTag>
-              </td>
-              <td className="text-center">品質保証部</td>
-            </tr>
-            <tr>
-              <td className="text-center">障害報告</td>
-              <td className={MONO_CLASS}>INC-2025-00038 決済処理ログ欠損事象</td>
-              <td className="text-center">
-                <JtcStatusTag tone="done">解決済</JtcStatusTag>
-              </td>
-              <td className="text-center">運用統括部</td>
-            </tr>
+            ) : detailQuery.isPending ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-slate-600">
+                  GitHub から更新履歴を取得しています。
+                </td>
+              </tr>
+            ) : detailQuery.isError ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-red-800">
+                  {detailQuery.error instanceof Error
+                    ? detailQuery.error.message
+                    : "更新履歴の取得に失敗しました。"}
+                </td>
+              </tr>
+            ) : timelineRows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-slate-600">
+                  表示可能な timeline item はありません。
+                </td>
+              </tr>
+            ) : (
+              timelineRows.map((row, index) => (
+                <tr key={row.id}>
+                  <td className="text-center">{index + 1}</td>
+                  <td className={clsx("text-center", MONO_CLASS)}>{formatGitHubDateTime(row.date)}</td>
+                  <td className="text-center">{row.actor}</td>
+                  <td className="text-center">
+                    <JtcStatusTag tone={row.tone}>{row.label}</JtcStatusTag>
+                  </td>
+                  <td>{row.body}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </Panel>
@@ -314,5 +471,5 @@ export function IssueDetailScreen({
 export default function IssueDetailPage(): JSX.Element {
   const { issueId } = useParams();
 
-  return <IssueDetailScreen issueId={issueId ?? "ISS-2025-00125"} />;
+  return <IssueDetailScreen issueId={issueId ?? "conao3:github-jtc:1"} />;
 }

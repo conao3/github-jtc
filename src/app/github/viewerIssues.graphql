@@ -1,0 +1,45 @@
+query ViewerIssues($first: Int!, $after: String, $states: [IssueState!]) {
+  viewer {
+    issues(first: $first, after: $after, orderBy: { field: UPDATED_AT, direction: DESC }, states: $states) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        number
+        title
+        state
+        stateReason
+        createdAt
+        updatedAt
+        url
+        comments {
+          totalCount
+        }
+        repository {
+          name
+          nameWithOwner
+          owner {
+            login
+          }
+        }
+        assignees(first: 3) {
+          totalCount
+          nodes {
+            login
+          }
+        }
+        labels(first: 3) {
+          totalCount
+          nodes {
+            id
+            name
+            color
+          }
+        }
+      }
+    }
+  }
+}

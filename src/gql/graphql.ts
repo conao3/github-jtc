@@ -22,6 +22,17 @@ export type IssueState =
   /** An issue that is still open */
   | "OPEN";
 
+/** The possible state reasons of an issue. */
+export type IssueStateReason =
+  /** An issue that has been closed as completed */
+  | "COMPLETED"
+  /** An issue that has been closed as a duplicate. */
+  | "DUPLICATE"
+  /** An issue that has been closed as not planned */
+  | "NOT_PLANNED"
+  /** An issue that has been reopened */
+  | "REOPENED";
+
 /** Detailed status information about a pull request merge. */
 export type MergeStateStatus =
   /** The head ref is out of date. */
@@ -215,6 +226,199 @@ export type DashboardQuery = {
     > | null;
   };
   authoredPullRequests: { issueCount: number };
+};
+
+export type IssueDetailQueryVariables = Exact<{
+  owner: string;
+  name: string;
+  number: number;
+  labelsFirst: number;
+  assigneesFirst: number;
+  timelineFirst: number;
+}>;
+
+export type IssueDetailQuery = {
+  repository: {
+    issue: {
+      id: string;
+      number: number;
+      title: string;
+      bodyText: string;
+      state: IssueState;
+      stateReason: IssueStateReason | null;
+      createdAt: string;
+      updatedAt: string;
+      closedAt: string | null;
+      url: string;
+      author:
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | null;
+      comments: { totalCount: number };
+      participants: { totalCount: number };
+      repository: { nameWithOwner: string; url: string };
+      milestone: { title: string; dueOn: string | null; progressPercentage: number } | null;
+      labels: {
+        totalCount: number;
+        nodes: Array<{ id: string; name: string; color: string } | null> | null;
+      } | null;
+      assignees: { totalCount: number; nodes: Array<{ login: string; url: string } | null> | null };
+      timelineItems: {
+        nodes: Array<
+          | { __typename: "AddedToProjectEvent" }
+          | { __typename: "AddedToProjectV2Event" }
+          | {
+              __typename: "AssignedEvent";
+              id: string;
+              createdAt: string;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+              assignee:
+                | { __typename: "Bot"; login: string }
+                | { __typename: "Mannequin"; login: string }
+                | { __typename: "Organization"; login: string }
+                | { __typename: "User"; login: string }
+                | null;
+            }
+          | { __typename: "BlockedByAddedEvent" }
+          | { __typename: "BlockedByRemovedEvent" }
+          | { __typename: "BlockingAddedEvent" }
+          | { __typename: "BlockingRemovedEvent" }
+          | {
+              __typename: "ClosedEvent";
+              id: string;
+              createdAt: string;
+              stateReason: IssueStateReason | null;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+            }
+          | { __typename: "CommentDeletedEvent" }
+          | { __typename: "ConnectedEvent" }
+          | { __typename: "ConvertedFromDraftEvent" }
+          | { __typename: "ConvertedNoteToIssueEvent" }
+          | { __typename: "ConvertedToDiscussionEvent" }
+          | { __typename: "CrossReferencedEvent" }
+          | { __typename: "DemilestonedEvent" }
+          | { __typename: "DisconnectedEvent" }
+          | {
+              __typename: "IssueComment";
+              id: string;
+              bodyText: string;
+              publishedAt: string | null;
+              url: string;
+              author:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+            }
+          | { __typename: "IssueCommentPinnedEvent" }
+          | { __typename: "IssueCommentUnpinnedEvent" }
+          | { __typename: "IssueFieldAddedEvent" }
+          | { __typename: "IssueFieldChangedEvent" }
+          | { __typename: "IssueFieldRemovedEvent" }
+          | { __typename: "IssueTypeAddedEvent" }
+          | { __typename: "IssueTypeChangedEvent" }
+          | { __typename: "IssueTypeRemovedEvent" }
+          | {
+              __typename: "LabeledEvent";
+              id: string;
+              createdAt: string;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+              label: { name: string; color: string };
+            }
+          | { __typename: "LockedEvent" }
+          | { __typename: "MarkedAsDuplicateEvent" }
+          | { __typename: "MentionedEvent" }
+          | { __typename: "MilestonedEvent" }
+          | { __typename: "MovedColumnsInProjectEvent" }
+          | { __typename: "ParentIssueAddedEvent" }
+          | { __typename: "ParentIssueRemovedEvent" }
+          | { __typename: "PinnedEvent" }
+          | { __typename: "ProjectV2ItemStatusChangedEvent" }
+          | { __typename: "ReferencedEvent" }
+          | { __typename: "RemovedFromProjectEvent" }
+          | { __typename: "RemovedFromProjectV2Event" }
+          | { __typename: "RenamedTitleEvent" }
+          | {
+              __typename: "ReopenedEvent";
+              id: string;
+              createdAt: string;
+              stateReason: IssueStateReason | null;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+            }
+          | { __typename: "SubIssueAddedEvent" }
+          | { __typename: "SubIssueRemovedEvent" }
+          | { __typename: "SubscribedEvent" }
+          | { __typename: "TransferredEvent" }
+          | {
+              __typename: "UnassignedEvent";
+              id: string;
+              createdAt: string;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+              assignee:
+                | { __typename: "Bot"; login: string }
+                | { __typename: "Mannequin"; login: string }
+                | { __typename: "Organization"; login: string }
+                | { __typename: "User"; login: string }
+                | null;
+            }
+          | {
+              __typename: "UnlabeledEvent";
+              id: string;
+              createdAt: string;
+              actor:
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | { login: string }
+                | null;
+              label: { name: string; color: string };
+            }
+          | { __typename: "UnlockedEvent" }
+          | { __typename: "UnmarkedAsDuplicateEvent" }
+          | { __typename: "UnpinnedEvent" }
+          | { __typename: "UnsubscribedEvent" }
+          | { __typename: "UserBlockedEvent" }
+          | null
+        > | null;
+      };
+    } | null;
+  } | null;
 };
 
 export type PullRequestDetailQueryVariables = Exact<{
@@ -466,6 +670,38 @@ export type ViewerQuery = {
     avatarUrl: string;
     url: string;
     company: string | null;
+  };
+};
+
+export type ViewerIssuesQueryVariables = Exact<{
+  first: number;
+  after?: string | null | undefined;
+  states?: Array<IssueState> | IssueState | null | undefined;
+}>;
+
+export type ViewerIssuesQuery = {
+  viewer: {
+    issues: {
+      totalCount: number;
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      nodes: Array<{
+        id: string;
+        number: number;
+        title: string;
+        state: IssueState;
+        stateReason: IssueStateReason | null;
+        createdAt: string;
+        updatedAt: string;
+        url: string;
+        comments: { totalCount: number };
+        repository: { name: string; nameWithOwner: string; owner: { login: string } | { login: string } };
+        assignees: { totalCount: number; nodes: Array<{ login: string } | null> | null };
+        labels: {
+          totalCount: number;
+          nodes: Array<{ id: string; name: string; color: string } | null> | null;
+        } | null;
+      } | null> | null;
+    };
   };
 };
 
@@ -986,6 +1222,564 @@ export const DashboardDocument = {
     },
   ],
 } as unknown as DocumentNode<DashboardQuery, DashboardQueryVariables>;
+export const IssueDetailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "IssueDetail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "number" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "labelsFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "assigneesFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "timelineFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "repository" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "owner" },
+                value: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "issue" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "number" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "number" } },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      { kind: "Field", name: { kind: "Name", value: "number" } },
+                      { kind: "Field", name: { kind: "Name", value: "title" } },
+                      { kind: "Field", name: { kind: "Name", value: "bodyText" } },
+                      { kind: "Field", name: { kind: "Name", value: "state" } },
+                      { kind: "Field", name: { kind: "Name", value: "stateReason" } },
+                      { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "closedAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "url" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "author" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [{ kind: "Field", name: { kind: "Name", value: "login" } }],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "comments" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "participants" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "repository" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "milestone" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "title" } },
+                            { kind: "Field", name: { kind: "Name", value: "dueOn" } },
+                            { kind: "Field", name: { kind: "Name", value: "progressPercentage" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "labels" },
+                        arguments: [
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "first" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "labelsFirst" } },
+                          },
+                        ],
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "nodes" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                                  { kind: "Field", name: { kind: "Name", value: "color" } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "assignees" },
+                        arguments: [
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "first" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "assigneesFirst" } },
+                          },
+                        ],
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "nodes" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "login" } },
+                                  { kind: "Field", name: { kind: "Name", value: "url" } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timelineItems" },
+                        arguments: [
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "first" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "timelineFirst" } },
+                          },
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "itemTypes" },
+                            value: {
+                              kind: "ListValue",
+                              values: [
+                                { kind: "EnumValue", value: "ISSUE_COMMENT" },
+                                { kind: "EnumValue", value: "CLOSED_EVENT" },
+                                { kind: "EnumValue", value: "REOPENED_EVENT" },
+                                { kind: "EnumValue", value: "ASSIGNED_EVENT" },
+                                { kind: "EnumValue", value: "UNASSIGNED_EVENT" },
+                                { kind: "EnumValue", value: "LABELED_EVENT" },
+                                { kind: "EnumValue", value: "UNLABELED_EVENT" },
+                              ],
+                            },
+                          },
+                        ],
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "nodes" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "IssueComment" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "bodyText" } },
+                                        { kind: "Field", name: { kind: "Name", value: "publishedAt" } },
+                                        { kind: "Field", name: { kind: "Name", value: "url" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "author" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "ClosedEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        { kind: "Field", name: { kind: "Name", value: "stateReason" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "ReopenedEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        { kind: "Field", name: { kind: "Name", value: "stateReason" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "AssignedEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "assignee" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "User" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Bot" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Organization" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Mannequin" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "UnassignedEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "assignee" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "User" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Bot" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Organization" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                              {
+                                                kind: "InlineFragment",
+                                                typeCondition: {
+                                                  kind: "NamedType",
+                                                  name: { kind: "Name", value: "Mannequin" },
+                                                },
+                                                selectionSet: {
+                                                  kind: "SelectionSet",
+                                                  selections: [
+                                                    { kind: "Field", name: { kind: "Name", value: "login" } },
+                                                  ],
+                                                },
+                                              },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "LabeledEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "label" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "name" } },
+                                              { kind: "Field", name: { kind: "Name", value: "color" } },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "UnlabeledEvent" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "actor" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "login" } },
+                                            ],
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "label" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              { kind: "Field", name: { kind: "Name", value: "name" } },
+                                              { kind: "Field", name: { kind: "Name", value: "color" } },
+                                            ],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<IssueDetailQuery, IssueDetailQueryVariables>;
 export const PullRequestDetailDocument = {
   kind: "Document",
   definitions: [
@@ -2100,6 +2894,208 @@ export const ViewerDocument = {
     },
   ],
 } as unknown as DocumentNode<ViewerQuery, ViewerQueryVariables>;
+export const ViewerIssuesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "ViewerIssues" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "first" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "after" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "states" } },
+          type: {
+            kind: "ListType",
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "IssueState" } },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "issues" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "first" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "after" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "after" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderBy" },
+                      value: {
+                        kind: "ObjectValue",
+                        fields: [
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "field" },
+                            value: { kind: "EnumValue", value: "UPDATED_AT" },
+                          },
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "direction" },
+                            value: { kind: "EnumValue", value: "DESC" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "states" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "states" } },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "nodes" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "id" } },
+                            { kind: "Field", name: { kind: "Name", value: "number" } },
+                            { kind: "Field", name: { kind: "Name", value: "title" } },
+                            { kind: "Field", name: { kind: "Name", value: "state" } },
+                            { kind: "Field", name: { kind: "Name", value: "stateReason" } },
+                            { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "comments" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "repository" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                                  { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "owner" },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [{ kind: "Field", name: { kind: "Name", value: "login" } }],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "assignees" },
+                              arguments: [
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "first" },
+                                  value: { kind: "IntValue", value: "3" },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "nodes" },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [{ kind: "Field", name: { kind: "Name", value: "login" } }],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "labels" },
+                              arguments: [
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "first" },
+                                  value: { kind: "IntValue", value: "3" },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "nodes" },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "id" } },
+                                        { kind: "Field", name: { kind: "Name", value: "name" } },
+                                        { kind: "Field", name: { kind: "Name", value: "color" } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ViewerIssuesQuery, ViewerIssuesQueryVariables>;
 export const ViewerProfileDocument = {
   kind: "Document",
   definitions: [
