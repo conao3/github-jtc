@@ -1,42 +1,44 @@
 # github-jtc
 
-JTC 風 GitHub フロントエンド PoC です。
+A JTC-style GitHub frontend PoC.
 
 ## Deploy
 
-このリポジトリは次の 2 つを前提にしています。
+This repository assumes the following deployment split:
 
-- GitHub Pages: フロントエンド配布
-- Cloudflare Worker: GitHub App の `code -> access token` 交換
+- GitHub Pages: frontend hosting
+- Cloudflare Worker: GitHub App `code -> access token` exchange
 
 ### GitHub repository variables
 
 - `GITHUB_APP_CLIENT_ID`
-  GitHub App の Client ID
+  GitHub App Client ID
 - `GITHUB_APP_EXCHANGE_URL`
-  例:
+  Example:
   `https://github-jtc-auth-broker.<subdomain>.workers.dev/api/auth/github/exchange`
 - `PAGES_BASE_PATH` optional
-  project site 以外で配布するときの base path。未設定時は repo 名から自動計算
+  Base path override when deploying somewhere other than a standard project site.
+  If unset, it is derived from the repository name.
 - `PAGES_BASE_URL` optional
-  Worker 側の `ALLOWED_ORIGINS` 自動計算に使う完全な Pages URL
+  Full Pages URL used to derive the Worker's `ALLOWED_ORIGINS`.
 - `WORKER_ALLOWED_ORIGINS` optional
-  Worker が受ける Origin を明示上書きする場合のカンマ区切り一覧
+  Comma-separated list of allowed origins for the Worker when you want to override
+  auto-detection explicitly.
 - `VITE_GITHUB_APP_REDIRECT_URI` optional
-  GitHub App callback URL を固定したい場合だけ指定
+  Set this only if you want to hard-code the GitHub App callback URL.
 
 ### GitHub repository secrets
 
 - `CLOUDFLARE_API_TOKEN`
-  Worker deploy 用
+  Used for Worker deployment
 - `GITHUB_APP_CLIENT_SECRET`
-  GitHub App の Client Secret
+  GitHub App Client Secret
 
 ### GitHub App settings
 
 - Callback URL:
   `https://<owner>.github.io/<repo>/login/callback`
-  user/org site の場合は `https://<owner>.github.io/login/callback`
+  For a user or organization site, use `https://<owner>.github.io/login/callback`.
 
 ### Workflows
 
