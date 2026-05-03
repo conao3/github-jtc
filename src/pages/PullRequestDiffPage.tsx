@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import { useQuery as useApolloQuery } from "@apollo/client/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
@@ -50,6 +50,7 @@ export function PullRequestDiffScreen({
   readonly prId?: string;
 }): JSX.Element {
   const commitsPager = useCursorPagerState();
+  const [searchParams, setSearchParams] = useSearchParams();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
@@ -98,7 +99,7 @@ export function PullRequestDiffScreen({
     commitsQuery.previousData?.repository?.pullRequest?.commits;
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
   const restFiles = restFilesQuery.data ?? [];
-  const [selectedPath, setSelectedPath] = useState<string>("");
+  const selectedPath = searchParams.get("file") ?? "";
 
   const fileEntries = useMemo(() => {
     const byPath = new Map<string, PullRequestDiffFileEntry>();
@@ -138,12 +139,23 @@ export function PullRequestDiffScreen({
   }, [files, restFiles]);
 
   useEffect(() => {
-    if (selectedPath.length === 0 && fileEntries[0] !== undefined) {
-      setSelectedPath(fileEntries[0].path);
+    const firstPath = fileEntries[0]?.path;
+    const hasSelectedFile = fileEntries.some((file) => file.path === selectedPath);
+
+    if ((selectedPath.length === 0 || !hasSelectedFile) && firstPath !== undefined) {
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set("file", firstPath);
+      setSearchParams(nextSearchParams, { replace: true });
     }
-  }, [fileEntries, selectedPath]);
+  }, [fileEntries, searchParams, selectedPath, setSearchParams]);
 
   const selectedFile = fileEntries.find((file) => file.path === selectedPath) ?? fileEntries[0] ?? null;
+  function selectFile(path: string): void {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("file", path);
+    setSearchParams(nextSearchParams);
+  }
+
   const threadComments = useMemo(
     () =>
       (pullRequest?.reviewThreads?.nodes ?? [])
@@ -204,7 +216,7 @@ export function PullRequestDiffScreen({
                       file.path === selectedFile?.path && "bg-amber-100 font-bold",
                     )}
                   >
-                    <button type="button" className="text-left" onClick={() => setSelectedPath(file.path)}>
+                    <button type="button" className="text-left" onClick={() => selectFile(file.path)}>
                       📄 {file.path}
                     </button>
                     <span className={clsx("text-xs", MONO_CLASS)}>
@@ -278,7 +290,7 @@ export function PullRequestDiffScreen({
               <select
                 className="min-w-72 border border-slate-400 px-1 py-0.5"
                 value={selectedFile.path}
-                onChange={(event) => setSelectedPath(event.target.value)}
+                onChange={(event) => selectFile(event.target.value)}
               >
                 {fileEntries.map((file, index) => (
                   <option key={file.path} value={file.path}>

@@ -556,27 +556,26 @@ export function PullRequestDetailScreen({
               <th className="w-16">削除</th>
               <th className="w-16">種別</th>
               <th className="w-20">閲覧状態</th>
-              <th className="w-16">操作</th>
             </tr>
           </thead>
           <tbody>
             {files.length === 0 ? (
               filesQuery.loading ? (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="empty"
                   title="変更ファイル一覧を取得しています。"
                   detail="GitHub から変更ファイル一覧を読み込んでいます。"
                 />
               ) : filesQuery.error ? (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="error"
                   {...describeGitHubError(filesQuery.error, "変更ファイル一覧の取得に失敗しました。")}
                 />
               ) : (
                 <GitHubTableStateRow
-                  colSpan={6}
+                  colSpan={5}
                   tone="empty"
                   title="変更ファイルはありません。"
                   detail="変更ファイル一覧が空です。差分がないプルリクエストか、取得対象外の可能性があります。"
@@ -585,7 +584,14 @@ export function PullRequestDetailScreen({
             ) : (
               files.map((file) => (
                 <tr key={file.path}>
-                  <td className={MONO_CLASS}>{file.path}</td>
+                  <td className={MONO_CLASS}>
+                    <Link
+                      to={`/pull-requests/${prId}/diff?file=${encodeURIComponent(file.path)}`}
+                      className={TEXT_LINK_CLASS}
+                    >
+                      {file.path}
+                    </Link>
+                  </td>
                   <td className="text-right text-green-700">+{file.additions}</td>
                   <td className="text-right text-red-700">-{file.deletions}</td>
                   <td className="text-center">{formatGitHubFileChangeType(file.changeType)}</td>
@@ -593,11 +599,6 @@ export function PullRequestDetailScreen({
                     <JtcStatusTag tone={file.viewerViewedState === "VIEWED" ? "done" : "confirmed"}>
                       {file.viewerViewedState === "VIEWED" ? "確認済" : "未確認"}
                     </JtcStatusTag>
-                  </td>
-                  <td className="text-center">
-                    <Link to={`/pull-requests/${prId}/diff`} className={TEXT_LINK_CLASS}>
-                      差分
-                    </Link>
                   </td>
                 </tr>
               ))
