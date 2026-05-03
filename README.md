@@ -2,6 +2,13 @@
 
 A JTC-style GitHub frontend PoC.
 
+## Screenshots
+
+![Screenshot 1](.github/img/img-001.png)
+![Screenshot 2](.github/img/img-002.png)
+![Screenshot 3](.github/img/img-003.png)
+![Screenshot 4](.github/img/img-004.png)
+
 ## Deploy
 
 This repository assumes the following deployment split:
