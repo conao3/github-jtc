@@ -1,0 +1,126 @@
+query IssueTimeline(
+  $owner: String!
+  $name: String!
+  $number: Int!
+  $timelineFirst: Int!
+  $timelineAfter: String
+) {
+  repository(owner: $owner, name: $name) {
+    id
+    issue(number: $number) {
+      id
+      timelineItems(
+        first: $timelineFirst
+        after: $timelineAfter
+        itemTypes: [
+          ISSUE_COMMENT
+          CLOSED_EVENT
+          REOPENED_EVENT
+          ASSIGNED_EVENT
+          UNASSIGNED_EVENT
+          LABELED_EVENT
+          UNLABELED_EVENT
+        ]
+      ) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          __typename
+          ... on IssueComment {
+            id
+            bodyText
+            publishedAt
+            url
+            author {
+              login
+            }
+          }
+          ... on ClosedEvent {
+            id
+            createdAt
+            stateReason
+            actor {
+              login
+            }
+          }
+          ... on ReopenedEvent {
+            id
+            createdAt
+            stateReason
+            actor {
+              login
+            }
+          }
+          ... on AssignedEvent {
+            id
+            createdAt
+            actor {
+              login
+            }
+            assignee {
+              __typename
+              ... on User {
+                login
+              }
+              ... on Bot {
+                login
+              }
+              ... on Organization {
+                login
+              }
+              ... on Mannequin {
+                login
+              }
+            }
+          }
+          ... on UnassignedEvent {
+            id
+            createdAt
+            actor {
+              login
+            }
+            assignee {
+              __typename
+              ... on User {
+                login
+              }
+              ... on Bot {
+                login
+              }
+              ... on Organization {
+                login
+              }
+              ... on Mannequin {
+                login
+              }
+            }
+          }
+          ... on LabeledEvent {
+            id
+            createdAt
+            actor {
+              login
+            }
+            label {
+              name
+              color
+            }
+          }
+          ... on UnlabeledEvent {
+            id
+            createdAt
+            actor {
+              login
+            }
+            label {
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+  }
+}

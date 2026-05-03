@@ -1,0 +1,51 @@
+query PullRequestDiff(
+  $owner: String!
+  $name: String!
+  $number: Int!
+  $filesFirst: Int!
+  $threadsFirst: Int!
+) {
+  repository(owner: $owner, name: $name) {
+    id
+    pullRequest(number: $number) {
+      id
+      number
+      title
+      url
+      state
+      updatedAt
+      files(first: $filesFirst) {
+        totalCount
+        nodes {
+          additions
+          deletions
+          changeType
+          path
+          viewerViewedState
+        }
+      }
+      reviewThreads(first: $threadsFirst) {
+        totalCount
+        nodes {
+          id
+          isResolved
+          isOutdated
+          path
+          comments(first: 10) {
+            nodes {
+              id
+              body
+              createdAt
+              diffHunk
+              author {
+                login
+                avatarUrl(size: 40)
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

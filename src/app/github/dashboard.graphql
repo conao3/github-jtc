@@ -1,8 +1,6 @@
 query Dashboard(
   $from: DateTime!
   $to: DateTime!
-  $recentReposFirst: Int!
-  $recentReposAfter: String
   $todoFirst: Int!
   $reviewRequestQuery: String!
   $issueAssignmentQuery: String!
@@ -13,37 +11,13 @@ query Dashboard(
     login
     name
     company
-    repositories(
-      first: $recentReposFirst
-      after: $recentReposAfter
+    repositoryCount: repositories(
+      first: 1
       affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
       orderBy: { field: PUSHED_AT, direction: DESC }
       isFork: false
     ) {
       totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        id
-        name
-        nameWithOwner
-        url
-        updatedAt
-        pushedAt
-        isPrivate
-        primaryLanguage {
-          name
-          color
-        }
-        issues(states: OPEN) {
-          totalCount
-        }
-        pullRequests(states: OPEN) {
-          totalCount
-        }
-      }
     }
     contributionsCollection(from: $from, to: $to) {
       totalCommitContributions

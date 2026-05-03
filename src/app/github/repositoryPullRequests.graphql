@@ -1,0 +1,39 @@
+query RepositoryPullRequests(
+  $owner: String!
+  $name: String!
+  $first: Int!
+  $after: String
+  $states: [PullRequestState!]
+) {
+  repository(owner: $owner, name: $name) {
+    id
+    pullRequests(
+      first: $first
+      after: $after
+      orderBy: { field: UPDATED_AT, direction: DESC }
+      states: $states
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        number
+        title
+        url
+        updatedAt
+        state
+        isDraft
+        reviewDecision
+        comments {
+          totalCount
+        }
+        author {
+          login
+        }
+      }
+    }
+  }
+}

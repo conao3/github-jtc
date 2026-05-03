@@ -18,7 +18,7 @@ import {
   formatGitHubViewedState,
   parseRepositoryScopedNumberRouteId,
 } from "../app/github.ts";
-import { PullRequestDetailDocument } from "../gql/graphql.ts";
+import { PullRequestCommitsDocument, PullRequestDiffDocument } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -53,20 +53,25 @@ export function PullRequestDiffScreen({
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
-  const detailQuery = useApolloQuery(PullRequestDetailDocument, {
+  const detailQuery = useApolloQuery(PullRequestDiffDocument, {
     skip: accessToken === undefined || coordinates === null,
     variables: {
       owner: coordinates?.owner ?? "",
       name: coordinates?.name ?? "",
       number: coordinates?.number ?? 0,
       filesFirst: 50,
-      reviewsFirst: 10,
       threadsFirst: 50,
-      commitsFirst: PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE,
-      commitsAfter: commitsPager.currentCursor,
-      filesAfter: null,
-      closingIssuesFirst: 5,
-      closingIssuesAfter: null,
+    },
+    fetchPolicy: "network-only",
+  });
+  const commitsQuery = useApolloQuery(PullRequestCommitsDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      first: PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE,
+      after: commitsPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
@@ -88,6 +93,9 @@ export function PullRequestDiffScreen({
   });
   const pullRequest =
     detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;
+  const commitsConnection =
+    commitsQuery.data?.repository?.pullRequest?.commits ??
+    commitsQuery.previousData?.repository?.pullRequest?.commits;
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
   const restFiles = restFilesQuery.data ?? [];
   const [selectedPath, setSelectedPath] = useState<string>("");
@@ -156,7 +164,7 @@ export function PullRequestDiffScreen({
         ),
     [pullRequest?.reviewThreads?.nodes, selectedFile?.path],
   );
-  const commits = (pullRequest?.commits?.nodes ?? []).filter((commit) => commit !== null);
+  const commits = (commitsConnection?.nodes ?? []).filter((commit) => commit !== null);
   const reviewChecklist = [
     { label: "対象ファイルを確認", checked: selectedFile !== null },
     { label: "閲覧状態を確認", checked: selectedFile?.viewerViewedState === "VIEWED" },
@@ -409,12 +417,27 @@ export function PullRequestDiffScreen({
           </thead>
           <tbody>
             {commits.length === 0 ? (
-              <GitHubTableStateRow
-                colSpan={4}
-                tone="empty"
-                title="関連コミットはありません。"
-                detail="commits connection に表示可能なデータがありません。"
-              />
+              commitsQuery.loading ? (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="empty"
+                  title="関連コミットを取得しています。"
+                  detail="GitHub からコミット一覧を読み込んでいます。"
+                />
+              ) : commitsQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="error"
+                  {...describeGitHubError(commitsQuery.error, "関連コミットの取得に失敗しました。")}
+                />
+              ) : (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="empty"
+                  title="関連コミットはありません。"
+                  detail="commits connection に表示可能なデータがありません。"
+                />
+              )
             ) : (
               commits.map((commit) => {
                 const author = (commit.commit.authors.nodes ?? [])[0];
@@ -435,12 +458,12 @@ export function PullRequestDiffScreen({
           currentPage={commitsPager.currentPage}
           pageSize={PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE}
           visibleCount={commits.length}
-          totalCount={pullRequest?.commits?.totalCount}
-          hasNextPage={pullRequest?.commits?.pageInfo.hasNextPage ?? false}
-          isLoading={detailQuery.loading}
+          totalCount={commitsConnection?.totalCount}
+          hasNextPage={commitsConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={commitsQuery.loading}
           onFirstPage={commitsPager.goToFirstPage}
           onPreviousPage={commitsPager.goToPreviousPage}
-          onNextPage={() => commitsPager.goToNextPage(pullRequest?.commits?.pageInfo.endCursor)}
+          onNextPage={() => commitsPager.goToNextPage(commitsConnection?.pageInfo.endCursor)}
         />
       </Panel>
 

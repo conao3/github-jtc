@@ -7,13 +7,13 @@ import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHub
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { describeGitHubError, formatGitHubDateTime, formatJapaneseEraDateTime } from "../app/github.ts";
 import {
-  describeGitHubError,
-  formatGitHubDateTime,
-  formatJapaneseEraDateTime,
-  type GitHubDashboardPayload,
-} from "../app/github.ts";
-import { DashboardDocument } from "../gql/graphql.ts";
+  DashboardDocument,
+  DashboardRecentRepositoriesDocument,
+  type DashboardQuery,
+  type DashboardRecentRepositoriesQuery,
+} from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   FLOW_STEP_META_CLASS,
@@ -149,17 +149,17 @@ const shortcuts = [
 ] as const;
 
 type ReviewRequestNode = Extract<
-  NonNullable<NonNullable<GitHubDashboardPayload["reviewRequests"]["nodes"]>[number]>,
+  NonNullable<NonNullable<DashboardQuery["reviewRequests"]["nodes"]>[number]>,
   { __typename: "PullRequest" }
 >;
 
 type AssignedIssueNode = Extract<
-  NonNullable<NonNullable<GitHubDashboardPayload["issueAssignments"]["nodes"]>[number]>,
+  NonNullable<NonNullable<DashboardQuery["issueAssignments"]["nodes"]>[number]>,
   { __typename: "Issue" }
 >;
 
 type RecentRepositoryNode = NonNullable<
-  NonNullable<GitHubDashboardPayload["viewer"]["repositories"]["nodes"]>[number]
+  NonNullable<DashboardRecentRepositoriesQuery["viewer"]["repositories"]["nodes"]>[number]
 >;
 
 function isPresent<T>(value: T | null | undefined): value is T {
@@ -178,13 +178,13 @@ function getDashboardQueryRange(): { readonly from: string; readonly to: string 
 }
 
 function getReviewRequestNodes(
-  nodes: GitHubDashboardPayload["reviewRequests"]["nodes"] | null | undefined,
+  nodes: DashboardQuery["reviewRequests"]["nodes"] | null | undefined,
 ): ReviewRequestNode[] {
   return (nodes ?? []).filter((node): node is ReviewRequestNode => node?.__typename === "PullRequest");
 }
 
 function getAssignedIssueNodes(
-  nodes: GitHubDashboardPayload["issueAssignments"]["nodes"] | null | undefined,
+  nodes: DashboardQuery["issueAssignments"]["nodes"] | null | undefined,
 ): AssignedIssueNode[] {
   return (nodes ?? []).filter((node): node is AssignedIssueNode => node?.__typename === "Issue");
 }
@@ -251,8 +251,6 @@ export function DashboardScreen(): JSX.Element {
     variables: {
       from: range.from,
       to: range.to,
-      recentReposFirst: 6,
-      recentReposAfter: recentRepositoriesPager.currentCursor,
       todoFirst: 5,
       reviewRequestQuery: `is:open is:pr archived:false review-requested:${viewerLogin} sort:updated-desc`,
       issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
@@ -260,16 +258,25 @@ export function DashboardScreen(): JSX.Element {
     },
     fetchPolicy: "network-only",
   });
+  const recentRepositoriesQuery = useQuery(DashboardRecentRepositoriesDocument, {
+    skip: accessToken === undefined || viewerLogin.length === 0,
+    variables: {
+      first: 6,
+      after: recentRepositoriesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
   const dashboard = dashboardQuery.data ?? dashboardQuery.previousData;
   const isDashboardInitialLoading = dashboardQuery.loading && dashboard === undefined;
   const reviewRequests = getReviewRequestNodes(dashboard?.reviewRequests?.nodes);
   const assignedIssues = getAssignedIssueNodes(dashboard?.issueAssignments?.nodes);
-  const recentRepositories = (dashboard?.viewer.repositories.nodes ?? []).filter(isPresent);
-  const repositoriesConnection = dashboard?.viewer.repositories;
+  const recentRepositoriesPayload = recentRepositoriesQuery.data ?? recentRepositoriesQuery.previousData;
+  const recentRepositories = (recentRepositoriesPayload?.viewer.repositories.nodes ?? []).filter(isPresent);
+  const repositoriesConnection = recentRepositoriesPayload?.viewer.repositories;
   const kpis = [
     {
       label: "担当リポジトリ数",
-      value: String(dashboard?.viewer.repositories.totalCount ?? 0),
+      value: String(dashboard?.viewer.repositoryCount.totalCount ?? 0),
       note: "利用可能リポジトリ参照",
     },
     {
@@ -427,12 +434,30 @@ export function DashboardScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {recentRepositories.length === 0 ? (
-                  <GitHubTableStateRow
-                    colSpan={3}
-                    tone="empty"
-                    title="最近更新したリポジトリはありません。"
-                    detail="最近更新したリポジトリの表示対象データがありません。"
-                  />
+                  recentRepositoriesQuery.loading ? (
+                    <GitHubTableStateRow
+                      colSpan={3}
+                      tone="empty"
+                      title="最近更新したリポジトリを取得しています。"
+                      detail="GitHub からリポジトリ一覧を読み込んでいます。"
+                    />
+                  ) : recentRepositoriesQuery.error ? (
+                    <GitHubTableStateRow
+                      colSpan={3}
+                      tone="error"
+                      {...describeGitHubError(
+                        recentRepositoriesQuery.error,
+                        "最近更新したリポジトリの取得に失敗しました。",
+                      )}
+                    />
+                  ) : (
+                    <GitHubTableStateRow
+                      colSpan={3}
+                      tone="empty"
+                      title="最近更新したリポジトリはありません。"
+                      detail="最近更新したリポジトリの表示対象データがありません。"
+                    />
+                  )
                 ) : (
                   recentRepositories.map((repository: RecentRepositoryNode) => (
                     <tr key={repository.id}>
@@ -452,7 +477,7 @@ export function DashboardScreen(): JSX.Element {
               visibleCount={recentRepositories.length}
               totalCount={repositoriesConnection?.totalCount}
               hasNextPage={repositoriesConnection?.pageInfo.hasNextPage ?? false}
-              isLoading={dashboardQuery.loading}
+              isLoading={recentRepositoriesQuery.loading}
               onFirstPage={recentRepositoriesPager.goToFirstPage}
               onPreviousPage={recentRepositoriesPager.goToPreviousPage}
               onNextPage={() =>

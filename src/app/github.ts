@@ -3,10 +3,8 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import { githubApolloClient, setGitHubAccessToken } from "./apollo.ts";
 import {
   type CommitHistoryQuery,
-  type DashboardQuery,
   type IssueDetailQuery,
   type PullRequestDetailQuery,
-  type RepositoryDetailQuery,
   ViewerDocument,
   type ViewerPullRequestsQuery,
   type ViewerIssuesQuery,
@@ -25,9 +23,7 @@ export type GitHubViewerPullRequest = NonNullable<
 >;
 export type GitHubViewerIssuesConnection = ViewerIssuesQuery["viewer"]["issues"];
 export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnection["nodes"]>[number]>;
-export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
 export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
-export type GitHubDashboardPayload = DashboardQuery;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;
@@ -643,7 +639,7 @@ export function formatGitHubByteSize(value: number | null | undefined): string {
 }
 
 export function sumLanguageSizes(
-  edges: NonNullable<GitHubRepositoryDetail["languages"]>["edges"] | null | undefined,
+  edges: ReadonlyArray<{ readonly size: number } | null> | null | undefined,
 ): number {
   return (edges ?? []).reduce((total, edge) => total + (edge?.size ?? 0), 0);
 }

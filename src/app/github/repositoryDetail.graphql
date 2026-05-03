@@ -3,14 +3,6 @@ query RepositoryDetail(
   $name: String!
   $rootExpression: String!
   $readmeExpression: String!
-  $pullRequestsFirst: Int!
-  $pullRequestsAfter: String
-  $branchesFirst: Int!
-  $branchesAfter: String
-  $tagsFirst: Int!
-  $tagsAfter: String
-  $languagesFirst: Int!
-  $languagesAfter: String
 ) {
   repository(owner: $owner, name: $name) {
     id
@@ -30,56 +22,21 @@ query RepositoryDetail(
     watchers {
       totalCount
     }
-    issues(states: OPEN) {
+    openIssues: issues(states: OPEN) {
+      totalCount
+    }
+    allIssues: issues(first: 1, states: [OPEN, CLOSED]) {
       totalCount
     }
     openPullRequests: pullRequests(states: OPEN) {
       totalCount
     }
-    pullRequests(
-      first: $pullRequestsFirst
-      after: $pullRequestsAfter
-      orderBy: { field: UPDATED_AT, direction: DESC }
-    ) {
+    allPullRequests: pullRequests(first: 1, states: [OPEN, CLOSED, MERGED]) {
       totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        id
-        number
-        title
-        url
-        updatedAt
-        state
-        isDraft
-        reviewDecision
-        comments {
-          totalCount
-        }
-        author {
-          login
-        }
-      }
     }
     primaryLanguage {
       name
       color
-    }
-    languages(first: $languagesFirst, after: $languagesAfter, orderBy: { field: SIZE, direction: DESC }) {
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      edges {
-        size
-        node {
-          id
-          name
-          color
-        }
-      }
     }
     owner {
       __typename
@@ -112,64 +69,15 @@ query RepositoryDetail(
         }
       }
     }
-    refs(
+    branchRefsSummary: refs(
       refPrefix: "refs/heads/"
-      first: $branchesFirst
-      after: $branchesAfter
+      first: 1
       orderBy: { field: ALPHABETICAL, direction: ASC }
     ) {
       totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        id
-        name
-        target {
-          __typename
-          ... on Commit {
-            committedDate
-            messageHeadline
-            author {
-              name
-              user {
-                login
-              }
-            }
-          }
-        }
-      }
     }
-    tagRefs: refs(
-      refPrefix: "refs/tags/"
-      first: $tagsFirst
-      after: $tagsAfter
-      orderBy: { field: TAG_COMMIT_DATE, direction: DESC }
-    ) {
+    tagRefs: refs(refPrefix: "refs/tags/", first: 1, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
       totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        id
-        name
-        target {
-          __typename
-          ... on Commit {
-            committedDate
-          }
-          ... on Tag {
-            target {
-              __typename
-              ... on Commit {
-                committedDate
-              }
-            }
-          }
-        }
-      }
     }
     rootEntries: object(expression: $rootExpression) {
       __typename

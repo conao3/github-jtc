@@ -16,7 +16,7 @@ import {
   parseRepositoryScopedNumberRouteId,
   type GitHubIssueDetail,
 } from "../app/github.ts";
-import { IssueDetailDocument } from "../gql/graphql.ts";
+import { IssueDetailDocument, IssueTimelineDocument, type IssueTimelineQuery } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -72,7 +72,16 @@ function renderLabelChip(id: string, name: string, color: string): JSX.Element {
   );
 }
 
-function buildTimelineRows(issue: GitHubIssueDetail): Array<{
+type IssueTimelineNode = NonNullable<
+  NonNullable<
+    NonNullable<NonNullable<IssueTimelineQuery["repository"]>["issue"]>["timelineItems"]["nodes"]
+  >[number]
+>;
+
+function buildTimelineRows(
+  issue: GitHubIssueDetail,
+  timelineNodes: ReadonlyArray<IssueTimelineNode | null> | null | undefined,
+): Array<{
   readonly id: string;
   readonly date: string | null;
   readonly actor: string;
@@ -98,7 +107,7 @@ function buildTimelineRows(issue: GitHubIssueDetail): Array<{
     },
   ];
 
-  for (const item of issue.timelineItems.nodes ?? []) {
+  for (const item of timelineNodes ?? []) {
     if (item === null) {
       continue;
     }
@@ -202,6 +211,15 @@ export function IssueDetailScreen({
       number: coordinates?.number ?? 0,
       labelsFirst: 10,
       assigneesFirst: 10,
+    },
+    fetchPolicy: "network-only",
+  });
+  const timelineQuery = useQuery(IssueTimelineDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
       timelineFirst: 20,
       timelineAfter: timelinePager.currentCursor,
     },
@@ -211,8 +229,11 @@ export function IssueDetailScreen({
   const state = issue === null || issue === undefined ? null : getIssueState(issue);
   const assignees = issue === null || issue === undefined ? [] : getAssigneeLabels(issue);
   const labels = (issue?.labels?.nodes ?? []).filter((label) => label !== null);
-  const timelineRows = issue === null || issue === undefined ? [] : buildTimelineRows(issue);
-  const timelineConnection = issue?.timelineItems;
+  const timelineIssue =
+    timelineQuery.data?.repository?.issue ?? timelineQuery.previousData?.repository?.issue;
+  const timelineRows =
+    issue === null || issue === undefined ? [] : buildTimelineRows(issue, timelineIssue?.timelineItems.nodes);
+  const timelineConnection = timelineIssue?.timelineItems;
 
   return (
     <JtcChrome
@@ -434,17 +455,17 @@ export function IssueDetailScreen({
                 title="チケット識別子を解釈できませんでした。"
                 detail="一覧画面から対象チケットを選び直してください。"
               />
-            ) : detailQuery.loading && timelineRows.length === 0 ? (
+            ) : timelineQuery.loading && timelineRows.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-6 text-center text-slate-600">
                   GitHub から更新履歴を取得しています。
                 </td>
               </tr>
-            ) : detailQuery.error ? (
+            ) : timelineQuery.error ? (
               <GitHubTableStateRow
                 colSpan={5}
                 tone="error"
-                {...describeGitHubError(detailQuery.error, "更新履歴の取得に失敗しました。")}
+                {...describeGitHubError(timelineQuery.error, "更新履歴の取得に失敗しました。")}
               />
             ) : timelineRows.length === 0 ? (
               <GitHubTableStateRow
@@ -473,7 +494,7 @@ export function IssueDetailScreen({
           pageSize={20}
           visibleCount={timelineRows.length}
           hasNextPage={timelineConnection?.pageInfo.hasNextPage ?? false}
-          isLoading={detailQuery.loading}
+          isLoading={timelineQuery.loading}
           onFirstPage={timelinePager.goToFirstPage}
           onPreviousPage={timelinePager.goToPreviousPage}
           onNextPage={() => timelinePager.goToNextPage(timelineConnection?.pageInfo.endCursor)}

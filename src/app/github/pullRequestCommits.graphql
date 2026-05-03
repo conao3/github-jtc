@@ -1,0 +1,34 @@
+query PullRequestCommits($owner: String!, $name: String!, $number: Int!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    id
+    pullRequest(number: $number) {
+      id
+      commits(first: $first, after: $after) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          commit {
+            oid
+            committedDate
+            messageHeadline
+            authors(first: 2) {
+              nodes {
+                name
+                email
+                user {
+                  login
+                  avatarUrl(size: 40)
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

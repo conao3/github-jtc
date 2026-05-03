@@ -18,7 +18,11 @@ import {
   parseRepositoryScopedNumberRouteId,
   type GitHubPullRequestDetail,
 } from "../app/github.ts";
-import { PullRequestDetailDocument } from "../gql/graphql.ts";
+import {
+  PullRequestClosingIssuesDocument,
+  PullRequestDetailDocument,
+  PullRequestFilesDocument,
+} from "../gql/graphql.ts";
 import {
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
@@ -163,14 +167,30 @@ export function PullRequestDetailScreen({
       owner: coordinates?.owner ?? "",
       name: coordinates?.name ?? "",
       number: coordinates?.number ?? 0,
-      filesFirst: PULL_REQUEST_DETAIL_FILES_PAGE_SIZE,
-      filesAfter: filesPager.currentCursor,
       reviewsFirst: 10,
       threadsFirst: 20,
-      commitsFirst: 10,
-      commitsAfter: null,
-      closingIssuesFirst: PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE,
-      closingIssuesAfter: closingIssuesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const filesQuery = useQuery(PullRequestFilesDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      filesFirst: PULL_REQUEST_DETAIL_FILES_PAGE_SIZE,
+      filesAfter: filesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const closingIssuesQuery = useQuery(PullRequestClosingIssuesDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      first: PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE,
+      after: closingIssuesPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
@@ -178,9 +198,15 @@ export function PullRequestDetailScreen({
     detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;
   const state = pullRequest === null || pullRequest === undefined ? null : getPullRequestState(pullRequest);
   const workflow = pullRequest === null || pullRequest === undefined ? [] : getWorkflowSteps(pullRequest);
-  const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
+  const filesConnection =
+    filesQuery.data?.repository?.pullRequest?.files ??
+    filesQuery.previousData?.repository?.pullRequest?.files;
+  const closingIssuesConnection =
+    closingIssuesQuery.data?.repository?.pullRequest?.closingIssuesReferences ??
+    closingIssuesQuery.previousData?.repository?.pullRequest?.closingIssuesReferences;
+  const files = (filesConnection?.nodes ?? []).filter((file) => file !== null);
   const reviews = (pullRequest?.reviews?.nodes ?? []).filter((review) => review !== null);
-  const closingIssues = (pullRequest?.closingIssuesReferences?.nodes ?? []).filter((issue) => issue !== null);
+  const closingIssues = (closingIssuesConnection?.nodes ?? []).filter((issue) => issue !== null);
   const reviewerLabels = (pullRequest?.reviewRequests?.nodes ?? [])
     .filter((request) => request?.requestedReviewer !== null && request?.requestedReviewer !== undefined)
     .map((request) => {
@@ -239,12 +265,27 @@ export function PullRequestDetailScreen({
             <table className={TABLE_CLASS}>
               <tbody>
                 {closingIssues.length === 0 ? (
-                  <GitHubTableStateRow
-                    colSpan={2}
-                    tone="empty"
-                    title="関連チケットはありません。"
-                    detail="closingIssuesReferences に紐づくチケットが見つかりません。"
-                  />
+                  closingIssuesQuery.loading ? (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="empty"
+                      title="関連チケットを取得しています。"
+                      detail="GitHub から関連チケット一覧を読み込んでいます。"
+                    />
+                  ) : closingIssuesQuery.error ? (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="error"
+                      {...describeGitHubError(closingIssuesQuery.error, "関連チケットの取得に失敗しました。")}
+                    />
+                  ) : (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="empty"
+                      title="関連チケットはありません。"
+                      detail="closingIssuesReferences に紐づくチケットが見つかりません。"
+                    />
+                  )
                 ) : (
                   closingIssues.map((issue) => (
                     <tr key={issue.id}>
@@ -259,14 +300,14 @@ export function PullRequestDetailScreen({
               currentPage={closingIssuesPager.currentPage}
               pageSize={PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE}
               visibleCount={closingIssues.length}
-              totalCount={pullRequest?.closingIssuesReferences?.totalCount}
-              hasNextPage={pullRequest?.closingIssuesReferences?.pageInfo.hasNextPage ?? false}
-              isLoading={detailQuery.loading}
+              totalCount={
+                closingIssuesConnection?.totalCount ?? pullRequest?.closingIssuesReferences?.totalCount
+              }
+              hasNextPage={closingIssuesConnection?.pageInfo.hasNextPage ?? false}
+              isLoading={closingIssuesQuery.loading}
               onFirstPage={closingIssuesPager.goToFirstPage}
               onPreviousPage={closingIssuesPager.goToPreviousPage}
-              onNextPage={() =>
-                closingIssuesPager.goToNextPage(pullRequest?.closingIssuesReferences?.pageInfo.endCursor)
-              }
+              onNextPage={() => closingIssuesPager.goToNextPage(closingIssuesConnection?.pageInfo.endCursor)}
             />
           </Panel>
 
@@ -381,9 +422,9 @@ export function PullRequestDetailScreen({
               <tr>
                 <th>関連チケット</th>
                 <td>
-                  {closingIssues.length === 0
+                  {(pullRequest.closingIssuesReferences?.totalCount ?? 0) === 0
                     ? "なし"
-                    : closingIssues.map((issue) => `#${issue.number}`).join(" / ")}
+                    : `${pullRequest.closingIssuesReferences?.totalCount ?? 0}件`}
                 </td>
                 <th>マージ状態</th>
                 <td>{formatGitHubMergeStateStatus(pullRequest.mergeStateStatus)}</td>
@@ -434,8 +475,8 @@ export function PullRequestDetailScreen({
         title="変更ファイル一覧"
         action={
           <span className={MUTED_CLASS}>
-            合計：{pullRequest?.files?.totalCount ?? 0}ファイル / +{pullRequest?.additions ?? 0} / -
-            {pullRequest?.deletions ?? 0}
+            合計：{filesConnection?.totalCount ?? pullRequest?.changedFiles ?? 0}ファイル / +
+            {pullRequest?.additions ?? 0} / -{pullRequest?.deletions ?? 0}
           </span>
         }
         bodyClassName="p-0"
@@ -453,12 +494,27 @@ export function PullRequestDetailScreen({
           </thead>
           <tbody>
             {files.length === 0 ? (
-              <GitHubTableStateRow
-                colSpan={6}
-                tone="empty"
-                title="変更ファイルはありません。"
-                detail="変更ファイル一覧が空です。差分がないプルリクエストか、取得対象外の可能性があります。"
-              />
+              filesQuery.loading ? (
+                <GitHubTableStateRow
+                  colSpan={6}
+                  tone="empty"
+                  title="変更ファイル一覧を取得しています。"
+                  detail="GitHub から変更ファイル一覧を読み込んでいます。"
+                />
+              ) : filesQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={6}
+                  tone="error"
+                  {...describeGitHubError(filesQuery.error, "変更ファイル一覧の取得に失敗しました。")}
+                />
+              ) : (
+                <GitHubTableStateRow
+                  colSpan={6}
+                  tone="empty"
+                  title="変更ファイルはありません。"
+                  detail="変更ファイル一覧が空です。差分がないプルリクエストか、取得対象外の可能性があります。"
+                />
+              )
             ) : (
               files.map((file) => (
                 <tr key={file.path}>
@@ -485,12 +541,12 @@ export function PullRequestDetailScreen({
           currentPage={filesPager.currentPage}
           pageSize={PULL_REQUEST_DETAIL_FILES_PAGE_SIZE}
           visibleCount={files.length}
-          totalCount={pullRequest?.files?.totalCount}
-          hasNextPage={pullRequest?.files?.pageInfo.hasNextPage ?? false}
-          isLoading={detailQuery.loading}
+          totalCount={filesConnection?.totalCount}
+          hasNextPage={filesConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={filesQuery.loading}
           onFirstPage={filesPager.goToFirstPage}
           onPreviousPage={filesPager.goToPreviousPage}
-          onNextPage={() => filesPager.goToNextPage(pullRequest?.files?.pageInfo.endCursor)}
+          onNextPage={() => filesPager.goToNextPage(filesConnection?.pageInfo.endCursor)}
         />
       </Panel>
 

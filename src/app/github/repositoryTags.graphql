@@ -1,0 +1,35 @@
+query RepositoryTags($owner: String!, $name: String!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    id
+    tagRefs: refs(
+      refPrefix: "refs/tags/"
+      first: $first
+      after: $after
+      orderBy: { field: TAG_COMMIT_DATE, direction: DESC }
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        name
+        target {
+          __typename
+          ... on Commit {
+            committedDate
+          }
+          ... on Tag {
+            target {
+              __typename
+              ... on Commit {
+                committedDate
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

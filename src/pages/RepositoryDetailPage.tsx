@@ -7,6 +7,7 @@ import { useAuthSession } from "../app/auth.tsx";
 import { CursorPager, useCursorPagerState } from "../app/components/CursorPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
+import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   createRepositoryPath,
@@ -16,13 +17,23 @@ import {
   formatGitHubByteSize,
   formatGitHubDate,
   formatGitHubDateTime,
+  formatGitHubIssueState,
   formatGitHubPermission,
   formatGitHubReviewDecision,
   formatGitHubVisibility,
   parseRepositoryRouteId,
   sumLanguageSizes,
 } from "../app/github.ts";
-import { CommitHistoryDocument, RepositoryDetailDocument } from "../gql/graphql.ts";
+import {
+  CommitHistoryDocument,
+  RepositoryBranchesDocument,
+  RepositoryDetailDocument,
+  RepositoryIssuesDocument,
+  RepositoryLanguagesDocument,
+  RepositoryPullRequestsDocument,
+  RepositoryTagsDocument,
+  type PullRequestState,
+} from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -41,9 +52,10 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-type RepositoryDetailTab = "files" | "commits" | "pullRequests" | "refs";
+type RepositoryDetailTab = "files" | "commits" | "issues" | "pullRequests" | "refs";
 type PullRequestStateFilter = "open" | "all" | "merged" | "closed";
 const REPOSITORY_DETAIL_COMMIT_PAGE_SIZE = 10;
+const REPOSITORY_DETAIL_ISSUE_PAGE_SIZE = 20;
 const REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE = 20;
 const REPOSITORY_DETAIL_BRANCH_PAGE_SIZE = 10;
 const REPOSITORY_DETAIL_TAG_PAGE_SIZE = 10;
@@ -114,9 +126,9 @@ function getTagDate(
 }
 
 function getPullRequestStatusLabel(pullRequest: {
-  readonly isDraft: boolean;
-  readonly reviewDecision: string | null;
-  readonly state: string;
+  readonly isDraft?: boolean | null;
+  readonly reviewDecision?: string | null;
+  readonly state?: string | null;
 }): string {
   if (pullRequest.isDraft) {
     return "下書き";
@@ -138,11 +150,42 @@ function getPullRequestStatusLabel(pullRequest: {
     return "オープン";
   }
 
-  return pullRequest.state;
+  return pullRequest.state ?? "－";
+}
+
+function getIssueStatus(issue: { readonly state: string }): {
+  readonly tone: "pending" | "done";
+  readonly label: string;
+} {
+  if (issue.state === "OPEN") {
+    return { tone: "pending", label: "オープン" };
+  }
+
+  return { tone: "done", label: formatGitHubIssueState(issue.state) };
+}
+
+function getPullRequestStates(value: PullRequestStateFilter): PullRequestState[] {
+  switch (value) {
+    case "all":
+      return ["OPEN", "CLOSED", "MERGED"];
+    case "merged":
+      return ["MERGED"];
+    case "closed":
+      return ["CLOSED"];
+    case "open":
+    default:
+      return ["OPEN"];
+  }
 }
 
 function isRepositoryDetailTab(value: string | null): value is RepositoryDetailTab {
-  return value === "files" || value === "commits" || value === "pullRequests" || value === "refs";
+  return (
+    value === "files" ||
+    value === "commits" ||
+    value === "issues" ||
+    value === "pullRequests" ||
+    value === "refs"
+  );
 }
 
 function isPullRequestStateFilter(value: string | null): value is PullRequestStateFilter {
@@ -203,6 +246,7 @@ export function RepositoryDetailScreen({
     parseCommitCursorHistory(searchParams),
   );
   const [commitPage, setCommitPage] = useState<number>(() => parseCommitPage(searchParams));
+  const issuesPager = useCursorPagerState();
   const pullRequestsPager = useCursorPagerState();
   const branchesPager = useCursorPagerState();
   const tagsPager = useCursorPagerState();
@@ -218,14 +262,57 @@ export function RepositoryDetailScreen({
       name: coordinates?.name ?? "",
       rootExpression: "HEAD:",
       readmeExpression: "HEAD:README.md",
-      pullRequestsFirst: REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE,
-      pullRequestsAfter: pullRequestsPager.currentCursor,
-      branchesFirst: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
-      branchesAfter: branchesPager.currentCursor,
-      tagsFirst: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
-      tagsAfter: tagsPager.currentCursor,
-      languagesFirst: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
-      languagesAfter: languagesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const issuesQuery = useQuery(RepositoryIssuesDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      first: REPOSITORY_DETAIL_ISSUE_PAGE_SIZE,
+      after: issuesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const pullRequestsQuery = useQuery(RepositoryPullRequestsDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      first: REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE,
+      after: pullRequestsPager.currentCursor,
+      states: getPullRequestStates(pullRequestStateFilter),
+    },
+    fetchPolicy: "network-only",
+  });
+  const branchesQuery = useQuery(RepositoryBranchesDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      first: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
+      after: branchesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const tagsQuery = useQuery(RepositoryTagsDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      first: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
+      after: tagsPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const languagesQuery = useQuery(RepositoryLanguagesDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      first: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
+      after: languagesPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
@@ -254,34 +341,30 @@ export function RepositoryDetailScreen({
       ? (repository.rootEntries.entries ?? []).filter(isPresent)
       : [];
   const recentCommits = (commitHistoryTarget?.history.nodes ?? []).filter(isPresent);
-  const pullRequestsConnection = repository?.pullRequests;
+  const issuesConnection =
+    issuesQuery.data?.repository?.issues ?? issuesQuery.previousData?.repository?.issues;
+  const recentIssues = (issuesConnection?.nodes ?? []).filter(isPresent);
+  const pullRequestsConnection =
+    pullRequestsQuery.data?.repository?.pullRequests ??
+    pullRequestsQuery.previousData?.repository?.pullRequests;
   const recentPullRequests = (pullRequestsConnection?.nodes ?? []).filter(isPresent);
-  const visiblePullRequests = recentPullRequests.filter((pullRequest) => {
-    switch (pullRequestStateFilter) {
-      case "all":
-        return true;
-      case "open":
-        return pullRequest.state === "OPEN";
-      case "merged":
-        return pullRequest.state === "MERGED";
-      case "closed":
-        return pullRequest.state === "CLOSED";
-      default:
-        return true;
-    }
-  });
-  const branchesConnection = repository?.refs;
+  const visiblePullRequests = recentPullRequests;
+  const branchesConnection =
+    branchesQuery.data?.repository?.refs ?? branchesQuery.previousData?.repository?.refs;
   const branchRefs = (branchesConnection?.nodes ?? []).filter(isPresent);
-  const tagRefsConnection = repository?.tagRefs;
+  const tagRefsConnection =
+    tagsQuery.data?.repository?.tagRefs ?? tagsQuery.previousData?.repository?.tagRefs;
   const tagRefs = (tagRefsConnection?.nodes ?? []).filter(isPresent);
   const readmeText =
     repository?.readme?.__typename === "Blob" && !repository.readme.isBinary ? repository.readme.text : null;
-  const languagesConnection = repository?.languages;
+  const languagesConnection =
+    languagesQuery.data?.repository?.languages ?? languagesQuery.previousData?.repository?.languages;
   const languageEdges = languagesConnection?.edges ?? [];
   const totalLanguageSize = sumLanguageSizes(languageEdges);
   const repositoryPath =
     coordinates === null ? null : createRepositoryPath({ owner: coordinates.owner, name: coordinates.name });
-  const combinedRefCount = (repository?.refs?.totalCount ?? 0) + (repository?.tagRefs?.totalCount ?? 0);
+  const combinedRefCount =
+    (repository?.branchRefsSummary?.totalCount ?? 0) + (repository?.tagRefs?.totalCount ?? 0);
 
   useEffect(() => {
     setActiveTab(parseRepositoryDetailTab(searchParams.get("tab"), searchParams.get("prState")));
@@ -289,6 +372,10 @@ export function RepositoryDetailScreen({
     setCommitCursorHistory(parseCommitCursorHistory(searchParams));
     setCommitPage(parseCommitPage(searchParams));
   }, [searchParams]);
+
+  useEffect(() => {
+    pullRequestsPager.resetPager();
+  }, [pullRequestStateFilter]);
 
   function applyRepositoryDetailSearchParams(
     tab: RepositoryDetailTab,
@@ -582,6 +669,100 @@ export function RepositoryDetailScreen({
       );
     }
 
+    if (activeTab === "issues") {
+      return (
+        <>
+          <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+            <span>更新日時の新しい順でチケット一覧を表示しています。</span>
+            <span>取得済: {recentIssues.length}件</span>
+          </div>
+
+          <table className={TABLE_CLASS}>
+            <thead>
+              <tr>
+                <th className="w-16">番号</th>
+                <th>件名</th>
+                <th className="w-20">作成者</th>
+                <th className="w-16">状態</th>
+                <th className="w-16">コメント</th>
+                <th className="w-36">更新日時</th>
+                <th className="w-16">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {issuesQuery.loading && recentIssues.length === 0 ? (
+                <GitHubTableStateRow
+                  colSpan={7}
+                  tone="empty"
+                  title="チケット一覧を取得しています。"
+                  detail="GitHub からこのリポジトリのチケットを読み込んでいます。"
+                />
+              ) : issuesQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={7}
+                  tone="error"
+                  {...describeGitHubError(issuesQuery.error, "チケット一覧の取得に失敗しました。")}
+                />
+              ) : recentIssues.length === 0 ? (
+                <GitHubTableStateRow
+                  colSpan={7}
+                  tone="empty"
+                  title="表示可能なチケットはありません。"
+                  detail="このリポジトリで参照できるチケットがありません。"
+                />
+              ) : (
+                recentIssues.map((issue) => {
+                  const state = getIssueStatus(issue);
+
+                  return (
+                    <tr key={issue.id}>
+                      <td className={clsx("text-center", MONO_CLASS)}>#{issue.number}</td>
+                      <td>{issue.title}</td>
+                      <td className="text-center">{issue.author?.login ?? "不明"}</td>
+                      <td className="text-center">
+                        <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
+                      </td>
+                      <td className={clsx("text-center", MONO_CLASS)}>{issue.comments.totalCount}</td>
+                      <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(issue.updatedAt)}</td>
+                      <td className="text-center">
+                        {coordinates === null ? (
+                          <a href={issue.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                            GitHub
+                          </a>
+                        ) : (
+                          <Link
+                            to={`/issues/${createRepositoryScopedNumberRouteId({
+                              owner: coordinates.owner,
+                              name: coordinates.name,
+                              number: issue.number,
+                            })}`}
+                            className={TEXT_LINK_CLASS}
+                          >
+                            詳細
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+          <CursorPager
+            currentPage={issuesPager.currentPage}
+            pageSize={REPOSITORY_DETAIL_ISSUE_PAGE_SIZE}
+            visibleCount={recentIssues.length}
+            totalCount={issuesConnection?.totalCount}
+            hasNextPage={issuesConnection?.pageInfo.hasNextPage ?? false}
+            isLoading={issuesQuery.loading}
+            onFirstPage={issuesPager.goToFirstPage}
+            onPreviousPage={issuesPager.goToPreviousPage}
+            onNextPage={() => issuesPager.goToNextPage(issuesConnection?.pageInfo.endCursor)}
+          />
+        </>
+      );
+    }
+
     if (activeTab === "pullRequests") {
       return (
         <>
@@ -625,12 +806,32 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {visiblePullRequests.length === 0 ? (
+              {pullRequestsQuery.loading && visiblePullRequests.length === 0 ? (
+                <GitHubTableStateRow
+                  colSpan={7}
+                  tone="empty"
+                  title="プルリクエスト一覧を取得しています。"
+                  detail="GitHub からこのリポジトリのプルリクエストを読み込んでいます。"
+                />
+              ) : pullRequestsQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={7}
+                  tone="error"
+                  {...describeGitHubError(
+                    pullRequestsQuery.error,
+                    "プルリクエスト一覧の取得に失敗しました。",
+                  )}
+                />
+              ) : visiblePullRequests.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={7}
                   tone="empty"
                   title="表示条件に一致するプルリクエストはありません。"
-                  detail="状態の絞り込みを「すべて」に切り替えると、取得済みの全プルリクエストを確認できます。"
+                  detail={
+                    pullRequestStateFilter === "open"
+                      ? "既定の絞り込みではオープン中のプルリクエストはありません。"
+                      : "現在の絞り込み条件に一致するプルリクエストはありません。"
+                  }
                 />
               ) : (
                 visiblePullRequests.map((pullRequest) => (
@@ -639,10 +840,12 @@ export function RepositoryDetailScreen({
                     <td>{pullRequest.title}</td>
                     <td className="text-center">{pullRequest.author?.login ?? "不明"}</td>
                     <td className="text-center">{getPullRequestStatusLabel(pullRequest)}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{pullRequest.comments.totalCount}</td>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      {pullRequest.comments?.totalCount ?? 0}
+                    </td>
                     <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
                     <td className="text-center">
-                      {coordinates === null ? (
+                      {coordinates === null || pullRequest.number === undefined ? (
                         <a
                           href={pullRequest.url}
                           target="_blank"
@@ -674,11 +877,11 @@ export function RepositoryDetailScreen({
             pageSize={REPOSITORY_DETAIL_PULL_REQUEST_PAGE_SIZE}
             visibleCount={visiblePullRequests.length}
             totalCount={pullRequestsConnection?.totalCount}
-            hasNextPage={pullRequestsConnection?.pageInfo.hasNextPage ?? false}
-            isLoading={repositoryQuery.loading}
+            hasNextPage={pullRequestsConnection?.pageInfo?.hasNextPage ?? false}
+            isLoading={pullRequestsQuery.loading}
             onFirstPage={pullRequestsPager.goToFirstPage}
             onPreviousPage={pullRequestsPager.goToPreviousPage}
-            onNextPage={() => pullRequestsPager.goToNextPage(pullRequestsConnection?.pageInfo.endCursor)}
+            onNextPage={() => pullRequestsPager.goToNextPage(pullRequestsConnection?.pageInfo?.endCursor)}
           />
         </>
       );
@@ -686,7 +889,7 @@ export function RepositoryDetailScreen({
 
     return (
       <div className="grid grid-cols-1 gap-3 p-2 lg:grid-cols-2">
-        <Panel title={`ブランチ一覧 (${repository?.refs?.totalCount ?? 0})`} bodyClassName="p-0">
+        <Panel title={`ブランチ一覧 (${repository?.branchRefsSummary?.totalCount ?? 0})`} bodyClassName="p-0">
           <table className={TABLE_CLASS}>
             <thead>
               <tr>
@@ -695,7 +898,20 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {branchRefs.length === 0 ? (
+              {branchesQuery.loading && branchRefs.length === 0 ? (
+                <GitHubTableStateRow
+                  colSpan={2}
+                  tone="empty"
+                  title="ブランチ一覧を取得しています。"
+                  detail="GitHub からブランチ一覧を読み込んでいます。"
+                />
+              ) : branchesQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={2}
+                  tone="error"
+                  {...describeGitHubError(branchesQuery.error, "ブランチ一覧の取得に失敗しました。")}
+                />
+              ) : branchRefs.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={2}
                   tone="empty"
@@ -720,7 +936,7 @@ export function RepositoryDetailScreen({
             visibleCount={branchRefs.length}
             totalCount={branchesConnection?.totalCount}
             hasNextPage={branchesConnection?.pageInfo.hasNextPage ?? false}
-            isLoading={repositoryQuery.loading}
+            isLoading={branchesQuery.loading}
             onFirstPage={branchesPager.goToFirstPage}
             onPreviousPage={branchesPager.goToPreviousPage}
             onNextPage={() => branchesPager.goToNextPage(branchesConnection?.pageInfo.endCursor)}
@@ -736,7 +952,20 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {tagRefs.length === 0 ? (
+              {tagsQuery.loading && tagRefs.length === 0 ? (
+                <GitHubTableStateRow
+                  colSpan={2}
+                  tone="empty"
+                  title="タグ一覧を取得しています。"
+                  detail="GitHub からタグ一覧を読み込んでいます。"
+                />
+              ) : tagsQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={2}
+                  tone="error"
+                  {...describeGitHubError(tagsQuery.error, "タグ一覧の取得に失敗しました。")}
+                />
+              ) : tagRefs.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={2}
                   tone="empty"
@@ -759,7 +988,7 @@ export function RepositoryDetailScreen({
             visibleCount={tagRefs.length}
             totalCount={tagRefsConnection?.totalCount}
             hasNextPage={tagRefsConnection?.pageInfo.hasNextPage ?? false}
-            isLoading={repositoryQuery.loading}
+            isLoading={tagsQuery.loading}
             onFirstPage={tagsPager.goToFirstPage}
             onPreviousPage={tagsPager.goToPreviousPage}
             onNextPage={() => tagsPager.goToNextPage(tagRefsConnection?.pageInfo.endCursor)}
@@ -810,10 +1039,10 @@ export function RepositoryDetailScreen({
             <ul className={TODO_LIST_CLASS}>
               {[
                 ["総コミット数", String(latestCommit?.history.totalCount ?? 0)],
-                ["ブランチ数", String(repository?.refs?.totalCount ?? 0)],
+                ["ブランチ数", String(repository?.branchRefsSummary?.totalCount ?? 0)],
                 ["ウォッチャー数", String(repository?.watchers.totalCount ?? 0)],
                 ["スター数", String(repository?.stargazerCount ?? 0)],
-                ["オープン中チケット", `${repository?.issues.totalCount ?? 0} 件`],
+                ["オープン中チケット", `${repository?.openIssues.totalCount ?? 0} 件`],
                 ["オープン中プルリクエスト", `${repository?.openPullRequests.totalCount ?? 0} 件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
@@ -827,13 +1056,35 @@ export function RepositoryDetailScreen({
           <Panel title="ブランチ一覧" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
-                {branchRefs.map((branch) =>
-                  branch.target?.__typename === "Commit" ? (
-                    <tr key={branch.id}>
-                      <td className={MONO_CLASS}>{branch.name}</td>
-                      <td className="text-center">{formatGitHubDate(branch.target.committedDate)}</td>
-                    </tr>
-                  ) : null,
+                {branchesQuery.loading && branchRefs.length === 0 ? (
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="ブランチ一覧を取得しています。"
+                    detail="GitHub からブランチ一覧を読み込んでいます。"
+                  />
+                ) : branchesQuery.error ? (
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="error"
+                    {...describeGitHubError(branchesQuery.error, "ブランチ一覧の取得に失敗しました。")}
+                  />
+                ) : branchRefs.length === 0 ? (
+                  <GitHubTableStateRow
+                    colSpan={2}
+                    tone="empty"
+                    title="ブランチはありません。"
+                    detail="参照可能なブランチ情報がありません。"
+                  />
+                ) : (
+                  branchRefs.map((branch) =>
+                    branch.target?.__typename === "Commit" ? (
+                      <tr key={branch.id}>
+                        <td className={MONO_CLASS}>{branch.name}</td>
+                        <td className="text-center">{formatGitHubDate(branch.target.committedDate)}</td>
+                      </tr>
+                    ) : null,
+                  )
                 )}
               </tbody>
             </table>
@@ -843,7 +1094,7 @@ export function RepositoryDetailScreen({
               visibleCount={branchRefs.length}
               totalCount={branchesConnection?.totalCount}
               hasNextPage={branchesConnection?.pageInfo.hasNextPage ?? false}
-              isLoading={repositoryQuery.loading}
+              isLoading={branchesQuery.loading}
               onFirstPage={branchesPager.goToFirstPage}
               onPreviousPage={branchesPager.goToPreviousPage}
               onNextPage={() => branchesPager.goToNextPage(branchesConnection?.pageInfo.endCursor)}
@@ -977,7 +1228,8 @@ export function RepositoryDetailScreen({
         <div className={TABS_ROW_CLASS}>
           {renderTabButton("files", "ファイル一覧")}
           {renderTabButton("commits", "コミット履歴", latestCommit?.history.totalCount ?? 0)}
-          {renderTabButton("pullRequests", "プルリクエスト", repository?.pullRequests.totalCount ?? 0)}
+          {renderTabButton("issues", "チケット一覧", repository?.allIssues.totalCount ?? 0)}
+          {renderTabButton("pullRequests", "プルリクエスト", repository?.allPullRequests.totalCount ?? 0)}
           {renderTabButton("refs", "ブランチ／タグ", combinedRefCount)}
         </div>
 
@@ -1034,12 +1286,27 @@ export function RepositoryDetailScreen({
           </thead>
           <tbody>
             {languageEdges.length === 0 ? (
-              <GitHubTableStateRow
-                colSpan={3}
-                tone="empty"
-                title="言語情報がありません。"
-                detail="GitHub 側で言語構成がまだ集計されていない可能性があります。"
-              />
+              languagesQuery.loading ? (
+                <GitHubTableStateRow
+                  colSpan={3}
+                  tone="empty"
+                  title="言語情報を取得しています。"
+                  detail="GitHub から言語構成を読み込んでいます。"
+                />
+              ) : languagesQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={3}
+                  tone="error"
+                  {...describeGitHubError(languagesQuery.error, "言語情報の取得に失敗しました。")}
+                />
+              ) : (
+                <GitHubTableStateRow
+                  colSpan={3}
+                  tone="empty"
+                  title="言語情報がありません。"
+                  detail="GitHub 側で言語構成がまだ集計されていない可能性があります。"
+                />
+              )
             ) : (
               languageEdges.map((edge) =>
                 edge?.node === null || edge?.node === undefined ? null : (
@@ -1064,7 +1331,7 @@ export function RepositoryDetailScreen({
             languageEdges.filter((edge) => edge?.node !== null && edge?.node !== undefined).length
           }
           hasNextPage={languagesConnection?.pageInfo.hasNextPage ?? false}
-          isLoading={repositoryQuery.loading}
+          isLoading={languagesQuery.loading}
           onFirstPage={languagesPager.goToFirstPage}
           onPreviousPage={languagesPager.goToPreviousPage}
           onNextPage={() => languagesPager.goToNextPage(languagesConnection?.pageInfo.endCursor)}

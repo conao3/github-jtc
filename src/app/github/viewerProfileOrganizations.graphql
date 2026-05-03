@@ -1,0 +1,19 @@
+query ViewerProfileOrganizations($first: Int!, $after: String) {
+  viewer {
+    id
+    organizations(first: $first, after: $after) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        login
+        name
+        url
+        avatarUrl(size: 40)
+      }
+    }
+  }
+}

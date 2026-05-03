@@ -1,0 +1,27 @@
+query ViewerProfileRepositories($first: Int!, $after: String) {
+  viewer {
+    id
+    repositories(
+      first: $first
+      after: $after
+      affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
+      orderBy: { field: PUSHED_AT, direction: DESC }
+      isFork: false
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        name
+        nameWithOwner
+        url
+        viewerPermission
+        updatedAt
+        isPrivate
+      }
+    }
+  }
+}

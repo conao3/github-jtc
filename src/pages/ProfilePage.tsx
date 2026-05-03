@@ -14,7 +14,11 @@ import {
   formatJapaneseEraDateTime,
   formatGitHubPermission,
 } from "../app/github.ts";
-import { ViewerProfileDocument } from "../gql/graphql.ts";
+import {
+  ViewerProfileDocument,
+  ViewerProfileOrganizationsDocument,
+  ViewerProfileRepositoriesDocument,
+} from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   KPI_CARD_CLASS,
@@ -57,16 +61,32 @@ export function ProfileScreen(): JSX.Element {
     skip: accessToken === undefined,
     variables: {
       ...range,
-      organizationsFirst: PROFILE_ORGANIZATIONS_PAGE_SIZE,
-      organizationsAfter: organizationsPager.currentCursor,
-      repositoriesFirst: PROFILE_REPOSITORIES_PAGE_SIZE,
-      repositoriesAfter: repositoriesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const repositoryQuery = useQuery(ViewerProfileRepositoriesDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: PROFILE_REPOSITORIES_PAGE_SIZE,
+      after: repositoriesPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
+  const organizationsQuery = useQuery(ViewerProfileOrganizationsDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: PROFILE_ORGANIZATIONS_PAGE_SIZE,
+      after: organizationsPager.currentCursor,
     },
     fetchPolicy: "network-only",
   });
   const profile = profileQuery.data?.viewer ?? profileQuery.previousData?.viewer;
-  const organizations = (profile?.organizations.nodes ?? []).filter(isPresent);
-  const repositories = (profile?.repositories.nodes ?? []).filter(isPresent);
+  const repositoriesConnection =
+    repositoryQuery.data?.viewer.repositories ?? repositoryQuery.previousData?.viewer.repositories;
+  const organizationsConnection =
+    organizationsQuery.data?.viewer.organizations ?? organizationsQuery.previousData?.viewer.organizations;
+  const organizations = (organizationsConnection?.nodes ?? []).filter(isPresent);
+  const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
 
   return (
     <JtcChrome
@@ -96,8 +116,8 @@ export function ProfileScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {[
-                  ["所属組織", String(profile?.organizations.totalCount ?? 0)],
-                  ["閲覧可能リポジトリ", String(profile?.repositories.totalCount ?? 0)],
+                  ["所属組織", String(profile?.organizationCount.totalCount ?? 0)],
+                  ["閲覧可能リポジトリ", String(profile?.repositoryCount.totalCount ?? 0)],
                   ["フォロワー", String(profile?.followers.totalCount ?? 0)],
                   ["フォロー中", String(profile?.following.totalCount ?? 0)],
                 ].map(([label, value]) => (
@@ -114,12 +134,30 @@ export function ProfileScreen(): JSX.Element {
             <table className={TABLE_CLASS}>
               <tbody>
                 {repositories.length === 0 ? (
-                  <GitHubTableStateRow
-                    colSpan={2}
-                    tone="empty"
-                    title="最近更新したリポジトリはありません。"
-                    detail="最近更新したリポジトリの表示対象データがありません。"
-                  />
+                  repositoryQuery.loading ? (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="empty"
+                      title="最近更新したリポジトリを取得しています。"
+                      detail="GitHub からリポジトリ一覧を読み込んでいます。"
+                    />
+                  ) : repositoryQuery.error ? (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="error"
+                      {...describeGitHubError(
+                        repositoryQuery.error,
+                        "最近更新したリポジトリの取得に失敗しました。",
+                      )}
+                    />
+                  ) : (
+                    <GitHubTableStateRow
+                      colSpan={2}
+                      tone="empty"
+                      title="最近更新したリポジトリはありません。"
+                      detail="最近更新したリポジトリの表示対象データがありません。"
+                    />
+                  )
                 ) : (
                   repositories.map((repository) => (
                     <tr key={repository.id}>
@@ -138,12 +176,12 @@ export function ProfileScreen(): JSX.Element {
               currentPage={repositoriesPager.currentPage}
               pageSize={PROFILE_REPOSITORIES_PAGE_SIZE}
               visibleCount={repositories.length}
-              totalCount={profile?.repositories.totalCount}
-              hasNextPage={profile?.repositories.pageInfo.hasNextPage ?? false}
-              isLoading={profileQuery.loading}
+              totalCount={repositoriesConnection?.totalCount}
+              hasNextPage={repositoriesConnection?.pageInfo.hasNextPage ?? false}
+              isLoading={repositoryQuery.loading}
               onFirstPage={repositoriesPager.goToFirstPage}
               onPreviousPage={repositoriesPager.goToPreviousPage}
-              onNextPage={() => repositoriesPager.goToNextPage(profile?.repositories.pageInfo.endCursor)}
+              onNextPage={() => repositoriesPager.goToNextPage(repositoriesConnection?.pageInfo.endCursor)}
             />
           </Panel>
 
@@ -244,7 +282,7 @@ export function ProfileScreen(): JSX.Element {
                       {profile.followers.totalCount} / {profile.following.totalCount}
                     </td>
                     <th>組織数</th>
-                    <td className={MONO_CLASS}>{profile.organizations.totalCount}</td>
+                    <td className={MONO_CLASS}>{profile.organizationCount.totalCount}</td>
                   </tr>
                   <tr>
                     <th>自己紹介</th>
@@ -270,12 +308,30 @@ export function ProfileScreen(): JSX.Element {
           </thead>
           <tbody>
             {repositories.length === 0 ? (
-              <GitHubTableStateRow
-                colSpan={5}
-                tone="empty"
-                title="表示可能なリポジトリ情報がありません。"
-                detail="このユーザートークンで参照できるリポジトリが存在しません。"
-              />
+              repositoryQuery.loading ? (
+                <GitHubTableStateRow
+                  colSpan={5}
+                  tone="empty"
+                  title="アクセス可能リポジトリを取得しています。"
+                  detail="GitHub からリポジトリ一覧を読み込んでいます。"
+                />
+              ) : repositoryQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={5}
+                  tone="error"
+                  {...describeGitHubError(
+                    repositoryQuery.error,
+                    "アクセス可能リポジトリの取得に失敗しました。",
+                  )}
+                />
+              ) : (
+                <GitHubTableStateRow
+                  colSpan={5}
+                  tone="empty"
+                  title="表示可能なリポジトリ情報がありません。"
+                  detail="このユーザートークンで参照できるリポジトリが存在しません。"
+                />
+              )
             ) : (
               repositories.map((repository, index) => (
                 <tr key={repository.id}>
@@ -301,12 +357,12 @@ export function ProfileScreen(): JSX.Element {
           currentPage={repositoriesPager.currentPage}
           pageSize={PROFILE_REPOSITORIES_PAGE_SIZE}
           visibleCount={repositories.length}
-          totalCount={profile?.repositories.totalCount}
-          hasNextPage={profile?.repositories.pageInfo.hasNextPage ?? false}
-          isLoading={profileQuery.loading}
+          totalCount={repositoriesConnection?.totalCount}
+          hasNextPage={repositoriesConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={repositoryQuery.loading}
           onFirstPage={repositoriesPager.goToFirstPage}
           onPreviousPage={repositoriesPager.goToPreviousPage}
-          onNextPage={() => repositoriesPager.goToNextPage(profile?.repositories.pageInfo.endCursor)}
+          onNextPage={() => repositoriesPager.goToNextPage(repositoriesConnection?.pageInfo.endCursor)}
         />
       </Panel>
 
@@ -347,12 +403,27 @@ export function ProfileScreen(): JSX.Element {
           </thead>
           <tbody>
             {organizations.length === 0 ? (
-              <GitHubTableStateRow
-                colSpan={4}
-                tone="empty"
-                title="所属組織はありません。"
-                detail="所属組織の表示対象データがありません。"
-              />
+              organizationsQuery.loading ? (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="empty"
+                  title="所属組織を取得しています。"
+                  detail="GitHub から組織一覧を読み込んでいます。"
+                />
+              ) : organizationsQuery.error ? (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="error"
+                  {...describeGitHubError(organizationsQuery.error, "所属組織の取得に失敗しました。")}
+                />
+              ) : (
+                <GitHubTableStateRow
+                  colSpan={4}
+                  tone="empty"
+                  title="所属組織はありません。"
+                  detail="所属組織の表示対象データがありません。"
+                />
+              )
             ) : (
               organizations.map((organization, index) => (
                 <tr key={organization.id}>
@@ -373,12 +444,12 @@ export function ProfileScreen(): JSX.Element {
           currentPage={organizationsPager.currentPage}
           pageSize={PROFILE_ORGANIZATIONS_PAGE_SIZE}
           visibleCount={organizations.length}
-          totalCount={profile?.organizations.totalCount}
-          hasNextPage={profile?.organizations.pageInfo.hasNextPage ?? false}
-          isLoading={profileQuery.loading}
+          totalCount={organizationsConnection?.totalCount}
+          hasNextPage={organizationsConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={organizationsQuery.loading}
           onFirstPage={organizationsPager.goToFirstPage}
           onPreviousPage={organizationsPager.goToPreviousPage}
-          onNextPage={() => organizationsPager.goToNextPage(profile?.organizations.pageInfo.endCursor)}
+          onNextPage={() => organizationsPager.goToNextPage(organizationsConnection?.pageInfo.endCursor)}
         />
       </Panel>
     </JtcChrome>

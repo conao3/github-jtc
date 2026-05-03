@@ -1,0 +1,22 @@
+query PullRequestClosingIssues($owner: String!, $name: String!, $number: Int!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    id
+    pullRequest(number: $number) {
+      id
+      closingIssuesReferences(first: $first, after: $after) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          number
+          title
+          url
+          state
+        }
+      }
+    }
+  }
+}
