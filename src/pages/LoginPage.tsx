@@ -1,10 +1,15 @@
 import clsx from "clsx";
 import { useForm } from "@tanstack/react-form";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
-import { getGitHubAuthConfig, normalizeRedirectTo, useAuthSession } from "../app/auth.tsx";
+import {
+  beginGitHubAppLogin,
+  getGitHubAuthConfig,
+  normalizeRedirectTo,
+  useAuthSession,
+} from "../app/auth.tsx";
 import { FormErrorList } from "../app/components/FormErrorList.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import { Panel } from "../app/components/Panel.tsx";
@@ -54,6 +59,7 @@ export function LoginScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const redirectTo = normalizeRedirectTo(searchParams.get("redirectTo"));
   const githubConfig = getGitHubAuthConfig();
+  const [githubLoginError, setGitHubLoginError] = useState<string | null>(null);
   const form = useForm({
     defaultValues: initialFormState,
     onSubmit: async () => {
@@ -72,6 +78,16 @@ export function LoginScreen(): JSX.Element {
       void navigate(redirectTo, { replace: true });
     }
   }, [navigate, redirectTo, sessionQuery.data]);
+
+  async function handleDirectGitHubLogin(): Promise<void> {
+    setGitHubLoginError(null);
+
+    try {
+      await beginGitHubAppLogin(redirectTo);
+    } catch (error) {
+      setGitHubLoginError(error instanceof Error ? error.message : "GitHub ログインの開始に失敗しました。");
+    }
+  }
 
   return (
     <div className={BODY_BG_CLASS}>
@@ -252,6 +268,27 @@ export function LoginScreen(): JSX.Element {
               </form>
 
               <div className="mt-3.5 border-t border-t-dotted border-t-slate-400 pt-2 text-xs">
+                <div className="mb-3 text-center text-slate-500">-または-</div>
+                <div className="mb-3 text-center">
+                  <button
+                    type="button"
+                    className={buttonClassName({ tone: "primary", size: "lg" })}
+                    disabled={!githubConfig.enabled}
+                    onClick={() => {
+                      void handleDirectGitHubLogin();
+                    }}
+                  >
+                    GitHubでログイン
+                  </button>
+                  <div className="mt-1 text-xs text-slate-600">
+                    社内認証の入力を省略して GitHub App 認証へ進みます。
+                  </div>
+                </div>
+                {githubLoginError === null ? null : (
+                  <div className="mb-3 border border-red-500 bg-red-100 px-2 py-1.5 text-red-800">
+                    {githubLoginError}
+                  </div>
+                )}
                 <div>
                   ▶ <span className={TEXT_LINK_CLASS}>パスワードを忘れた方はこちら</span>
                 </div>
