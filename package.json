@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
+    "auth:broker": "bun run scripts/githubAuthBroker.ts",
     "build": "vp build",
     "check": "bun run scripts/check.ts",
     "check:vp": "vp check",
