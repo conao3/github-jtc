@@ -11,9 +11,9 @@ This repository assumes the following deployment split:
 
 ### GitHub repository variables
 
-- `GITHUB_APP_CLIENT_ID`
+- `APP_CLIENT_ID`
   GitHub App Client ID
-- `GITHUB_APP_EXCHANGE_URL`
+- `APP_EXCHANGE_URL`
   Example:
   `https://github-jtc-auth-broker.<subdomain>.workers.dev/api/auth/github/exchange`
 - `PAGES_BASE_PATH` optional
@@ -23,15 +23,16 @@ This repository assumes the following deployment split:
   Full Pages URL used to derive the Worker's `ALLOWED_ORIGINS`.
 - `WORKER_ALLOWED_ORIGINS` optional
   Comma-separated list of allowed origins for the Worker when you want to override
-  auto-detection explicitly.
-- `VITE_GITHUB_APP_REDIRECT_URI` optional
+  auto-detection explicitly. Use origin values only, for example
+  `https://conao3.github.io,http://localhost:5174`.
+- `APP_REDIRECT_URI` optional
   Set this only if you want to hard-code the GitHub App callback URL.
 
 ### GitHub repository secrets
 
 - `CLOUDFLARE_API_TOKEN`
   Used for Worker deployment
-- `GITHUB_APP_CLIENT_SECRET`
+- `APP_CLIENT_SECRET`
   GitHub App Client Secret
 
 ### GitHub App settings

@@ -58,9 +58,9 @@ jobs:
         run: bun run build
         env:
           VITE_PUBLIC_BASE_PATH: ${{ env.VITE_PUBLIC_BASE_PATH }}
-          VITE_GITHUB_APP_CLIENT_ID: ${{ vars.GITHUB_APP_CLIENT_ID }}
-          VITE_GITHUB_APP_EXCHANGE_URL: ${{ vars.GITHUB_APP_EXCHANGE_URL }}
-          VITE_GITHUB_APP_REDIRECT_URI: ${{ vars.GITHUB_APP_REDIRECT_URI }}
+          VITE_GITHUB_APP_CLIENT_ID: ${{ vars.APP_CLIENT_ID }}
+          VITE_GITHUB_APP_EXCHANGE_URL: ${{ vars.APP_EXCHANGE_URL }}
+          VITE_GITHUB_APP_REDIRECT_URI: ${{ vars.APP_REDIRECT_URI }}
 
       - name: Add SPA fallback
         run: cp dist/web/index.html dist/web/404.html

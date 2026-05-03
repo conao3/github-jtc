@@ -5,7 +5,6 @@ on:
     branches:
       - master
     paths:
-      - ".github/workflows/deploy-worker.yml"
       - "workers/github-auth-broker/**"
   workflow_dispatch:
 
@@ -27,11 +26,11 @@ jobs:
           if [ -n "${WORKER_ALLOWED_ORIGINS}" ]; then
             allowed_origins="${WORKER_ALLOWED_ORIGINS}"
           elif [ -n "${PAGES_BASE_URL}" ]; then
-            allowed_origins="${PAGES_BASE_URL}"
+            allowed_origins="$(python3 -c 'from urllib.parse import urlsplit; import os; value = os.environ[\"PAGES_BASE_URL\"].strip(); parts = urlsplit(value); print(f\"{parts.scheme}://{parts.netloc}\" if parts.scheme and parts.netloc else \"\")')"
           elif [[ "${repo}" == *.github.io ]]; then
             allowed_origins="https://${repo}"
           else
-            allowed_origins="https://${owner}.github.io/${repo}"
+            allowed_origins="https://${owner}.github.io"
           fi
 
           echo "ALLOWED_ORIGINS=${allowed_origins}" >> "${GITHUB_ENV}"
@@ -50,6 +49,6 @@ jobs:
             GITHUB_APP_CLIENT_SECRET
             ALLOWED_ORIGINS
         env:
-          GITHUB_APP_CLIENT_ID: ${{ vars.GITHUB_APP_CLIENT_ID }}
-          GITHUB_APP_CLIENT_SECRET: ${{ secrets.GITHUB_APP_CLIENT_SECRET }}
+          GITHUB_APP_CLIENT_ID: ${{ vars.APP_CLIENT_ID }}
+          GITHUB_APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
           ALLOWED_ORIGINS: ${{ env.ALLOWED_ORIGINS }}
