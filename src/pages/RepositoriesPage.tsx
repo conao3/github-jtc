@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useState } from "react";
+import { useQuery } from "@apollo/client/react";
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
@@ -13,12 +13,12 @@ import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryPath,
   describeGitHubError,
-  fetchGitHubViewerRepositories,
   formatGitHubDateTime,
   formatGitHubPermission,
   formatGitHubVisibility,
   type GitHubViewerRepository,
 } from "../app/github.ts";
+import { ViewerRepositoriesDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -33,7 +33,6 @@ import {
 } from "../app/styles.ts";
 
 const QUERY_SIZE = 10;
-const REPOSITORIES_STALE_TIME_MS = 5 * 60 * 1000;
 const visibilityOptions = ["all", "PRIVATE", "INTERNAL", "PUBLIC"] as const;
 const permissionOptions = ["all", "ADMIN", "MAINTAIN", "WRITE", "TRIAGE", "READ"] as const;
 
@@ -139,14 +138,13 @@ export function RepositoriesScreen(): JSX.Element {
   const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
   const [currentPage, setCurrentPage] = useState(1);
   const currentCursor = cursorHistory[currentPage - 1] ?? null;
-  const repositoriesQuery = useQuery({
-    queryKey: ["github", "viewer-repositories", QUERY_SIZE, currentCursor],
-    enabled: accessToken !== undefined,
-    staleTime: REPOSITORIES_STALE_TIME_MS,
-    queryFn: () =>
-      fetchGitHubViewerRepositories(accessToken ?? "", { first: QUERY_SIZE, after: currentCursor }),
+  const repositoriesQuery = useQuery(ViewerRepositoriesDocument, {
+    skip: accessToken === undefined,
+    variables: { first: QUERY_SIZE, after: currentCursor },
+    fetchPolicy: "network-only",
   });
-  const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
+  const repositoriesConnection = repositoriesQuery.data?.viewer.repositories;
+  const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
   const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
   const form = useForm({
     defaultValues: initialRepositoryFilterValues,
@@ -173,9 +171,9 @@ export function RepositoriesScreen(): JSX.Element {
   }
 
   function goToNextPage(): void {
-    const endCursor = repositoriesQuery.data?.pageInfo.endCursor;
+    const endCursor = repositoriesConnection?.pageInfo.endCursor;
     if (
-      repositoriesQuery.data?.pageInfo.hasNextPage !== true ||
+      repositoriesConnection?.pageInfo.hasNextPage !== true ||
       endCursor === null ||
       endCursor === undefined
     ) {
@@ -214,10 +212,10 @@ export function RepositoriesScreen(): JSX.Element {
     (repository) => repository.visibility === "INTERNAL",
   ).length;
   const publicCount = filteredRepositories.filter((repository) => repository.visibility === "PUBLIC").length;
-  const totalCount = repositoriesQuery.data?.totalCount ?? repositories.length;
+  const totalCount = repositoriesConnection?.totalCount ?? repositories.length;
   const visibleFrom = repositories.length === 0 ? 0 : (currentPage - 1) * QUERY_SIZE + 1;
   const visibleTo = repositories.length === 0 ? 0 : visibleFrom + repositories.length - 1;
-  const hasNextPage = repositoriesQuery.data?.pageInfo.hasNextPage ?? false;
+  const hasNextPage = repositoriesConnection?.pageInfo.hasNextPage ?? false;
   const quickFilters = [
     {
       label: "★ 直近プッシュ順",
@@ -420,7 +418,7 @@ export function RepositoriesScreen(): JSX.Element {
         title="検索結果"
         action={
           <span className={MUTED_CLASS}>
-            {repositoriesQuery.isPending
+            {repositoriesQuery.loading
               ? "GitHub から読込中..."
               : `取得 ${visibleFrom}～${visibleTo}件目 / 表示 ${filteredRepositories.length}件 / 利用可能全 ${totalCount}件`}
           </span>
@@ -441,13 +439,13 @@ export function RepositoriesScreen(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {repositoriesQuery.isPending ? (
+            {repositoriesQuery.loading ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
                   GitHub GraphQL からリポジトリ一覧を取得しています。
                 </td>
               </tr>
-            ) : repositoriesQuery.isError ? (
+            ) : repositoriesQuery.error ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="error"
@@ -508,14 +506,14 @@ export function RepositoriesScreen(): JSX.Element {
         </table>
         <div className={PAGER_CLASS}>
           <span className={MUTED_CLASS}>
-            {repositoriesQuery.isPending
+            {repositoriesQuery.loading
               ? `ページ ${currentPage} を取得中...`
               : `ページ ${currentPage} / 1ページ ${QUERY_SIZE}件`}
           </span>
-          {renderPagerButton("≪先頭", currentPage === 1 || repositoriesQuery.isPending, goToFirstPage)}
-          {renderPagerButton("＜前", currentPage === 1 || repositoriesQuery.isPending, goToPreviousPage)}
+          {renderPagerButton("≪先頭", currentPage === 1 || repositoriesQuery.loading, goToFirstPage)}
+          {renderPagerButton("＜前", currentPage === 1 || repositoriesQuery.loading, goToPreviousPage)}
           <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>現在 {currentPage}</span>
-          {renderPagerButton("次＞", !hasNextPage || repositoriesQuery.isPending, goToNextPage)}
+          {renderPagerButton("次＞", !hasNextPage || repositoriesQuery.loading, goToNextPage)}
         </div>
       </Panel>
     </JtcChrome>

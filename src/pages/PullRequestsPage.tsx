@@ -1,7 +1,7 @@
 import clsx from "clsx";
+import { useQuery } from "@apollo/client/react";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
@@ -15,10 +15,10 @@ import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
-  fetchGitHubViewerPullRequests,
   formatGitHubDateTime,
   type GitHubViewerPullRequest,
 } from "../app/github.ts";
+import { ViewerPullRequestsDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -128,17 +128,17 @@ function filterPullRequests(
 export function PullRequestsScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const pullRequestsQuery = useQuery({
-    queryKey: ["github", "viewer-pull-requests", QUERY_SIZE],
-    enabled: accessToken !== undefined,
-    queryFn: () =>
-      fetchGitHubViewerPullRequests(accessToken ?? "", {
-        first: QUERY_SIZE,
-        after: null,
-        states: ["OPEN", "MERGED", "CLOSED"],
-      }),
+  const pullRequestsQuery = useQuery(ViewerPullRequestsDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: QUERY_SIZE,
+      after: null,
+      states: ["OPEN", "MERGED", "CLOSED"],
+    },
+    fetchPolicy: "network-only",
   });
-  const pullRequests = (pullRequestsQuery.data?.nodes ?? []).filter((value) => value !== null);
+  const pullRequestConnection = pullRequestsQuery.data?.viewer.pullRequests;
+  const pullRequests = (pullRequestConnection?.nodes ?? []).filter((value) => value !== null);
   const [appliedFilters, setAppliedFilters] = useState<PullRequestFilterValues>(
     initialPullRequestFilterValues,
   );
@@ -326,9 +326,9 @@ export function PullRequestsScreen(): JSX.Element {
         title="対象プルリクエスト一覧"
         action={
           <span className={MUTED_CLASS}>
-            {pullRequestsQuery.isPending
+            {pullRequestsQuery.loading
               ? "GitHub から読込中..."
-              : `絞込 ${filteredPullRequests.length}件 / 全 ${pullRequestsQuery.data?.totalCount ?? pullRequests.length}件`}
+              : `絞込 ${filteredPullRequests.length}件 / 全 ${pullRequestConnection?.totalCount ?? pullRequests.length}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -347,13 +347,13 @@ export function PullRequestsScreen(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {pullRequestsQuery.isPending ? (
+            {pullRequestsQuery.loading ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
                   GitHub からプルリクエスト一覧を取得しています。
                 </td>
               </tr>
-            ) : pullRequestsQuery.isError ? (
+            ) : pullRequestsQuery.error ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="error"

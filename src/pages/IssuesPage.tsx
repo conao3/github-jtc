@@ -1,7 +1,7 @@
 import clsx from "clsx";
+import { useQuery } from "@apollo/client/react";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
@@ -15,10 +15,10 @@ import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
-  fetchGitHubViewerIssues,
   formatGitHubDateTime,
   type GitHubViewerIssue,
 } from "../app/github.ts";
+import { ViewerIssuesDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -158,17 +158,17 @@ function filterIssues(issues: readonly GitHubViewerIssue[], filters: IssueFilter
 export function IssuesScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const issuesQuery = useQuery({
-    queryKey: ["github", "viewer-issues", QUERY_SIZE],
-    enabled: accessToken !== undefined,
-    queryFn: () =>
-      fetchGitHubViewerIssues(accessToken ?? "", {
-        first: QUERY_SIZE,
-        after: null,
-        states: ["OPEN", "CLOSED"],
-      }),
+  const issuesQuery = useQuery(ViewerIssuesDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: QUERY_SIZE,
+      after: null,
+      states: ["OPEN", "CLOSED"],
+    },
+    fetchPolicy: "network-only",
   });
-  const issues = (issuesQuery.data?.nodes ?? []).filter((value) => value !== null);
+  const issueConnection = issuesQuery.data?.viewer.issues;
+  const issues = (issueConnection?.nodes ?? []).filter((value) => value !== null);
   const [appliedFilters, setAppliedFilters] = useState<IssueFilterValues>(initialIssueFilterValues);
   const [currentPage, setCurrentPage] = useState(1);
   const form = useForm({
@@ -343,9 +343,9 @@ export function IssuesScreen(): JSX.Element {
         title="チケット一覧"
         action={
           <span className={MUTED_CLASS}>
-            {issuesQuery.isPending
+            {issuesQuery.loading
               ? "GitHub から読込中..."
-              : `絞込 ${filteredIssues.length}件 / 全 ${issuesQuery.data?.totalCount ?? issues.length}件`}
+              : `絞込 ${filteredIssues.length}件 / 全 ${issueConnection?.totalCount ?? issues.length}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -364,13 +364,13 @@ export function IssuesScreen(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {issuesQuery.isPending ? (
+            {issuesQuery.loading ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-slate-600">
                   GitHub からチケット一覧を取得しています。
                 </td>
               </tr>
-            ) : issuesQuery.isError ? (
+            ) : issuesQuery.error ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="error"

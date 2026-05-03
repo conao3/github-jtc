@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+import { clearGitHubApolloStore, setGitHubAccessToken } from "./apollo.ts";
 import { fetchGitHubViewer, formatJapaneseEraDateTime } from "./github.ts";
 import { getAppOriginBaseUrl } from "./runtime.ts";
 import { LOADING_CLASS } from "./styles.ts";
@@ -80,11 +81,13 @@ function getStoredSession(): AuthSession | null {
 }
 
 function storeSession(session: AuthSession): AuthSession {
+  setGitHubAccessToken(session.accessToken);
   writeJsonStorage(AUTH_SESSION_STORAGE_KEY, session);
   return session;
 }
 
 function clearStoredSession(): void {
+  setGitHubAccessToken(undefined);
   getLocalStorage().removeItem(AUTH_SESSION_STORAGE_KEY);
 }
 
@@ -200,10 +203,12 @@ async function loadAuthSession(): Promise<AuthSession | null> {
   }
 
   if (stored.provider !== "github" || stored.accessToken === undefined) {
+    setGitHubAccessToken(stored.accessToken);
     return stored;
   }
 
   try {
+    setGitHubAccessToken(stored.accessToken);
     const viewer = await fetchGitHubViewer(stored.accessToken);
     const session: AuthSession = {
       ...stored,
@@ -368,6 +373,7 @@ export function useLogoutMutation() {
     mutationFn: async () => {
       clearStoredSession();
       clearPendingGitHubLogin();
+      await clearGitHubApolloStore();
     },
     onSuccess: () => {
       queryClient.setQueryData(AUTH_QUERY_KEY, null);

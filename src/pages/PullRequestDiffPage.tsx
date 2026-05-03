@@ -1,6 +1,7 @@
 import clsx from "clsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery as useApolloQuery } from "@apollo/client/react";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -10,13 +11,13 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
-  fetchGitHubPullRequestDetail,
   fetchGitHubPullRequestDiffFiles,
   formatGitHubDateTime,
   formatGitHubFileChangeType,
   formatGitHubViewedState,
   parseRepositoryScopedNumberRouteId,
 } from "../app/github.ts";
+import { PullRequestDetailDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   TABLE_CLASS,
@@ -47,19 +48,18 @@ export function PullRequestDiffScreen({
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
-  const detailQuery = useQuery({
-    queryKey: ["github", "pull-request-diff", coordinates?.owner, coordinates?.name, coordinates?.number],
-    enabled: accessToken !== undefined && coordinates !== null,
-    queryFn: () =>
-      fetchGitHubPullRequestDetail(accessToken ?? "", {
-        owner: coordinates?.owner ?? "",
-        name: coordinates?.name ?? "",
-        number: coordinates?.number ?? 0,
-        filesFirst: 50,
-        reviewsFirst: 10,
-        threadsFirst: 50,
-        commitsFirst: 10,
-      }),
+  const detailQuery = useApolloQuery(PullRequestDetailDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      filesFirst: 50,
+      reviewsFirst: 10,
+      threadsFirst: 50,
+      commitsFirst: 10,
+    },
+    fetchPolicy: "network-only",
   });
   const restFilesQuery = useQuery({
     queryKey: [
@@ -77,7 +77,7 @@ export function PullRequestDiffScreen({
         number: coordinates?.number ?? 0,
       }),
   });
-  const pullRequest = detailQuery.data;
+  const pullRequest = detailQuery.data?.repository?.pullRequest;
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
   const restFiles = restFilesQuery.data ?? [];
   const [selectedPath, setSelectedPath] = useState<string>("");
@@ -153,9 +153,9 @@ export function PullRequestDiffScreen({
     { label: "レビューコメントを確認", checked: threadComments.length > 0 },
     { label: "コミット履歴を確認", checked: commits.length > 0 },
   ] as const;
-  const isPending = detailQuery.isPending || restFilesQuery.isPending;
+  const isPending = detailQuery.loading || restFilesQuery.isPending;
   const error = detailQuery.error ?? restFilesQuery.error;
-  const isError = detailQuery.isError || restFilesQuery.isError;
+  const isError = detailQuery.error !== undefined || restFilesQuery.isError;
 
   return (
     <JtcChrome

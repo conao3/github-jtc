@@ -1,7 +1,7 @@
 import clsx from "clsx";
+import { useQuery } from "@apollo/client/react";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
 
@@ -14,14 +14,13 @@ import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryRouteId,
   describeGitHubError,
-  fetchGitHubCommitHistory,
-  fetchGitHubViewerRepositories,
   formatGitHubDateTime,
   formatJapaneseEraDate,
   parseRepositoryRouteId,
   type GitHubCommitHistoryRepository,
   type GitHubViewerRepository,
 } from "../app/github.ts";
+import { CommitHistoryDocument, ViewerRepositoriesDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -332,16 +331,16 @@ export function CommitsScreen(): JSX.Element {
           owner: routeOwner,
           name: routeName,
         });
-  const repositoriesQuery = useQuery({
-    queryKey: ["github", "viewer-repositories", "commits", REPOSITORY_PAGE_SIZE],
-    enabled: accessToken !== undefined,
-    queryFn: () =>
-      fetchGitHubViewerRepositories(accessToken ?? "", {
-        first: REPOSITORY_PAGE_SIZE,
-        after: null,
-      }),
+  const repositoriesQuery = useQuery(ViewerRepositoriesDocument, {
+    skip: accessToken === undefined,
+    variables: {
+      first: REPOSITORY_PAGE_SIZE,
+      after: null,
+    },
+    fetchPolicy: "network-only",
   });
-  const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
+  const repositoriesConnection = repositoriesQuery.data?.viewer.repositories;
+  const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
   const [selectedRepoId, setSelectedRepoId] = useState(routeSelectedRepoId);
   const [appliedFilters, setAppliedFilters] = useState<CommitFilterValues>(initialCommitFilterValues);
   const [currentPage, setCurrentPage] = useState(1);
@@ -399,19 +398,18 @@ export function CommitsScreen(): JSX.Element {
             repository.owner.login === selectedCoordinates.owner &&
             repository.name === selectedCoordinates.name,
         ) ?? null);
-  const commitHistoryQuery = useQuery({
-    queryKey: ["github", "commit-history", selectedCoordinates?.owner, selectedCoordinates?.name],
-    enabled: accessToken !== undefined && selectedCoordinates !== null,
-    queryFn: () =>
-      fetchGitHubCommitHistory(accessToken ?? "", {
-        owner: selectedCoordinates?.owner ?? "",
-        name: selectedCoordinates?.name ?? "",
-        historyFirst: HISTORY_PAGE_SIZE,
-        historyAfter: null,
-        tagsFirst: TAG_PAGE_SIZE,
-      }),
+  const commitHistoryQuery = useQuery(CommitHistoryDocument, {
+    skip: accessToken === undefined || selectedCoordinates === null,
+    variables: {
+      owner: selectedCoordinates?.owner ?? "",
+      name: selectedCoordinates?.name ?? "",
+      historyFirst: HISTORY_PAGE_SIZE,
+      historyAfter: null,
+      tagsFirst: TAG_PAGE_SIZE,
+    },
+    fetchPolicy: "network-only",
   });
-  const repository = commitHistoryQuery.data;
+  const repository = commitHistoryQuery.data?.repository;
   const commitTarget = getCommitTarget(repository);
   const history = commitTarget?.history ?? null;
   const commits = (history?.nodes ?? []).filter(isPresent);
@@ -529,10 +527,10 @@ export function CommitsScreen(): JSX.Element {
             className="border border-slate-400 px-1 py-0.5"
             value={selectedRepoId}
             onChange={(event) => setSelectedRepoId(event.target.value)}
-            disabled={repositoriesQuery.isPending || repositories.length === 0}
+            disabled={repositoriesQuery.loading || repositories.length === 0}
           >
             {repositories.length === 0 ? (
-              <option value="">{repositoriesQuery.isPending ? "取得中" : "対象なし"}</option>
+              <option value="">{repositoriesQuery.loading ? "取得中" : "対象なし"}</option>
             ) : (
               <>
                 {selectedCoordinates !== null && !selectedRepoListed ? (
@@ -645,7 +643,7 @@ export function CommitsScreen(): JSX.Element {
         title={`コミット履歴一覧（${repositoryNameWithOwner}）`}
         action={
           <span className={MUTED_CLASS}>
-            {commitHistoryQuery.isPending
+            {commitHistoryQuery.loading
               ? "GitHub から読込中..."
               : `該当 ${filteredCommits.length}件　／　${visibleFrom}～${visibleTo}件を表示`}
           </span>
@@ -674,13 +672,13 @@ export function CommitsScreen(): JSX.Element {
                 title="対象リポジトリを選択してください。"
                 detail="一覧から参照対象のリポジトリを選ぶと履歴を表示します。"
               />
-            ) : commitHistoryQuery.isPending ? (
+            ) : commitHistoryQuery.loading ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-600">
                   GitHub からコミット履歴を取得しています。
                 </td>
               </tr>
-            ) : commitHistoryQuery.isError ? (
+            ) : commitHistoryQuery.error ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="error"
@@ -798,7 +796,7 @@ export function CommitsScreen(): JSX.Element {
       </Panel>
 
       <Panel title="日別コミット数（直近30日）">
-        {commitHistoryQuery.isPending ? (
+        {commitHistoryQuery.loading ? (
           <GitHubInlineState
             tone="empty"
             title="履歴取得後に日別集計を表示します。"

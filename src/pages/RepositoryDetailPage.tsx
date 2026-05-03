@@ -1,6 +1,6 @@
 import clsx from "clsx";
+import { useQuery } from "@apollo/client/react";
 import { useEffect, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -12,8 +12,6 @@ import {
   createRepositoryRouteId,
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
-  fetchGitHubCommitHistory,
-  fetchGitHubRepositoryDetail,
   formatGitHubByteSize,
   formatGitHubDate,
   formatGitHubDateTime,
@@ -23,6 +21,7 @@ import {
   parseRepositoryRouteId,
   sumLanguageSizes,
 } from "../app/github.ts";
+import { CommitHistoryDocument, RepositoryDetailDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   MUTED_CLASS,
@@ -202,42 +201,35 @@ export function RepositoryDetailScreen({
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
   const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
-  const repositoryQuery = useQuery({
-    queryKey: ["github", "repository-detail", coordinates?.owner, coordinates?.name],
-    enabled: accessToken !== undefined && coordinates !== null,
-    queryFn: () =>
-      fetchGitHubRepositoryDetail(accessToken ?? "", {
-        owner: coordinates?.owner ?? "",
-        name: coordinates?.name ?? "",
-        rootExpression: "HEAD:",
-        readmeExpression: "HEAD:README.md",
-      }),
+  const repositoryQuery = useQuery(RepositoryDetailDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      rootExpression: "HEAD:",
+      readmeExpression: "HEAD:README.md",
+    },
+    fetchPolicy: "network-only",
   });
-  const commitHistoryQuery = useQuery({
-    queryKey: [
-      "github",
-      "repository-detail-commits",
-      coordinates?.owner,
-      coordinates?.name,
-      currentCommitCursor,
-    ],
-    enabled: accessToken !== undefined && coordinates !== null,
-    placeholderData: keepPreviousData,
-    queryFn: () =>
-      fetchGitHubCommitHistory(accessToken ?? "", {
-        owner: coordinates?.owner ?? "",
-        name: coordinates?.name ?? "",
-        historyFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
-        historyAfter: currentCommitCursor,
-        tagsFirst: 1,
-      }),
+  const commitHistoryQuery = useQuery(CommitHistoryDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      historyFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
+      historyAfter: currentCommitCursor,
+      tagsFirst: 1,
+    },
+    fetchPolicy: "network-only",
   });
-  const repository = repositoryQuery.data;
+  const repository = repositoryQuery.data?.repository;
   const latestCommit =
     repository?.defaultBranchRef?.target?.__typename === "Commit" ? repository.defaultBranchRef.target : null;
+  const commitHistoryRepository =
+    commitHistoryQuery.data?.repository ?? commitHistoryQuery.previousData?.repository;
   const commitHistoryTarget =
-    commitHistoryQuery.data?.defaultBranchRef?.target?.__typename === "Commit"
-      ? commitHistoryQuery.data.defaultBranchRef.target
+    commitHistoryRepository?.defaultBranchRef?.target?.__typename === "Commit"
+      ? commitHistoryRepository.defaultBranchRef.target
       : null;
   const rootEntries =
     repository?.rootEntries?.__typename === "Tree"
@@ -317,7 +309,7 @@ export function RepositoryDetailScreen({
   }
 
   function goToPreviousCommitPage(): void {
-    if (commitPage <= 1 || commitHistoryQuery.isFetching) {
+    if (commitPage <= 1 || commitHistoryQuery.loading) {
       return;
     }
 
@@ -325,7 +317,7 @@ export function RepositoryDetailScreen({
   }
 
   function goToNextCommitPage(): void {
-    if (commitHistoryQuery.isFetching) {
+    if (commitHistoryQuery.loading) {
       return;
     }
 
@@ -472,14 +464,14 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {commitHistoryQuery.isPending ? (
+              {commitHistoryQuery.loading && recentCommits.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={6}
                   tone="empty"
                   title="コミット履歴を取得しています。"
                   detail="GitHub から既定ブランチの履歴を読み込んでいます。"
                 />
-              ) : commitHistoryQuery.isError ? (
+              ) : commitHistoryQuery.error ? (
                 <GitHubTableStateRow
                   colSpan={6}
                   tone="error"
@@ -547,22 +539,22 @@ export function RepositoryDetailScreen({
           </table>
           <div className={PAGER_CLASS}>
             <span className={MUTED_CLASS}>
-              {commitHistoryQuery.isFetching
+              {commitHistoryQuery.loading
                 ? `ページ ${commitPage} を取得中...`
                 : `全 ${latestCommit?.history.totalCount ?? 0}件中 ページ ${commitPage} / 1ページ ${REPOSITORY_DETAIL_COMMIT_PAGE_SIZE}件`}
             </span>
-            {renderCommitPagerButton("≪先頭", commitPage === 1 || commitHistoryQuery.isFetching, () =>
+            {renderCommitPagerButton("≪先頭", commitPage === 1 || commitHistoryQuery.loading, () =>
               applyRepositoryDetailSearchParams("commits", pullRequestStateFilter, 1, [null]),
             )}
             {renderCommitPagerButton(
               "＜前",
-              commitPage === 1 || commitHistoryQuery.isFetching,
+              commitPage === 1 || commitHistoryQuery.loading,
               goToPreviousCommitPage,
             )}
             <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>現在 {commitPage}</span>
             {renderCommitPagerButton(
               "次＞",
-              commitHistoryTarget?.history.pageInfo.hasNextPage !== true || commitHistoryQuery.isFetching,
+              commitHistoryTarget?.history.pageInfo.hasNextPage !== true || commitHistoryQuery.loading,
               goToNextCommitPage,
             )}
           </div>
@@ -824,9 +816,9 @@ export function RepositoryDetailScreen({
             detail="一覧画面から対象リポジトリを選び直してください。"
             className="py-8"
           />
-        ) : repositoryQuery.isPending ? (
+        ) : repositoryQuery.loading ? (
           <div className="py-8 text-center text-slate-600">GitHub からリポジトリ詳細を取得しています。</div>
-        ) : repositoryQuery.isError ? (
+        ) : repositoryQuery.error ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
@@ -938,9 +930,9 @@ export function RepositoryDetailScreen({
             detail="一覧画面から対象リポジトリを選び直してください。"
             className="py-8"
           />
-        ) : repositoryQuery.isPending ? (
+        ) : repositoryQuery.loading ? (
           <div className="py-8 text-center text-slate-600">GitHub からタブ内容を取得しています。</div>
-        ) : repositoryQuery.isError ? (
+        ) : repositoryQuery.error ? (
           <GitHubInlineState
             tone="error"
             className="py-8"

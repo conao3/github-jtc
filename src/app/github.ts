@@ -1,43 +1,20 @@
-import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client";
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 
+import { githubApolloClient, setGitHubAccessToken } from "./apollo.ts";
 import {
-  CommitHistoryDocument,
   type CommitHistoryQuery,
-  type CommitHistoryQueryVariables,
-  CreateRepositoryDocument,
-  type CreateRepositoryMutation,
-  type CreateRepositoryMutationVariables,
-  DashboardDocument,
   type DashboardQuery,
-  type DashboardQueryVariables,
-  IssueDetailDocument,
   type IssueDetailQuery,
-  type IssueDetailQueryVariables,
-  PullRequestDetailDocument,
   type PullRequestDetailQuery,
-  type PullRequestDetailQueryVariables,
-  RepositoryDetailDocument,
   type RepositoryDetailQuery,
-  type RepositoryDetailQueryVariables,
   ViewerDocument,
   type ViewerPullRequestsQuery,
-  type ViewerPullRequestsQueryVariables,
   type ViewerIssuesQuery,
-  type ViewerIssuesQueryVariables,
-  type ViewerProfileQuery,
-  type ViewerProfileQueryVariables,
-  ViewerIssuesDocument,
-  ViewerProfileDocument,
-  ViewerPullRequestsDocument,
   type ViewerQuery,
   type ViewerRepositoriesQuery,
-  type ViewerRepositoriesQueryVariables,
-  ViewerRepositoriesDocument,
 } from "../gql/graphql.ts";
 
 export type GitHubViewerProfile = ViewerQuery["viewer"];
-export type GitHubViewerExtendedProfile = ViewerProfileQuery["viewer"];
 export type GitHubViewerRepositoriesConnection = ViewerRepositoriesQuery["viewer"]["repositories"];
 export type GitHubViewerRepository = NonNullable<
   NonNullable<GitHubViewerRepositoriesConnection["nodes"]>[number]
@@ -51,9 +28,6 @@ export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnec
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
 export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
 export type GitHubDashboardPayload = DashboardQuery;
-export type GitHubCreatedRepository = NonNullable<
-  NonNullable<CreateRepositoryMutation["createRepository"]>["repository"]
->;
 export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;
@@ -138,56 +112,6 @@ export interface GitHubRepositoryScopedNumberCoordinates extends GitHubRepositor
   readonly number: number;
 }
 
-const githubApolloClients = new Map<string, ApolloClient>();
-
-function getGitHubApolloClient(accessToken: string): ApolloClient {
-  const existingClient = githubApolloClients.get(accessToken);
-  if (existingClient !== undefined) {
-    if (typeof window !== "undefined") {
-      (
-        window as typeof window & {
-          __APOLLO_CLIENT__?: ApolloClient;
-        }
-      ).__APOLLO_CLIENT__ = existingClient;
-    }
-
-    return existingClient;
-  }
-
-  const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: new HttpLink({
-      uri: import.meta.env.VITE_GITHUB_GRAPHQL_URL ?? "https://api.github.com/graphql",
-      fetch,
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${accessToken}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    }),
-    defaultOptions: {
-      query: {
-        fetchPolicy: "no-cache",
-      },
-    },
-    devtools: {
-      enabled: true,
-      name: "GitHub JTC",
-    },
-  });
-
-  if (typeof window !== "undefined") {
-    (
-      window as typeof window & {
-        __APOLLO_CLIENT__?: ApolloClient;
-      }
-    ).__APOLLO_CLIENT__ = client;
-  }
-
-  githubApolloClients.set(accessToken, client);
-  return client;
-}
-
 function getGitHubRestBaseUrl(): string {
   return import.meta.env["VITE_GITHUB_REST_URL"]?.trim() ?? "https://api.github.com";
 }
@@ -241,26 +165,15 @@ async function executeGitHubQuery<TData, TVariables extends Record<string, unkno
   query: TypedDocumentNode<TData, TVariables>,
   variables: TVariables,
 ): Promise<TData> {
-  const client = getGitHubApolloClient(accessToken);
-  const result = await client.query({ query, variables });
+  setGitHubAccessToken(accessToken);
+  const result = await githubApolloClient.query({
+    query,
+    variables,
+    fetchPolicy: "network-only",
+  });
 
   if (result.data === undefined || result.data === null) {
     throw new Error("GitHub GraphQL の問い合わせ結果にデータがありません。");
-  }
-
-  return result.data;
-}
-
-async function executeGitHubMutation<TData, TVariables extends Record<string, unknown>>(
-  accessToken: string,
-  mutation: TypedDocumentNode<TData, TVariables>,
-  variables: TVariables,
-): Promise<TData> {
-  const client = getGitHubApolloClient(accessToken);
-  const result = await client.mutate({ mutation, variables });
-
-  if (result.data === undefined || result.data === null) {
-    throw new Error("GitHub GraphQL の更新結果にデータがありません。");
   }
 
   return result.data;
@@ -275,91 +188,6 @@ export async function fetchGitHubViewer(accessToken: string): Promise<GitHubView
   }
 
   return viewer;
-}
-
-export async function fetchGitHubViewerProfile(
-  accessToken: string,
-  variables: ViewerProfileQueryVariables,
-): Promise<GitHubViewerExtendedProfile> {
-  const data = await executeGitHubQuery(accessToken, ViewerProfileDocument, variables);
-  return data.viewer;
-}
-
-export async function fetchGitHubViewerRepositories(
-  accessToken: string,
-  variables: ViewerRepositoriesQueryVariables,
-): Promise<GitHubViewerRepositoriesConnection> {
-  const data = await executeGitHubQuery(accessToken, ViewerRepositoriesDocument, variables);
-  return data.viewer.repositories;
-}
-
-export async function fetchGitHubRepositoryDetail(
-  accessToken: string,
-  variables: RepositoryDetailQueryVariables,
-): Promise<GitHubRepositoryDetail | null> {
-  const data = await executeGitHubQuery(accessToken, RepositoryDetailDocument, variables);
-  return data.repository ?? null;
-}
-
-export async function fetchGitHubCommitHistory(
-  accessToken: string,
-  variables: CommitHistoryQueryVariables,
-): Promise<GitHubCommitHistoryRepository | null> {
-  const data = await executeGitHubQuery(accessToken, CommitHistoryDocument, variables);
-  return data.repository ?? null;
-}
-
-export async function fetchGitHubDashboard(
-  accessToken: string,
-  variables: DashboardQueryVariables,
-): Promise<GitHubDashboardPayload> {
-  return await executeGitHubQuery(accessToken, DashboardDocument, variables);
-}
-
-export async function createGitHubRepository(
-  accessToken: string,
-  input: CreateRepositoryMutationVariables["input"],
-): Promise<GitHubCreatedRepository> {
-  const data = await executeGitHubMutation(accessToken, CreateRepositoryDocument, { input });
-  const repository = data.createRepository?.repository;
-
-  if (repository === undefined || repository === null) {
-    throw new Error("GitHub が作成済みリポジトリ情報を返しませんでした。");
-  }
-
-  return repository;
-}
-
-export async function fetchGitHubViewerPullRequests(
-  accessToken: string,
-  variables: ViewerPullRequestsQueryVariables,
-): Promise<GitHubViewerPullRequestsConnection> {
-  const data = await executeGitHubQuery(accessToken, ViewerPullRequestsDocument, variables);
-  return data.viewer.pullRequests;
-}
-
-export async function fetchGitHubViewerIssues(
-  accessToken: string,
-  variables: ViewerIssuesQueryVariables,
-): Promise<GitHubViewerIssuesConnection> {
-  const data = await executeGitHubQuery(accessToken, ViewerIssuesDocument, variables);
-  return data.viewer.issues;
-}
-
-export async function fetchGitHubPullRequestDetail(
-  accessToken: string,
-  variables: PullRequestDetailQueryVariables,
-): Promise<GitHubPullRequestDetail | null> {
-  const data = await executeGitHubQuery(accessToken, PullRequestDetailDocument, variables);
-  return data.repository?.pullRequest ?? null;
-}
-
-export async function fetchGitHubIssueDetail(
-  accessToken: string,
-  variables: IssueDetailQueryVariables,
-): Promise<GitHubIssueDetail | null> {
-  const data = await executeGitHubQuery(accessToken, IssueDetailDocument, variables);
-  return data.repository?.issue ?? null;
 }
 
 export async function fetchGitHubCommitDiff(

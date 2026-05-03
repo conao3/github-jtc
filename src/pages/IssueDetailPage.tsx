@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@apollo/client/react";
 import { useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -9,13 +9,13 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
-  fetchGitHubIssueDetail,
   formatGitHubDateTime,
   formatGitHubIssueState,
   formatGitHubIssueStateReason,
   parseRepositoryScopedNumberRouteId,
   type GitHubIssueDetail,
 } from "../app/github.ts";
+import { IssueDetailDocument } from "../gql/graphql.ts";
 import {
   MONO_CLASS,
   TABLE_CLASS,
@@ -191,20 +191,19 @@ export function IssueDetailScreen({
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(issueId, sessionQuery.data?.user.login);
-  const detailQuery = useQuery({
-    queryKey: ["github", "issue-detail", coordinates?.owner, coordinates?.name, coordinates?.number],
-    enabled: accessToken !== undefined && coordinates !== null,
-    queryFn: () =>
-      fetchGitHubIssueDetail(accessToken ?? "", {
-        owner: coordinates?.owner ?? "",
-        name: coordinates?.name ?? "",
-        number: coordinates?.number ?? 0,
-        labelsFirst: 10,
-        assigneesFirst: 10,
-        timelineFirst: 20,
-      }),
+  const detailQuery = useQuery(IssueDetailDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      labelsFirst: 10,
+      assigneesFirst: 10,
+      timelineFirst: 20,
+    },
+    fetchPolicy: "network-only",
   });
-  const issue = detailQuery.data;
+  const issue = detailQuery.data?.repository?.issue;
   const state = issue === null || issue === undefined ? null : getIssueState(issue);
   const assignees = issue === null || issue === undefined ? [] : getAssigneeLabels(issue);
   const labels = (issue?.labels?.nodes ?? []).filter((label) => label !== null);
@@ -330,9 +329,9 @@ export function IssueDetailScreen({
             detail="一覧画面から対象チケットを選び直してください。"
             className="py-8"
           />
-        ) : detailQuery.isPending ? (
+        ) : detailQuery.loading ? (
           <div className="py-8 text-center text-slate-600">GitHub からチケット詳細を取得しています。</div>
-        ) : detailQuery.isError ? (
+        ) : detailQuery.error ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
@@ -430,13 +429,13 @@ export function IssueDetailScreen({
                 title="チケット識別子を解釈できませんでした。"
                 detail="一覧画面から対象チケットを選び直してください。"
               />
-            ) : detailQuery.isPending ? (
+            ) : detailQuery.loading ? (
               <tr>
                 <td colSpan={5} className="py-6 text-center text-slate-600">
                   GitHub から更新履歴を取得しています。
                 </td>
               </tr>
-            ) : detailQuery.isError ? (
+            ) : detailQuery.error ? (
               <GitHubTableStateRow
                 colSpan={5}
                 tone="error"

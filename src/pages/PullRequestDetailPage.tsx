@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@apollo/client/react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -9,7 +9,6 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
-  fetchGitHubPullRequestDetail,
   formatGitHubDateTime,
   formatGitHubFileChangeType,
   formatGitHubMergeableState,
@@ -18,6 +17,7 @@ import {
   parseRepositoryScopedNumberRouteId,
   type GitHubPullRequestDetail,
 } from "../app/github.ts";
+import { PullRequestDetailDocument } from "../gql/graphql.ts";
 import {
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
@@ -151,21 +151,20 @@ export function PullRequestDetailScreen({
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
-  const detailQuery = useQuery({
-    queryKey: ["github", "pull-request-detail", coordinates?.owner, coordinates?.name, coordinates?.number],
-    enabled: accessToken !== undefined && coordinates !== null,
-    queryFn: () =>
-      fetchGitHubPullRequestDetail(accessToken ?? "", {
-        owner: coordinates?.owner ?? "",
-        name: coordinates?.name ?? "",
-        number: coordinates?.number ?? 0,
-        filesFirst: 20,
-        reviewsFirst: 10,
-        threadsFirst: 20,
-        commitsFirst: 10,
-      }),
+  const detailQuery = useQuery(PullRequestDetailDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      filesFirst: 20,
+      reviewsFirst: 10,
+      threadsFirst: 20,
+      commitsFirst: 10,
+    },
+    fetchPolicy: "network-only",
   });
-  const pullRequest = detailQuery.data;
+  const pullRequest = detailQuery.data?.repository?.pullRequest;
   const state = pullRequest === null || pullRequest === undefined ? null : getPullRequestState(pullRequest);
   const workflow = pullRequest === null || pullRequest === undefined ? [] : getWorkflowSteps(pullRequest);
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
@@ -305,11 +304,11 @@ export function PullRequestDetailScreen({
             detail="一覧画面から対象プルリクエストを選び直してください。"
             className="py-8"
           />
-        ) : detailQuery.isPending ? (
+        ) : detailQuery.loading ? (
           <div className="py-8 text-center text-slate-600">
             GitHub からプルリクエスト詳細を取得しています。
           </div>
-        ) : detailQuery.isError ? (
+        ) : detailQuery.error ? (
           <GitHubInlineState
             tone="error"
             className="py-8"

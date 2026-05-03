@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@apollo/client/react";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
@@ -8,12 +8,12 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
-  fetchGitHubViewerProfile,
   formatGitHubDate,
   formatGitHubDateTime,
   formatJapaneseEraDateTime,
   formatGitHubPermission,
 } from "../app/github.ts";
+import { ViewerProfileDocument } from "../gql/graphql.ts";
 import {
   KPI_CARD_CLASS,
   KPI_LABEL_CLASS,
@@ -45,15 +45,13 @@ function getProfileQueryRange(): { readonly from: string; readonly to: string } 
 export function ProfileScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
-  const profileQuery = useQuery({
-    queryKey: ["github", "viewer-profile"],
-    enabled: accessToken !== undefined,
-    queryFn: () => {
-      const range = getProfileQueryRange();
-      return fetchGitHubViewerProfile(accessToken ?? "", range);
-    },
+  const range = getProfileQueryRange();
+  const profileQuery = useQuery(ViewerProfileDocument, {
+    skip: accessToken === undefined,
+    variables: range,
+    fetchPolicy: "network-only",
   });
-  const profile = profileQuery.data;
+  const profile = profileQuery.data?.viewer;
   const organizations = (profile?.organizations.nodes ?? []).filter(isPresent);
   const repositories = (profile?.repositories.nodes ?? []).filter(isPresent);
 
@@ -141,9 +139,9 @@ export function ProfileScreen(): JSX.Element {
           </span>
         }
       >
-        {profileQuery.isPending ? (
+        {profileQuery.loading ? (
           <div className="py-8 text-center text-slate-600">GitHub プロフィール情報を取得しています。</div>
-        ) : profileQuery.isError || profile === undefined ? (
+        ) : profileQuery.error || profile === undefined ? (
           <GitHubInlineState
             tone="error"
             className="py-8"

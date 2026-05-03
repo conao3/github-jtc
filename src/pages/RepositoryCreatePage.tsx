@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useForm } from "@tanstack/react-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -11,13 +11,8 @@ import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
-import {
-  createGitHubRepository,
-  createRepositoryPath,
-  describeGitHubError,
-  fetchGitHubViewer,
-  formatJapaneseEraDateTime,
-} from "../app/github.ts";
+import { createRepositoryPath, describeGitHubError, formatJapaneseEraDateTime } from "../app/github.ts";
+import { CreateRepositoryDocument, ViewerDocument } from "../gql/graphql.ts";
 import {
   FLOW_WRAP_CLASS,
   FLOW_STEP_META_CLASS,
@@ -132,47 +127,42 @@ function getRepositoryVisibilitySummary(values: RepositoryCreateFormValues): str
 
 export function RepositoryCreateScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
-  const queryClient = useQueryClient();
   const accessToken = sessionQuery.data?.accessToken;
-  const viewerQuery = useQuery({
-    queryKey: ["github", "viewer", "repository-create"],
-    enabled: accessToken !== undefined,
-    queryFn: () => fetchGitHubViewer(accessToken ?? ""),
+  const viewerQuery = useQuery(ViewerDocument, {
+    skip: accessToken === undefined,
+    fetchPolicy: "network-only",
   });
-  const createRepositoryMutation = useMutation({
-    mutationFn: async (value: RepositoryCreateFormValues) => {
+  const [runCreateRepository, createRepositoryMutation] = useMutation(CreateRepositoryDocument);
+  const form = useForm({
+    defaultValues: initialRepositoryCreateValues,
+    onSubmit: async ({ value }) => {
       if (accessToken === undefined) {
         throw new Error("GitHub アクセストークンがありません。再ログインしてください。");
       }
 
-      const viewer = viewerQuery.data;
+      const viewer = viewerQuery.data?.viewer;
 
       if (viewer === undefined) {
         throw new Error("GitHub 利用者情報の取得完了後に再試行してください。");
       }
 
-      return await createGitHubRepository(accessToken, {
-        name: value.repositoryName,
-        description: value.description,
-        hasIssuesEnabled: true,
-        hasWikiEnabled: false,
-        ownerId: viewer.id,
-        visibility: getRepositoryVisibility(value),
+      await runCreateRepository({
+        variables: {
+          input: {
+            name: value.repositoryName,
+            description: value.description,
+            hasIssuesEnabled: true,
+            hasWikiEnabled: false,
+            ownerId: viewer.id,
+            visibility: getRepositoryVisibility(value),
+          },
+        },
       });
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["github"] });
-    },
-  });
-  const form = useForm({
-    defaultValues: initialRepositoryCreateValues,
-    onSubmit: async ({ value }) => {
-      await createRepositoryMutation.mutateAsync(value);
     },
   });
   const applicant = sessionQuery.data?.user;
   const submittedValues = form.state.values;
-  const createdRepository = createRepositoryMutation.data;
+  const createdRepository = createRepositoryMutation.data?.createRepository?.repository ?? undefined;
   const createdRepositoryRouteId =
     createdRepository === undefined
       ? null
@@ -223,15 +213,15 @@ export function RepositoryCreateScreen(): JSX.Element {
           </Panel>
 
           <Panel title="GitHub 実作成設定" bodyClassName="p-0">
-            {viewerQuery.isPending ? (
+            {viewerQuery.loading ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub 利用者情報を確認しています。</div>
-            ) : viewerQuery.isError ? (
+            ) : viewerQuery.error ? (
               <GitHubInlineState
                 tone="error"
                 className="px-2 py-3 text-xs"
                 {...describeGitHubError(viewerQuery.error, "GitHub 作成先の確認に失敗しました。")}
               />
-            ) : viewerQuery.data === undefined ? (
+            ) : viewerQuery.data?.viewer === undefined ? (
               <GitHubInlineState
                 tone="empty"
                 title="GitHub 利用者情報がありません。"
@@ -243,7 +233,7 @@ export function RepositoryCreateScreen(): JSX.Element {
                 <tbody>
                   <tr>
                     <th>作成先所有者</th>
-                    <td className={MONO_CLASS}>{viewerQuery.data.login}</td>
+                    <td className={MONO_CLASS}>{viewerQuery.data.viewer.login}</td>
                   </tr>
                   <tr>
                     <th>作成 API</th>
@@ -310,7 +300,12 @@ export function RepositoryCreateScreen(): JSX.Element {
                 <th>申請者ID</th>
                 <td className={MONO_CLASS}>{applicant?.login ?? "GitHub 利用者"}</td>
                 <th>氏名</th>
-                <td>{applicant?.displayName ?? viewerQuery.data?.name ?? viewerQuery.data?.login ?? "－"}</td>
+                <td>
+                  {applicant?.displayName ??
+                    viewerQuery.data?.viewer.name ??
+                    viewerQuery.data?.viewer.login ??
+                    "－"}
+                </td>
               </tr>
               <tr>
                 <th>所属</th>
@@ -319,9 +314,9 @@ export function RepositoryCreateScreen(): JSX.Element {
               <tr>
                 <th>連絡先</th>
                 <td className={MONO_CLASS}>
-                  {viewerQuery.data?.login === undefined
+                  {viewerQuery.data?.viewer.login === undefined
                     ? "GitHub 利用者情報読込中"
-                    : `${viewerQuery.data.login}@users.noreply.github.com`}
+                    : `${viewerQuery.data.viewer.login}@users.noreply.github.com`}
                 </td>
                 <th>申請日時</th>
                 <td className={MONO_CLASS}>{formatJapaneseEraDateTime(new Date())}</td>
@@ -789,7 +784,7 @@ export function RepositoryCreateScreen(): JSX.Element {
         </Panel>
 
         <div className="mb-1 border border-slate-300 bg-white px-2 py-3 text-center">
-          {createRepositoryMutation.isError ? (
+          {createRepositoryMutation.error ? (
             <GitHubInlineState
               tone="error"
               className="mb-3"
@@ -834,9 +829,11 @@ export function RepositoryCreateScreen(): JSX.Element {
           <button
             type="submit"
             className={buttonClassName({ tone: "primary", size: "lg" })}
-            disabled={viewerQuery.isPending || viewerQuery.isError || createRepositoryMutation.isPending}
+            disabled={
+              viewerQuery.loading || viewerQuery.error !== undefined || createRepositoryMutation.loading
+            }
           >
-            {createRepositoryMutation.isPending ? "GitHubに作成中..." : "申請して GitHub に作成"}
+            {createRepositoryMutation.loading ? "GitHubに作成中..." : "申請して GitHub に作成"}
           </button>
           <span className="px-1" />
           <button type="button" className={buttonClassName()}>

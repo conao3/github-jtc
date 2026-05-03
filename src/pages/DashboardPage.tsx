@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@apollo/client/react";
 
 import { useAuthSession } from "../app/auth.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
@@ -8,11 +8,11 @@ import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
-  fetchGitHubDashboard,
   formatGitHubDateTime,
   formatJapaneseEraDateTime,
   type GitHubDashboardPayload,
 } from "../app/github.ts";
+import { DashboardDocument } from "../gql/graphql.ts";
 import {
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
@@ -245,22 +245,19 @@ export function DashboardScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const viewerLogin = sessionQuery.data?.user.login ?? "";
-  const dashboardQuery = useQuery({
-    queryKey: ["github", "dashboard", viewerLogin],
-    enabled: accessToken !== undefined && viewerLogin.length > 0,
-    queryFn: () => {
-      const range = getDashboardQueryRange();
-
-      return fetchGitHubDashboard(accessToken ?? "", {
-        from: range.from,
-        to: range.to,
-        recentReposFirst: 6,
-        todoFirst: 5,
-        reviewRequestQuery: `is:open is:pr archived:false review-requested:${viewerLogin} sort:updated-desc`,
-        issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
-        authoredPrQuery: `is:open is:pr archived:false author:${viewerLogin} sort:updated-desc`,
-      });
+  const range = getDashboardQueryRange();
+  const dashboardQuery = useQuery(DashboardDocument, {
+    skip: accessToken === undefined || viewerLogin.length === 0,
+    variables: {
+      from: range.from,
+      to: range.to,
+      recentReposFirst: 6,
+      todoFirst: 5,
+      reviewRequestQuery: `is:open is:pr archived:false review-requested:${viewerLogin} sort:updated-desc`,
+      issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
+      authoredPrQuery: `is:open is:pr archived:false author:${viewerLogin} sort:updated-desc`,
     },
+    fetchPolicy: "network-only",
   });
   const dashboard = dashboardQuery.data;
   const reviewRequests = getReviewRequestNodes(dashboard?.reviewRequests.nodes);
@@ -333,9 +330,9 @@ export function DashboardScreen(): JSX.Element {
           </Panel>
 
           <Panel title="レビュー依頼中プルリクエスト" bodyClassName="p-0">
-            {dashboardQuery.isPending ? (
+            {dashboardQuery.loading ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
-            ) : dashboardQuery.isError ? (
+            ) : dashboardQuery.error ? (
               <GitHubInlineState
                 tone="error"
                 className="px-2 py-3 text-xs"
@@ -381,9 +378,9 @@ export function DashboardScreen(): JSX.Element {
           </Panel>
 
           <Panel title="自分の担当チケット" bodyClassName="p-0">
-            {dashboardQuery.isPending ? (
+            {dashboardQuery.loading ? (
               <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
-            ) : dashboardQuery.isError ? (
+            ) : dashboardQuery.error ? (
               <GitHubInlineState
                 tone="error"
                 className="px-2 py-3 text-xs"
@@ -466,15 +463,15 @@ export function DashboardScreen(): JSX.Element {
         title={`本日のサマリ（${formatJapaneseEraDateTime(new Date())} 時点）`}
         action={
           <span className={MUTED_CLASS}>
-            {dashboardQuery.isPending
+            {dashboardQuery.loading
               ? "GitHub から集計中..."
-              : dashboardQuery.isError
+              : dashboardQuery.error
                 ? "GitHub 集計の取得に失敗"
                 : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "利用者"} / 直近30日集計`}
           </span>
         }
       >
-        {dashboardQuery.isError ? (
+        {dashboardQuery.error ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
