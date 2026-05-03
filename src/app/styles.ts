@@ -107,8 +107,9 @@ export const TABLE_CLASS = "jtc-data-table";
 export const TABS_ROW_CLASS =
   "flex gap-1 overflow-x-auto border-b border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 px-2 pt-1 whitespace-nowrap";
 export const TAB_CLASS =
-  "shrink-0 border border-b-0 border-slate-500 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-1 text-xs font-bold";
-export const TAB_ACTIVE_CLASS = "bg-white";
+  "shrink-0 border border-b-0 border-slate-500 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-1 text-xs font-bold text-slate-700";
+export const TAB_ACTIVE_CLASS =
+  "border-blue-900 bg-gradient-to-b from-amber-100 via-white to-white text-blue-950 shadow-sm";
 export const TAB_BADGE_CLASS =
   "ml-1 inline-flex min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-xs text-white";
 
