@@ -32,6 +32,7 @@ import {
 } from "../app/styles.ts";
 
 const QUERY_SIZE = 60;
+const REPOSITORIES_STALE_TIME_MS = 5 * 60 * 1000;
 const pageSizeOptions = ["10", "20", "50"] as const;
 const visibilityOptions = ["all", "PRIVATE", "INTERNAL", "PUBLIC"] as const;
 const permissionOptions = ["all", "ADMIN", "MAINTAIN", "WRITE", "TRIAGE", "READ"] as const;
@@ -169,6 +170,7 @@ export function RepositoriesScreen(): JSX.Element {
   const repositoriesQuery = useQuery({
     queryKey: ["github", "viewer-repositories", QUERY_SIZE],
     enabled: accessToken !== undefined,
+    staleTime: REPOSITORIES_STALE_TIME_MS,
     queryFn: () => fetchGitHubViewerRepositories(accessToken ?? "", { first: QUERY_SIZE, after: null }),
   });
   const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
@@ -483,7 +485,6 @@ export function RepositoriesScreen(): JSX.Element {
               <th>リポジトリ名／説明</th>
               <th className="w-24">所有者</th>
               <th className="w-20">主要言語</th>
-              <th className="w-16">コミット</th>
               <th className="w-16">プルリクエスト</th>
               <th className="w-16">チケット</th>
               <th className="w-20">状態</th>
@@ -496,19 +497,19 @@ export function RepositoriesScreen(): JSX.Element {
           <tbody>
             {repositoriesQuery.isPending ? (
               <tr>
-                <td colSpan={12} className="py-6 text-center text-slate-600">
+                <td colSpan={11} className="py-6 text-center text-slate-600">
                   GitHub GraphQL からリポジトリ一覧を取得しています。
                 </td>
               </tr>
             ) : repositoriesQuery.isError ? (
               <GitHubTableStateRow
-                colSpan={12}
+                colSpan={11}
                 tone="error"
                 {...describeGitHubError(repositoriesQuery.error, "リポジトリ一覧の取得に失敗しました。")}
               />
             ) : pagedRepositories.length === 0 ? (
               <GitHubTableStateRow
-                colSpan={12}
+                colSpan={11}
                 tone="empty"
                 title={
                   hasActiveRepositoryFilters(appliedFilters)
@@ -524,10 +525,6 @@ export function RepositoriesScreen(): JSX.Element {
             ) : (
               pagedRepositories.map((repository, index) => {
                 const state = getRepositoryState(repository);
-                const commitCount =
-                  repository.defaultBranchRef?.target?.__typename === "Commit"
-                    ? repository.defaultBranchRef.target.history.totalCount
-                    : 0;
 
                 return (
                   <tr key={repository.id}>
@@ -549,7 +546,6 @@ export function RepositoriesScreen(): JSX.Element {
                     </td>
                     <td className="text-center">{getOwnerLabel(repository)}</td>
                     <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{commitCount}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{repository.pullRequests.totalCount}</td>
                     <td className={clsx("text-center", MONO_CLASS)}>{repository.issues.totalCount}</td>
                     <td className="text-center">

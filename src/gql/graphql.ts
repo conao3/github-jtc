@@ -940,28 +940,16 @@ export type ViewerRepositoriesQuery = {
         nameWithOwner: string;
         url: string;
         description: string | null;
-        isPrivate: boolean;
         visibility: RepositoryVisibility;
         pushedAt: string | null;
-        updatedAt: string;
         viewerPermission: RepositoryPermission | null;
         stargazerCount: number;
         forkCount: number;
-        primaryLanguage: { name: string; color: string | null } | null;
-        owner:
-          | { __typename: "Organization"; name: string | null; login: string; avatarUrl: string }
-          | { __typename: "User"; name: string | null; login: string; avatarUrl: string };
+        primaryLanguage: { name: string } | null;
+        owner: { name: string | null; login: string } | { name: string | null; login: string };
         issues: { totalCount: number };
         pullRequests: { totalCount: number };
-        defaultBranchRef: {
-          name: string;
-          target:
-            | { __typename: "Blob" }
-            | { __typename: "Commit"; history: { totalCount: number } }
-            | { __typename: "Tag" }
-            | { __typename: "Tree" }
-            | null;
-        } | null;
+        defaultBranchRef: { name: string } | null;
       } | null> | null;
     };
   };
@@ -4185,10 +4173,8 @@ export const ViewerRepositoriesDocument = {
                             { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
                             { kind: "Field", name: { kind: "Name", value: "url" } },
                             { kind: "Field", name: { kind: "Name", value: "description" } },
-                            { kind: "Field", name: { kind: "Name", value: "isPrivate" } },
                             { kind: "Field", name: { kind: "Name", value: "visibility" } },
                             { kind: "Field", name: { kind: "Name", value: "pushedAt" } },
-                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
                             { kind: "Field", name: { kind: "Name", value: "viewerPermission" } },
                             { kind: "Field", name: { kind: "Name", value: "stargazerCount" } },
                             { kind: "Field", name: { kind: "Name", value: "forkCount" } },
@@ -4197,10 +4183,7 @@ export const ViewerRepositoriesDocument = {
                               name: { kind: "Name", value: "primaryLanguage" },
                               selectionSet: {
                                 kind: "SelectionSet",
-                                selections: [
-                                  { kind: "Field", name: { kind: "Name", value: "name" } },
-                                  { kind: "Field", name: { kind: "Name", value: "color" } },
-                                ],
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
                               },
                             },
                             {
@@ -4209,19 +4192,7 @@ export const ViewerRepositoriesDocument = {
                               selectionSet: {
                                 kind: "SelectionSet",
                                 selections: [
-                                  { kind: "Field", name: { kind: "Name", value: "__typename" } },
                                   { kind: "Field", name: { kind: "Name", value: "login" } },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "avatarUrl" },
-                                    arguments: [
-                                      {
-                                        kind: "Argument",
-                                        name: { kind: "Name", value: "size" },
-                                        value: { kind: "IntValue", value: "40" },
-                                      },
-                                    ],
-                                  },
                                   {
                                     kind: "InlineFragment",
                                     typeCondition: {
@@ -4282,51 +4253,7 @@ export const ViewerRepositoriesDocument = {
                               name: { kind: "Name", value: "defaultBranchRef" },
                               selectionSet: {
                                 kind: "SelectionSet",
-                                selections: [
-                                  { kind: "Field", name: { kind: "Name", value: "name" } },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "target" },
-                                    selectionSet: {
-                                      kind: "SelectionSet",
-                                      selections: [
-                                        { kind: "Field", name: { kind: "Name", value: "__typename" } },
-                                        {
-                                          kind: "InlineFragment",
-                                          typeCondition: {
-                                            kind: "NamedType",
-                                            name: { kind: "Name", value: "Commit" },
-                                          },
-                                          selectionSet: {
-                                            kind: "SelectionSet",
-                                            selections: [
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "history" },
-                                                arguments: [
-                                                  {
-                                                    kind: "Argument",
-                                                    name: { kind: "Name", value: "first" },
-                                                    value: { kind: "IntValue", value: "1" },
-                                                  },
-                                                ],
-                                                selectionSet: {
-                                                  kind: "SelectionSet",
-                                                  selections: [
-                                                    {
-                                                      kind: "Field",
-                                                      name: { kind: "Name", value: "totalCount" },
-                                                    },
-                                                  ],
-                                                },
-                                              },
-                                            ],
-                                          },
-                                        },
-                                      ],
-                                    },
-                                  },
-                                ],
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
                               },
                             },
                           ],

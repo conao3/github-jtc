@@ -17,21 +17,16 @@ query ViewerRepositories($first: Int!, $after: String) {
         nameWithOwner
         url
         description
-        isPrivate
         visibility
         pushedAt
-        updatedAt
         viewerPermission
         stargazerCount
         forkCount
         primaryLanguage {
           name
-          color
         }
         owner {
-          __typename
           login
-          avatarUrl(size: 40)
           ... on Organization {
             name
           }
@@ -47,14 +42,6 @@ query ViewerRepositories($first: Int!, $after: String) {
         }
         defaultBranchRef {
           name
-          target {
-            __typename
-            ... on Commit {
-              history(first: 1) {
-                totalCount
-              }
-            }
-          }
         }
       }
     }
