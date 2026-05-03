@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -252,7 +253,7 @@ export function DashboardScreen(): JSX.Element {
   const accessToken = sessionQuery.data?.accessToken;
   const viewerLogin = sessionQuery.data?.user.login ?? "";
   const recentRepositoriesPager = useCursorPagerState();
-  const range = getDashboardQueryRange();
+  const range = useMemo(() => getDashboardQueryRange(), []);
   const dashboardQuery = useQuery(DashboardDocument, {
     skip: accessToken === undefined || viewerLogin.length === 0,
     variables: {
