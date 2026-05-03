@@ -299,11 +299,8 @@ export function RepositoryCreateScreen(): JSX.Element {
           <span className="font-bold text-red-700">★</span>
           付項目は必須入力です。記載不備がある場合は差戻しとなりますのでご注意ください。詳細は
           <span className={TEXT_LINK_CLASS}>リポジトリ登録手順書.pdf</span>
-          をご確認ください。なお、この PoC は
-          <span className="font-bold text-red-700">
-            現在ログイン中の GitHub viewer 配下に直接 repository を作成
-          </span>
-          します。担当者設定・添付書類・承認フローは JTC 演出用の mock です。
+          をご確認ください。
+          します。
         </div>
 
         <Panel title="申請者情報（自動入力）" bodyClassName="p-0">

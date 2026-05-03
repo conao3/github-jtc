@@ -268,7 +268,7 @@ export function LoginScreen(): JSX.Element {
               </form>
 
               <div className="mt-3.5 border-t border-t-dotted border-t-slate-400 pt-2 text-xs">
-                <div className="mb-3 text-center">
+                <div className="p-3 text-center">
                   <button
                     type="button"
                     className={buttonClassName({ tone: "primary", size: "lg" })}
