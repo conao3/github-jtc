@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { fetchGitHubViewer } from "./github.ts";
+import { getAppOriginBaseUrl } from "./runtime.ts";
 import { LOADING_CLASS } from "./styles.ts";
 
 const AUTH_QUERY_KEY = ["auth", "session"] as const;
@@ -153,7 +154,7 @@ async function createPkceChallenge(codeVerifier: string): Promise<string> {
 }
 
 function getDefaultGitHubRedirectUri(): string {
-  return `${window.location.origin}/login/callback`;
+  return new URL("login/callback", getAppOriginBaseUrl()).toString();
 }
 
 export function getGitHubAuthConfig(): {

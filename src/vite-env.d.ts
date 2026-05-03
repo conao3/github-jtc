@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_PUBLIC_BASE_PATH?: string;
   readonly VITE_GITHUB_APP_CLIENT_ID?: string;
   readonly VITE_GITHUB_APP_REDIRECT_URI?: string;
   readonly VITE_GITHUB_APP_EXCHANGE_URL?: string;

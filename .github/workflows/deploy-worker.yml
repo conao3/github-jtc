@@ -1,0 +1,55 @@
+name: Deploy Auth Broker Worker
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/deploy-worker.yml"
+      - "workers/github-auth-broker/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Derive allowed origins
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          owner="${GITHUB_REPOSITORY_OWNER}"
+
+          if [ -n "${WORKER_ALLOWED_ORIGINS}" ]; then
+            allowed_origins="${WORKER_ALLOWED_ORIGINS}"
+          elif [ -n "${PAGES_BASE_URL}" ]; then
+            allowed_origins="${PAGES_BASE_URL}"
+          elif [[ "${repo}" == *.github.io ]]; then
+            allowed_origins="https://${repo}"
+          else
+            allowed_origins="https://${owner}.github.io/${repo}"
+          fi
+
+          echo "ALLOWED_ORIGINS=${allowed_origins}" >> "${GITHUB_ENV}"
+        env:
+          WORKER_ALLOWED_ORIGINS: ${{ vars.WORKER_ALLOWED_ORIGINS }}
+          PAGES_BASE_URL: ${{ vars.PAGES_BASE_URL }}
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: workers/github-auth-broker
+          wranglerVersion: "4.87.0"
+          secrets: |
+            GITHUB_APP_CLIENT_ID
+            GITHUB_APP_CLIENT_SECRET
+            ALLOWED_ORIGINS
+        env:
+          GITHUB_APP_CLIENT_ID: ${{ vars.GITHUB_APP_CLIENT_ID }}
+          GITHUB_APP_CLIENT_SECRET: ${{ secrets.GITHUB_APP_CLIENT_SECRET }}
+          ALLOWED_ORIGINS: ${{ env.ALLOWED_ORIGINS }}

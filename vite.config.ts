@@ -2,8 +2,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite-plus";
 
+const publicBasePath = process.env.VITE_PUBLIC_BASE_PATH?.trim();
+
 export default defineConfig({
-  base: "./",
+  base: publicBasePath !== undefined && publicBasePath.length > 0 ? publicBasePath : "./",
   plugins: [react(), tailwindcss()],
   build: {
     target: "esnext",
