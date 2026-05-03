@@ -1,9 +1,16 @@
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
-import { JtcPriorityTag, JtcStatusTag } from "../app/components/JtcIndicators.tsx";
+import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { fetchGitHubDashboard, formatGitHubDateTime, type GitHubDashboardPayload } from "../app/github.ts";
 import {
+  FLOW_STEP_META_CLASS,
+  FLOW_STEP_NAME_CLASS,
+  FLOW_STEP_NO_CLASS,
+  FLOW_WRAP_CLASS,
   KPI_CARD_CLASS,
   KPI_DELTA_CLASS,
   KPI_LABEL_CLASS,
@@ -27,19 +34,8 @@ import {
   TODO_LIST_CLASS,
   TODO_LIST_ITEM_CLASS,
   WARN_LINE_CLASS,
-  FLOW_WRAP_CLASS,
-  FLOW_STEP_META_CLASS,
-  FLOW_STEP_NAME_CLASS,
-  FLOW_STEP_NO_CLASS,
   flowStepClassName,
 } from "../app/styles.ts";
-
-const dashboardKpis = [
-  { label: "担当リポジトリ数", value: "12", note: "▲ 前月比 +2件" },
-  { label: "未対応PR", value: "7", note: "▼ 前日比 +1件" },
-  { label: "担当課題（Issue）", value: "14", note: "▼ 前日比 +3件" },
-  { label: "承認待ちタスク", value: "5", note: "▲ 前日比 -2件" },
-];
 
 const noticeRows = [
   [
@@ -90,7 +86,7 @@ const noticeRows = [
     "人材開発部",
     "📎",
   ],
-];
+] as const;
 
 const flowSteps = [
   {
@@ -135,7 +131,7 @@ const flowSteps = [
     meta: ["担当：リリース管理委員会", "状態：未着手"],
     status: <JtcStatusTag tone="required">申請必要</JtcStatusTag>,
   },
-];
+] as const;
 
 const shortcuts = [
   ["変", "変更登録"],
@@ -144,24 +140,78 @@ const shortcuts = [
   ["🔍", "リポジトリ検索"],
   ["人", "ユーザー検索"],
   ["📖", "操作マニュアル"],
-];
+] as const;
 
-const todoItems = [
-  ["承認待ち（変更）", "2 件"],
-  ["承認待ち（PR）", "1 件"],
-  ["課題回答待ち", "3 件"],
-  ["レビュー依頼中", "2 件"],
-  ["マイタスク", "5 件"],
-  ["差戻し対応", "1 件"],
-  ["研修・訓練", "0 件"],
-];
+type ReviewRequestNode = Extract<
+  NonNullable<NonNullable<GitHubDashboardPayload["reviewRequests"]["nodes"]>[number]>,
+  { __typename: "PullRequest" }
+>;
 
-const assignedIssues = [
-  ["ISS-25-00125", "決済処理でエラーになる", "対応中", "高", "05/30"],
-  ["ISS-25-00118", "ログ出力が消えている", "新規", "中", "06/02"],
-  ["ISS-25-00105", "画面遷移時のDBエラー", "対応中", "高", "05/15"],
-  ["ISS-25-00099", "マスタ更新の権限が無い", "確認待", "低", "06/15"],
-];
+type AssignedIssueNode = Extract<
+  NonNullable<NonNullable<GitHubDashboardPayload["issueAssignments"]["nodes"]>[number]>,
+  { __typename: "Issue" }
+>;
+
+type RecentRepositoryNode = NonNullable<
+  NonNullable<GitHubDashboardPayload["viewer"]["repositories"]["nodes"]>[number]
+>;
+
+function isPresent<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
+function getDashboardQueryRange(): { readonly from: string; readonly to: string } {
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(from.getDate() - 30);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
+function getReviewRequestNodes(
+  nodes: GitHubDashboardPayload["reviewRequests"]["nodes"] | null | undefined,
+): ReviewRequestNode[] {
+  return (nodes ?? []).filter((node): node is ReviewRequestNode => node?.__typename === "PullRequest");
+}
+
+function getAssignedIssueNodes(
+  nodes: GitHubDashboardPayload["issueAssignments"]["nodes"] | null | undefined,
+): AssignedIssueNode[] {
+  return (nodes ?? []).filter((node): node is AssignedIssueNode => node?.__typename === "Issue");
+}
+
+function getReviewDecisionTag(decision: ReviewRequestNode["reviewDecision"]): {
+  readonly tone: "pending" | "review" | "done" | "rejected";
+  readonly label: string;
+} {
+  switch (decision) {
+    case "APPROVED":
+      return { tone: "done", label: "承認済" };
+    case "CHANGES_REQUESTED":
+      return { tone: "rejected", label: "差戻し" };
+    case "REVIEW_REQUIRED":
+      return { tone: "review", label: "要レビュー" };
+    default:
+      return { tone: "pending", label: "依頼中" };
+  }
+}
+
+function getIssueStateTag(state: AssignedIssueNode["state"]): {
+  readonly tone: "new" | "inProgress" | "confirmed";
+  readonly label: string;
+} {
+  switch (state) {
+    case "OPEN":
+      return { tone: "inProgress", label: "Open" };
+    case "CLOSED":
+      return { tone: "confirmed", label: "Closed" };
+    default:
+      return { tone: "new", label: state };
+  }
+}
 
 function NoticeTag({ label }: { label: string }): JSX.Element {
   const tone =
@@ -180,7 +230,69 @@ function NoticeTag({ label }: { label: string }): JSX.Element {
   );
 }
 
+function SideList({ children }: { readonly children: React.ReactNode }): JSX.Element {
+  return <div className="divide-y divide-slate-300">{children}</div>;
+}
+
 export function DashboardScreen(): JSX.Element {
+  const sessionQuery = useAuthSession();
+  const accessToken = sessionQuery.data?.accessToken;
+  const viewerLogin = sessionQuery.data?.user.login ?? "";
+  const dashboardQuery = useQuery({
+    queryKey: ["github", "dashboard", viewerLogin],
+    enabled: accessToken !== undefined && viewerLogin.length > 0,
+    queryFn: () => {
+      const range = getDashboardQueryRange();
+
+      return fetchGitHubDashboard(accessToken ?? "", {
+        from: range.from,
+        to: range.to,
+        recentReposFirst: 6,
+        todoFirst: 5,
+        reviewRequestQuery: `is:open is:pr archived:false review-requested:${viewerLogin} sort:updated-desc`,
+        issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
+        authoredPrQuery: `is:open is:pr archived:false author:${viewerLogin} sort:updated-desc`,
+      });
+    },
+  });
+  const dashboard = dashboardQuery.data;
+  const reviewRequests = getReviewRequestNodes(dashboard?.reviewRequests.nodes);
+  const assignedIssues = getAssignedIssueNodes(dashboard?.issueAssignments.nodes);
+  const recentRepositories = (dashboard?.viewer.repositories.nodes ?? []).filter(isPresent);
+  const kpis = [
+    {
+      label: "担当リポジトリ数",
+      value: String(dashboard?.viewer.repositories.totalCount ?? 0),
+      note: "viewer.repositories",
+    },
+    {
+      label: "直近30日コミット",
+      value: String(dashboard?.viewer.contributionsCollection.totalCommitContributions ?? 0),
+      note: "contributionsCollection",
+    },
+    {
+      label: "レビュー依頼中PR",
+      value: String(dashboard?.reviewRequests.issueCount ?? 0),
+      note: "search review-requested",
+    },
+    {
+      label: "自分担当Issue",
+      value: String(dashboard?.issueAssignments.issueCount ?? 0),
+      note: "search assignee",
+    },
+  ] as const;
+  const todoItems = [
+    ["レビュー依頼中", `${dashboard?.reviewRequests.issueCount ?? 0} 件`],
+    ["自分担当Issue", `${dashboard?.issueAssignments.issueCount ?? 0} 件`],
+    ["自分が開いているPR", `${dashboard?.authoredPullRequests.issueCount ?? 0} 件`],
+    ["最近更新したRepo", `${recentRepositories.length} 件`],
+    [
+      "直近30日レビュー",
+      `${dashboard?.viewer.contributionsCollection.totalPullRequestReviewContributions ?? 0} 件`,
+    ],
+    ["直近30日Issue", `${dashboard?.viewer.contributionsCollection.totalIssueContributions ?? 0} 件`],
+  ] as const;
+
   return (
     <JtcChrome
       screenId="JTC-PRT-001"
@@ -200,7 +312,7 @@ export function DashboardScreen(): JSX.Element {
             </div>
           </Panel>
 
-          <Panel title="ToDo一覧（未完了）" bodyClassName="p-0">
+          <Panel title="GitHub ToDo一覧" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {todoItems.map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
@@ -213,41 +325,105 @@ export function DashboardScreen(): JSX.Element {
             </ul>
           </Panel>
 
-          <Panel title="課題一覧（自分の担当）" bodyClassName="p-0">
+          <Panel title="レビュー依頼中PR" bodyClassName="p-0">
+            {dashboardQuery.isPending ? (
+              <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
+            ) : dashboardQuery.isError ? (
+              <div className="px-2 py-3 text-xs text-red-800">
+                {dashboardQuery.error instanceof Error
+                  ? dashboardQuery.error.message
+                  : "レビュー依頼一覧を取得できませんでした。"}
+              </div>
+            ) : reviewRequests.length === 0 ? (
+              <div className="px-2 py-3 text-xs text-slate-600">レビュー依頼中の PR はありません。</div>
+            ) : (
+              <SideList>
+                {reviewRequests.map((pullRequest) => {
+                  const status = getReviewDecisionTag(pullRequest.reviewDecision);
+
+                  return (
+                    <div key={pullRequest.id} className="space-y-1 px-2 py-2 text-xs">
+                      <div className="font-bold">
+                        <a
+                          href={pullRequest.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={TEXT_LINK_CLASS}
+                        >
+                          PR #{pullRequest.number}
+                        </a>
+                      </div>
+                      <div>{pullRequest.title}</div>
+                      <div className={MONO_CLASS}>{pullRequest.repository.nameWithOwner}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <JtcStatusTag tone={status.tone}>{status.label}</JtcStatusTag>
+                        <span className={clsx("text-slate-600", MONO_CLASS)}>
+                          {formatGitHubDateTime(pullRequest.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </SideList>
+            )}
+          </Panel>
+
+          <Panel title="自分の担当Issue" bodyClassName="p-0">
+            {dashboardQuery.isPending ? (
+              <div className="px-2 py-3 text-xs text-slate-600">GitHub から読込中です。</div>
+            ) : dashboardQuery.isError ? (
+              <div className="px-2 py-3 text-xs text-red-800">
+                {dashboardQuery.error instanceof Error
+                  ? dashboardQuery.error.message
+                  : "Issue 一覧を取得できませんでした。"}
+              </div>
+            ) : assignedIssues.length === 0 ? (
+              <div className="px-2 py-3 text-xs text-slate-600">担当中の open issue はありません。</div>
+            ) : (
+              <SideList>
+                {assignedIssues.map((issue) => {
+                  const status = getIssueStateTag(issue.state);
+
+                  return (
+                    <div key={issue.id} className="space-y-1 px-2 py-2 text-xs">
+                      <div className="font-bold">
+                        <a href={issue.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                          Issue #{issue.number}
+                        </a>
+                      </div>
+                      <div>{issue.title}</div>
+                      <div className={MONO_CLASS}>{issue.repository.nameWithOwner}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <JtcStatusTag tone={status.tone}>{status.label}</JtcStatusTag>
+                        <span className={clsx("text-slate-600", MONO_CLASS)}>
+                          {formatGitHubDateTime(issue.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </SideList>
+            )}
+          </Panel>
+
+          <Panel title="最近更新したリポジトリ" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
-              <thead>
-                <tr>
-                  <th className="w-24">課題ID</th>
-                  <th>件名</th>
-                  <th className="w-12">状態</th>
-                  <th className="w-8">優先</th>
-                  <th className="w-12">期限</th>
-                </tr>
-              </thead>
               <tbody>
-                {assignedIssues.map(([id, title, status, priority, due]) => (
-                  <tr key={id}>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      <span className={TEXT_LINK_CLASS}>{id}</span>
-                    </td>
-                    <td>{title}</td>
-                    <td className="text-center">
-                      <JtcStatusTag
-                        tone={status === "新規" ? "new" : status === "確認待" ? "confirmed" : "inProgress"}
-                      >
-                        {status}
-                      </JtcStatusTag>
-                    </td>
-                    <td className="text-center">
-                      <JtcPriorityTag
-                        priority={priority === "高" ? "high" : priority === "中" ? "medium" : "low"}
-                      >
-                        {priority}
-                      </JtcPriorityTag>
-                    </td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{due}</td>
+                {recentRepositories.length === 0 ? (
+                  <tr>
+                    <td className="text-center text-slate-600">データなし</td>
                   </tr>
-                ))}
+                ) : (
+                  recentRepositories.map((repository: RecentRepositoryNode) => (
+                    <tr key={repository.id}>
+                      <td className={MONO_CLASS}>{repository.name}</td>
+                      <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
+                      <td className={clsx("text-center", MONO_CLASS)}>
+                        {formatGitHubDateTime(repository.pushedAt)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </Panel>
@@ -267,11 +443,17 @@ export function DashboardScreen(): JSX.Element {
       </div>
 
       <Panel
-        title="本日のサマリ（令和8年5月3日 8時42分時点）"
-        action={<span className={MUTED_CLASS}>自動更新：5分間隔</span>}
+        title={`本日のサマリ（${new Date().toLocaleString("ja-JP")} 時点）`}
+        action={
+          <span className={MUTED_CLASS}>
+            {dashboardQuery.isPending
+              ? "GitHub から集計中..."
+              : `${dashboard?.viewer.name ?? dashboard?.viewer.login ?? "viewer"} / 直近30日集計`}
+          </span>
+        }
       >
         <div className={KPI_ROW_CLASS}>
-          {dashboardKpis.map((item) => (
+          {kpis.map((item) => (
             <div key={item.label} className={KPI_CARD_CLASS}>
               <div className={KPI_LABEL_CLASS}>{item.label}</div>
               <div className={KPI_VALUE_CLASS}>

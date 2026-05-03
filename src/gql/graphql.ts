@@ -6,6 +6,22 @@ export type Incremental<T> =
   | T
   | { [P in keyof T]?: P extends " $fragmentName" | "__typename" ? T[P] : never };
 import type { TypedDocumentNode as DocumentNode } from "@graphql-typed-document-node/core";
+/** The possible states of an issue. */
+export type IssueState =
+  /** An issue that has been closed */
+  | "CLOSED"
+  /** An issue that is still open */
+  | "OPEN";
+
+/** The review status of a pull request. */
+export type PullRequestReviewDecision =
+  /** The pull request has received an approving review. */
+  | "APPROVED"
+  /** Changes have been requested on the pull request. */
+  | "CHANGES_REQUESTED"
+  /** A review is required before the pull request can be merged. */
+  | "REVIEW_REQUIRED";
+
 /** The access level to a repository */
 export type RepositoryPermission =
   /**
@@ -30,6 +46,102 @@ export type RepositoryVisibility =
   | "PRIVATE"
   /** The repository is visible to everyone. */
   | "PUBLIC";
+
+export type DashboardQueryVariables = Exact<{
+  from: string;
+  to: string;
+  recentReposFirst: number;
+  todoFirst: number;
+  reviewRequestQuery: string;
+  issueAssignmentQuery: string;
+  authoredPrQuery: string;
+}>;
+
+export type DashboardQuery = {
+  viewer: {
+    id: string;
+    login: string;
+    name: string | null;
+    company: string | null;
+    repositories: {
+      totalCount: number;
+      nodes: Array<{
+        id: string;
+        name: string;
+        nameWithOwner: string;
+        url: string;
+        updatedAt: string;
+        pushedAt: string | null;
+        isPrivate: boolean;
+        primaryLanguage: { name: string; color: string | null } | null;
+        issues: { totalCount: number };
+        pullRequests: { totalCount: number };
+      } | null> | null;
+    };
+    contributionsCollection: {
+      totalCommitContributions: number;
+      totalPullRequestContributions: number;
+      totalIssueContributions: number;
+      totalPullRequestReviewContributions: number;
+    };
+  };
+  reviewRequests: {
+    issueCount: number;
+    nodes: Array<
+      | { __typename: "App" }
+      | { __typename: "Discussion" }
+      | { __typename: "Issue" }
+      | { __typename: "MarketplaceListing" }
+      | { __typename: "Organization" }
+      | {
+          __typename: "PullRequest";
+          id: string;
+          number: number;
+          title: string;
+          url: string;
+          updatedAt: string;
+          reviewDecision: PullRequestReviewDecision | null;
+          repository: { nameWithOwner: string; url: string };
+          author:
+            | { login: string }
+            | { login: string }
+            | { login: string }
+            | { login: string }
+            | { login: string }
+            | null;
+          comments: { totalCount: number };
+        }
+      | { __typename: "Repository" }
+      | { __typename: "User" }
+      | null
+    > | null;
+  };
+  issueAssignments: {
+    issueCount: number;
+    nodes: Array<
+      | { __typename: "App" }
+      | { __typename: "Discussion" }
+      | {
+          __typename: "Issue";
+          id: string;
+          number: number;
+          title: string;
+          url: string;
+          updatedAt: string;
+          state: IssueState;
+          repository: { nameWithOwner: string; url: string };
+          comments: { totalCount: number };
+        }
+      | { __typename: "MarketplaceListing" }
+      | { __typename: "Organization" }
+      | { __typename: "PullRequest" }
+      | { __typename: "Repository" }
+      | { __typename: "User" }
+      | null
+    > | null;
+  };
+  authoredPullRequests: { issueCount: number };
+};
 
 export type RepositoryDetailQueryVariables = Exact<{
   owner: string;
@@ -236,6 +348,390 @@ export type ViewerRepositoriesQuery = {
   };
 };
 
+export const DashboardDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "Dashboard" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "from" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "DateTime" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "to" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "DateTime" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "recentReposFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "todoFirst" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "reviewRequestQuery" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "issueAssignmentQuery" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "authoredPrQuery" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "login" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "company" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "repositories" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "recentReposFirst" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "affiliations" },
+                      value: {
+                        kind: "ListValue",
+                        values: [
+                          { kind: "EnumValue", value: "OWNER" },
+                          { kind: "EnumValue", value: "COLLABORATOR" },
+                          { kind: "EnumValue", value: "ORGANIZATION_MEMBER" },
+                        ],
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderBy" },
+                      value: {
+                        kind: "ObjectValue",
+                        fields: [
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "field" },
+                            value: { kind: "EnumValue", value: "PUSHED_AT" },
+                          },
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "direction" },
+                            value: { kind: "EnumValue", value: "DESC" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "isFork" },
+                      value: { kind: "BooleanValue", value: false },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "nodes" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "id" } },
+                            { kind: "Field", name: { kind: "Name", value: "name" } },
+                            { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "pushedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "isPrivate" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "primaryLanguage" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                                  { kind: "Field", name: { kind: "Name", value: "color" } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "issues" },
+                              arguments: [
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "states" },
+                                  value: { kind: "EnumValue", value: "OPEN" },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pullRequests" },
+                              arguments: [
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "states" },
+                                  value: { kind: "EnumValue", value: "OPEN" },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "contributionsCollection" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "from" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "from" } },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "to" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "to" } },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "totalCommitContributions" } },
+                      { kind: "Field", name: { kind: "Name", value: "totalPullRequestContributions" } },
+                      { kind: "Field", name: { kind: "Name", value: "totalIssueContributions" } },
+                      { kind: "Field", name: { kind: "Name", value: "totalPullRequestReviewContributions" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "reviewRequests" },
+            name: { kind: "Name", value: "search" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: { kind: "Variable", name: { kind: "Name", value: "reviewRequestQuery" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "type" },
+                value: { kind: "EnumValue", value: "ISSUE" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "Variable", name: { kind: "Name", value: "todoFirst" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "issueCount" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "nodes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                      {
+                        kind: "InlineFragment",
+                        typeCondition: { kind: "NamedType", name: { kind: "Name", value: "PullRequest" } },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "id" } },
+                            { kind: "Field", name: { kind: "Name", value: "number" } },
+                            { kind: "Field", name: { kind: "Name", value: "title" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "reviewDecision" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "repository" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                                  { kind: "Field", name: { kind: "Name", value: "url" } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "author" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "login" } }],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "comments" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "issueAssignments" },
+            name: { kind: "Name", value: "search" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: { kind: "Variable", name: { kind: "Name", value: "issueAssignmentQuery" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "type" },
+                value: { kind: "EnumValue", value: "ISSUE" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "Variable", name: { kind: "Name", value: "todoFirst" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "issueCount" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "nodes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                      {
+                        kind: "InlineFragment",
+                        typeCondition: { kind: "NamedType", name: { kind: "Name", value: "Issue" } },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "id" } },
+                            { kind: "Field", name: { kind: "Name", value: "number" } },
+                            { kind: "Field", name: { kind: "Name", value: "title" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "state" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "repository" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                                  { kind: "Field", name: { kind: "Name", value: "url" } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "comments" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "authoredPullRequests" },
+            name: { kind: "Name", value: "search" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: { kind: "Variable", name: { kind: "Name", value: "authoredPrQuery" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "type" },
+                value: { kind: "EnumValue", value: "ISSUE" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "Variable", name: { kind: "Name", value: "todoFirst" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "issueCount" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<DashboardQuery, DashboardQueryVariables>;
 export const RepositoryDetailDocument = {
   kind: "Document",
   definitions: [

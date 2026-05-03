@@ -1,0 +1,97 @@
+query Dashboard(
+  $from: DateTime!
+  $to: DateTime!
+  $recentReposFirst: Int!
+  $todoFirst: Int!
+  $reviewRequestQuery: String!
+  $issueAssignmentQuery: String!
+  $authoredPrQuery: String!
+) {
+  viewer {
+    id
+    login
+    name
+    company
+    repositories(
+      first: $recentReposFirst
+      affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
+      orderBy: { field: PUSHED_AT, direction: DESC }
+      isFork: false
+    ) {
+      totalCount
+      nodes {
+        id
+        name
+        nameWithOwner
+        url
+        updatedAt
+        pushedAt
+        isPrivate
+        primaryLanguage {
+          name
+          color
+        }
+        issues(states: OPEN) {
+          totalCount
+        }
+        pullRequests(states: OPEN) {
+          totalCount
+        }
+      }
+    }
+    contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalPullRequestContributions
+      totalIssueContributions
+      totalPullRequestReviewContributions
+    }
+  }
+  reviewRequests: search(query: $reviewRequestQuery, type: ISSUE, first: $todoFirst) {
+    issueCount
+    nodes {
+      __typename
+      ... on PullRequest {
+        id
+        number
+        title
+        url
+        updatedAt
+        reviewDecision
+        repository {
+          nameWithOwner
+          url
+        }
+        author {
+          login
+        }
+        comments {
+          totalCount
+        }
+      }
+    }
+  }
+  issueAssignments: search(query: $issueAssignmentQuery, type: ISSUE, first: $todoFirst) {
+    issueCount
+    nodes {
+      __typename
+      ... on Issue {
+        id
+        number
+        title
+        url
+        updatedAt
+        state
+        repository {
+          nameWithOwner
+          url
+        }
+        comments {
+          totalCount
+        }
+      }
+    }
+  }
+  authoredPullRequests: search(query: $authoredPrQuery, type: ISSUE, first: $todoFirst) {
+    issueCount
+  }
+}

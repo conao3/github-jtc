@@ -2,6 +2,9 @@ import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client";
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 
 import {
+  DashboardDocument,
+  type DashboardQuery,
+  type DashboardQueryVariables,
   RepositoryDetailDocument,
   type RepositoryDetailQuery,
   type RepositoryDetailQueryVariables,
@@ -22,6 +25,7 @@ export type GitHubViewerRepository = NonNullable<
   NonNullable<GitHubViewerRepositoriesConnection["nodes"]>[number]
 >;
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
+export type GitHubDashboardPayload = DashboardQuery;
 
 export interface GitHubRepositoryCoordinates {
   readonly owner: string;
@@ -96,6 +100,13 @@ export async function fetchGitHubRepositoryDetail(
 ): Promise<GitHubRepositoryDetail | null> {
   const data = await executeGitHubQuery(accessToken, RepositoryDetailDocument, variables);
   return data.repository ?? null;
+}
+
+export async function fetchGitHubDashboard(
+  accessToken: string,
+  variables: DashboardQueryVariables,
+): Promise<GitHubDashboardPayload> {
+  return await executeGitHubQuery(accessToken, DashboardDocument, variables);
 }
 
 export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | string): string {
