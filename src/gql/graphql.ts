@@ -947,8 +947,6 @@ export type ViewerRepositoriesQuery = {
         forkCount: number;
         primaryLanguage: { name: string } | null;
         owner: { name: string | null; login: string } | { name: string | null; login: string };
-        issues: { totalCount: number };
-        pullRequests: { totalCount: number };
         defaultBranchRef: { name: string } | null;
       } | null> | null;
     };
@@ -4216,36 +4214,6 @@ export const ViewerRepositoriesDocument = {
                                     },
                                   },
                                 ],
-                              },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "issues" },
-                              arguments: [
-                                {
-                                  kind: "Argument",
-                                  name: { kind: "Name", value: "states" },
-                                  value: { kind: "EnumValue", value: "OPEN" },
-                                },
-                              ],
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
-                              },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "pullRequests" },
-                              arguments: [
-                                {
-                                  kind: "Argument",
-                                  name: { kind: "Name", value: "states" },
-                                  value: { kind: "EnumValue", value: "OPEN" },
-                                },
-                              ],
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [{ kind: "Field", name: { kind: "Name", value: "totalCount" } }],
                               },
                             },
                             {

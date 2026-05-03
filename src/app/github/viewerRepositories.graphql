@@ -34,12 +34,6 @@ query ViewerRepositories($first: Int!, $after: String) {
             name
           }
         }
-        issues(states: OPEN) {
-          totalCount
-        }
-        pullRequests(states: OPEN) {
-          totalCount
-        }
         defaultBranchRef {
           name
         }

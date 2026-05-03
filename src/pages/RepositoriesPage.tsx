@@ -1,15 +1,13 @@
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
-import { ClientPager } from "../app/components/ClientPager.tsx";
 import { GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
-import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import {
@@ -31,12 +29,10 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const QUERY_SIZE = 60;
+const QUERY_SIZE = 10;
 const REPOSITORIES_STALE_TIME_MS = 5 * 60 * 1000;
-const pageSizeOptions = ["10", "20", "50"] as const;
 const visibilityOptions = ["all", "PRIVATE", "INTERNAL", "PUBLIC"] as const;
 const permissionOptions = ["all", "ADMIN", "MAINTAIN", "WRITE", "TRIAGE", "READ"] as const;
-const yesNoOptions = ["all", "yes", "no"] as const;
 
 const repositoryFilterFieldValidators = {
   repositoryName: z.string(),
@@ -44,8 +40,6 @@ const repositoryFilterFieldValidators = {
   visibility: z.enum(visibilityOptions),
   language: z.string(),
   permission: z.enum(permissionOptions),
-  hasOpenPr: z.enum(yesNoOptions),
-  pageSize: z.enum(pageSizeOptions),
 } as const;
 
 type RepositoryFilterValues = {
@@ -54,8 +48,6 @@ type RepositoryFilterValues = {
   visibility: (typeof visibilityOptions)[number];
   language: string;
   permission: (typeof permissionOptions)[number];
-  hasOpenPr: (typeof yesNoOptions)[number];
-  pageSize: (typeof pageSizeOptions)[number];
 };
 
 const initialRepositoryFilterValues: RepositoryFilterValues = {
@@ -64,27 +56,10 @@ const initialRepositoryFilterValues: RepositoryFilterValues = {
   visibility: "all",
   language: "",
   permission: "all",
-  hasOpenPr: "all",
-  pageSize: "10",
 };
 
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
-}
-
-function getRepositoryState(repository: GitHubViewerRepository): {
-  readonly tone: "done" | "review" | "pending";
-  readonly label: string;
-} {
-  if (repository.pullRequests.totalCount > 0) {
-    return { tone: "review", label: "PRあり" };
-  }
-
-  if (repository.issues.totalCount > 0) {
-    return { tone: "pending", label: "チケットあり" };
-  }
-
-  return { tone: "done", label: "運用中" };
 }
 
 function getOwnerLabel(repository: GitHubViewerRepository): string {
@@ -110,8 +85,7 @@ function hasActiveRepositoryFilters(filters: RepositoryFilterValues): boolean {
     filters.owner.trim().length > 0 ||
     filters.visibility !== "all" ||
     filters.language.trim().length > 0 ||
-    filters.permission !== "all" ||
-    filters.hasOpenPr !== "all"
+    filters.permission !== "all"
   );
 }
 
@@ -152,14 +126,6 @@ function filterRepositories(
       return false;
     }
 
-    if (filters.hasOpenPr === "yes" && repository.pullRequests.totalCount === 0) {
-      return false;
-    }
-
-    if (filters.hasOpenPr === "no" && repository.pullRequests.totalCount > 0) {
-      return false;
-    }
-
     return true;
   });
 }
@@ -175,19 +141,16 @@ export function RepositoriesScreen(): JSX.Element {
   });
   const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
   const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
-  const [currentPage, setCurrentPage] = useState(1);
   const form = useForm({
     defaultValues: initialRepositoryFilterValues,
     onSubmit: async ({ value }) => {
       setAppliedFilters(value);
-      setCurrentPage(1);
     },
   });
 
   function applyPreset(next: RepositoryFilterValues): void {
     form.reset(next);
     setAppliedFilters(next);
-    setCurrentPage(1);
   }
 
   const filteredRepositories = filterRepositories(repositories, appliedFilters);
@@ -199,27 +162,6 @@ export function RepositoriesScreen(): JSX.Element {
     (repository) => repository.visibility === "INTERNAL",
   ).length;
   const publicCount = filteredRepositories.filter((repository) => repository.visibility === "PUBLIC").length;
-  const issueTotal = filteredRepositories.reduce(
-    (total, repository) => total + repository.issues.totalCount,
-    0,
-  );
-  const pullRequestTotal = filteredRepositories.reduce(
-    (total, repository) => total + repository.pullRequests.totalCount,
-    0,
-  );
-  const pageSize = Number(appliedFilters.pageSize);
-  const pageCount = Math.max(1, Math.ceil(Math.max(filteredRepositories.length, 1) / pageSize));
-
-  useEffect(() => {
-    if (currentPage <= pageCount) {
-      return;
-    }
-
-    setCurrentPage(pageCount);
-  }, [currentPage, pageCount]);
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const pagedRepositories = filteredRepositories.slice(startIndex, startIndex + pageSize);
   const quickFilters = [
     {
       label: "★ 直近プッシュ順",
@@ -230,16 +172,12 @@ export function RepositoriesScreen(): JSX.Element {
       filters: { ...initialRepositoryFilterValues, permission: "WRITE" },
     },
     {
-      label: "★ オープン中プルリクエストがあるもの",
-      filters: { ...initialRepositoryFilterValues, hasOpenPr: "yes" },
-    },
-    {
-      label: "★ オープン中プルリクエストがないもの",
-      filters: { ...initialRepositoryFilterValues, hasOpenPr: "no" },
-    },
-    {
       label: "★ 公開リポジトリ",
       filters: { ...initialRepositoryFilterValues, visibility: "PUBLIC" },
+    },
+    {
+      label: "★ 非公開リポジトリ",
+      filters: { ...initialRepositoryFilterValues, visibility: "PRIVATE" },
     },
   ] satisfies ReadonlyArray<{ readonly label: string; readonly filters: RepositoryFilterValues }>;
 
@@ -267,15 +205,13 @@ export function RepositoriesScreen(): JSX.Element {
             </ul>
           </Panel>
 
-          <Panel title="統計（絞込結果）" bodyClassName="p-0">
+          <Panel title="統計（表示中）" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 {[
                   ["非公開", String(privateCount)],
                   ["組織内", String(internalCount)],
                   ["公開", String(publicCount)],
-                  ["オープン中プルリクエスト", String(pullRequestTotal)],
-                  ["オープン中チケット", String(issueTotal)],
                   ["合計", String(filteredRepositories.length)],
                 ].map(([label, value]) => (
                   <tr key={label}>
@@ -287,7 +223,7 @@ export function RepositoriesScreen(): JSX.Element {
             </table>
           </Panel>
 
-          <Panel title="主要言語（絞込結果 上位6件）" bodyClassName="p-0">
+          <Panel title="主要言語（表示中 上位6件）" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 {languageStats.length === 0 ? (
@@ -317,7 +253,7 @@ export function RepositoriesScreen(): JSX.Element {
     >
       <Panel
         title="検索条件"
-        action={<span className={MUTED_CLASS}>画面内絞込 / ページ切替</span>}
+        action={<span className={MUTED_CLASS}>画面内絞込 / 初回表示は直近10件</span>}
         bodyClassName="p-0"
       >
         <form
@@ -414,45 +350,6 @@ export function RepositoriesScreen(): JSX.Element {
                 </select>
               )}
             </form.Field>
-            <label>オープン中プルリクエスト：</label>
-            <form.Field
-              name="hasOpenPr"
-              validators={zodValidators(repositoryFilterFieldValidators.hasOpenPr)}
-            >
-              {(field) => (
-                <select
-                  className="border border-slate-400 px-1 py-0.5"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) =>
-                    field.handleChange(event.target.value as RepositoryFilterValues["hasOpenPr"])
-                  }
-                >
-                  <option value="all">──全て──</option>
-                  <option value="yes">あり</option>
-                  <option value="no">なし</option>
-                </select>
-              )}
-            </form.Field>
-            <label>表示件数：</label>
-            <form.Field name="pageSize" validators={zodValidators(repositoryFilterFieldValidators.pageSize)}>
-              {(field) => (
-                <select
-                  className="border border-slate-400 px-1 py-0.5"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) =>
-                    field.handleChange(event.target.value as RepositoryFilterValues["pageSize"])
-                  }
-                >
-                  {pageSizeOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </form.Field>
             <button type="submit" className={buttonClassName({ tone: "primary" })}>
               検索実行
             </button>
@@ -473,7 +370,7 @@ export function RepositoriesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {repositoriesQuery.isPending
               ? "GitHub から読込中..."
-              : `絞込 ${filteredRepositories.length}件 / 全 ${repositoriesQuery.data?.totalCount ?? repositories.length}件`}
+              : `表示 ${filteredRepositories.length}件 / 利用可能全 ${repositoriesQuery.data?.totalCount ?? repositories.length}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -485,9 +382,6 @@ export function RepositoriesScreen(): JSX.Element {
               <th>リポジトリ名／説明</th>
               <th className="w-24">所有者</th>
               <th className="w-20">主要言語</th>
-              <th className="w-16">プルリクエスト</th>
-              <th className="w-16">チケット</th>
-              <th className="w-20">状態</th>
               <th className="w-16">権限</th>
               <th className="w-16">公開</th>
               <th className="w-28">最終プッシュ</th>
@@ -497,19 +391,19 @@ export function RepositoriesScreen(): JSX.Element {
           <tbody>
             {repositoriesQuery.isPending ? (
               <tr>
-                <td colSpan={11} className="py-6 text-center text-slate-600">
+                <td colSpan={8} className="py-6 text-center text-slate-600">
                   GitHub GraphQL からリポジトリ一覧を取得しています。
                 </td>
               </tr>
             ) : repositoriesQuery.isError ? (
               <GitHubTableStateRow
-                colSpan={11}
+                colSpan={8}
                 tone="error"
                 {...describeGitHubError(repositoriesQuery.error, "リポジトリ一覧の取得に失敗しました。")}
               />
-            ) : pagedRepositories.length === 0 ? (
+            ) : filteredRepositories.length === 0 ? (
               <GitHubTableStateRow
-                colSpan={11}
+                colSpan={8}
                 tone="empty"
                 title={
                   hasActiveRepositoryFilters(appliedFilters)
@@ -518,61 +412,46 @@ export function RepositoriesScreen(): JSX.Element {
                 }
                 detail={
                   hasActiveRepositoryFilters(appliedFilters)
-                    ? "検索条件を緩めるか、ページサイズを変更して再確認してください。"
+                    ? "検索条件を緩めて再確認してください。"
                     : "GitHub App が参照できるリポジトリがない可能性があります。"
                 }
               />
             ) : (
-              pagedRepositories.map((repository, index) => {
-                const state = getRepositoryState(repository);
-
-                return (
-                  <tr key={repository.id}>
-                    <td className="text-center">{String(startIndex + index + 1).padStart(3, "0")}</td>
-                    <td>
-                      <div className={MONO_CLASS}>
-                        <Link
-                          to={`/repositories/${createRepositoryRouteId(repository.nameWithOwner)}`}
-                          className={TEXT_LINK_CLASS}
-                        >
-                          {repository.nameWithOwner}
-                        </Link>
-                      </div>
-                      <div className="text-slate-700">{repository.description ?? "説明なし"}</div>
-                      <div className="text-slate-500">
-                        既定ブランチ: {repository.defaultBranchRef?.name ?? "－"} ／ スター:{" "}
-                        {repository.stargazerCount} ／ フォーク: {repository.forkCount}
-                      </div>
-                    </td>
-                    <td className="text-center">{getOwnerLabel(repository)}</td>
-                    <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{repository.pullRequests.totalCount}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{repository.issues.totalCount}</td>
-                    <td className="text-center">
-                      <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
-                    </td>
-                    <td className="text-center">{formatGitHubPermission(repository.viewerPermission)}</td>
-                    <td className="text-center">{formatGitHubVisibility(repository.visibility)}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      {formatGitHubDateTime(repository.pushedAt)}
-                    </td>
-                    <td className="text-center">
-                      <a href={repository.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                        GitHub
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })
+              filteredRepositories.map((repository, index) => (
+                <tr key={repository.id}>
+                  <td className="text-center">{String(index + 1).padStart(3, "0")}</td>
+                  <td>
+                    <div className={MONO_CLASS}>
+                      <Link
+                        to={`/repositories/${createRepositoryRouteId(repository.nameWithOwner)}`}
+                        className={TEXT_LINK_CLASS}
+                      >
+                        {repository.nameWithOwner}
+                      </Link>
+                    </div>
+                    <div className="text-slate-700">{repository.description ?? "説明なし"}</div>
+                    <div className="text-slate-500">
+                      既定ブランチ: {repository.defaultBranchRef?.name ?? "－"} ／ スター:{" "}
+                      {repository.stargazerCount} ／ フォーク: {repository.forkCount}
+                    </div>
+                  </td>
+                  <td className="text-center">{getOwnerLabel(repository)}</td>
+                  <td className="text-center">{repository.primaryLanguage?.name ?? "－"}</td>
+                  <td className="text-center">{formatGitHubPermission(repository.viewerPermission)}</td>
+                  <td className="text-center">{formatGitHubVisibility(repository.visibility)}</td>
+                  <td className={clsx("text-center", MONO_CLASS)}>
+                    {formatGitHubDateTime(repository.pushedAt)}
+                  </td>
+                  <td className="text-center">
+                    <a href={repository.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                      GitHub
+                    </a>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
-        <ClientPager
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalCount={filteredRepositories.length}
-          onPageChange={setCurrentPage}
-        />
       </Panel>
     </JtcChrome>
   );
