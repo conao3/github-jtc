@@ -8,33 +8,6 @@
       content="JTCによる情報過多な社内GitHub風ポータルのインタラクティブプロトタイプ"
     />
     <title>JTC GitHub</title>
-    <script>
-      (() => {
-        const callbackPath = "/login/callback";
-
-        if (!window.location.pathname.endsWith(callbackPath) || window.location.search.length === 0) {
-          return;
-        }
-
-        const params = new URLSearchParams(window.location.search);
-
-        if (!params.has("code") && !params.has("state") && !params.has("error")) {
-          return;
-        }
-
-        sessionStorage.setItem(
-          "github-jtc:login-callback",
-          JSON.stringify({
-            code: params.get("code"),
-            state: params.get("state"),
-            error: params.get("error"),
-            errorDescription: params.get("error_description"),
-          }),
-        );
-
-        window.history.replaceState(window.history.state, "", window.location.pathname);
-      })();
-    </script>
   </head>
   <body class="m-0 min-h-full">
     <div></div>
