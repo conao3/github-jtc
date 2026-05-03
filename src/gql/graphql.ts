@@ -682,6 +682,40 @@ export type PullRequestClosingIssuesQuery = {
   } | null;
 };
 
+export type PullRequestCommentsQueryVariables = Exact<{
+  owner: string;
+  name: string;
+  number: number;
+  first: number;
+  after?: string | null | undefined;
+}>;
+
+export type PullRequestCommentsQuery = {
+  repository: {
+    id: string;
+    pullRequest: {
+      id: string;
+      comments: {
+        totalCount: number;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: Array<{
+          id: string;
+          bodyText: string;
+          publishedAt: string | null;
+          url: string;
+          author:
+            | { login: string; avatarUrl: string; url: string }
+            | { login: string; avatarUrl: string; url: string }
+            | { login: string; avatarUrl: string; url: string }
+            | { login: string; avatarUrl: string; url: string }
+            | { login: string; avatarUrl: string; url: string }
+            | null;
+        } | null> | null;
+      };
+    } | null;
+  } | null;
+};
+
 export type PullRequestCommitsQueryVariables = Exact<{
   owner: string;
   name: string;
@@ -3548,6 +3582,155 @@ export const PullRequestClosingIssuesDocument = {
     },
   ],
 } as unknown as DocumentNode<PullRequestClosingIssuesQuery, PullRequestClosingIssuesQueryVariables>;
+export const PullRequestCommentsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "PullRequestComments" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "number" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "first" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "after" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "repository" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "owner" },
+                value: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pullRequest" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "number" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "number" } },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "comments" },
+                        arguments: [
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "first" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "first" } },
+                          },
+                          {
+                            kind: "Argument",
+                            name: { kind: "Name", value: "after" },
+                            value: { kind: "Variable", name: { kind: "Name", value: "after" } },
+                          },
+                        ],
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "pageInfo" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                                  { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "nodes" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                                  { kind: "Field", name: { kind: "Name", value: "bodyText" } },
+                                  { kind: "Field", name: { kind: "Name", value: "publishedAt" } },
+                                  { kind: "Field", name: { kind: "Name", value: "url" } },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "author" },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        { kind: "Field", name: { kind: "Name", value: "login" } },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "avatarUrl" },
+                                          arguments: [
+                                            {
+                                              kind: "Argument",
+                                              name: { kind: "Name", value: "size" },
+                                              value: { kind: "IntValue", value: "40" },
+                                            },
+                                          ],
+                                        },
+                                        { kind: "Field", name: { kind: "Name", value: "url" } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PullRequestCommentsQuery, PullRequestCommentsQueryVariables>;
 export const PullRequestCommitsDocument = {
   kind: "Document",
   definitions: [

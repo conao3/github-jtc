@@ -20,6 +20,7 @@ import {
   type GitHubPullRequestDetail,
 } from "../app/github.ts";
 import {
+  PullRequestCommentsDocument,
   PullRequestClosingIssuesDocument,
   PullRequestDetailDocument,
   PullRequestFilesDocument,
@@ -42,6 +43,7 @@ import {
 
 const PULL_REQUEST_DETAIL_FILES_PAGE_SIZE = 20;
 const PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE = 5;
+const PULL_REQUEST_DETAIL_COMMENTS_PAGE_SIZE = 10;
 
 function getPullRequestState(pullRequest: GitHubPullRequestDetail): {
   readonly tone: "new" | "review" | "pending" | "done" | "rejected";
@@ -159,6 +161,7 @@ export function PullRequestDetailScreen({
 }): JSX.Element {
   const filesPager = useCursorPagerState();
   const closingIssuesPager = useCursorPagerState();
+  const commentsPager = useCursorPagerState();
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
@@ -195,6 +198,17 @@ export function PullRequestDetailScreen({
     },
     fetchPolicy: "network-only",
   });
+  const commentsQuery = useQuery(PullRequestCommentsDocument, {
+    skip: accessToken === undefined || coordinates === null,
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      number: coordinates?.number ?? 0,
+      first: PULL_REQUEST_DETAIL_COMMENTS_PAGE_SIZE,
+      after: commentsPager.currentCursor,
+    },
+    fetchPolicy: "network-only",
+  });
   const pullRequest =
     detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;
   const state = pullRequest === null || pullRequest === undefined ? null : getPullRequestState(pullRequest);
@@ -205,9 +219,13 @@ export function PullRequestDetailScreen({
   const closingIssuesConnection =
     closingIssuesQuery.data?.repository?.pullRequest?.closingIssuesReferences ??
     closingIssuesQuery.previousData?.repository?.pullRequest?.closingIssuesReferences;
+  const commentsConnection =
+    commentsQuery.data?.repository?.pullRequest?.comments ??
+    commentsQuery.previousData?.repository?.pullRequest?.comments;
   const files = (filesConnection?.nodes ?? []).filter((file) => file !== null);
   const reviews = (pullRequest?.reviews?.nodes ?? []).filter((review) => review !== null);
   const closingIssues = (closingIssuesConnection?.nodes ?? []).filter((issue) => issue !== null);
+  const comments = (commentsConnection?.nodes ?? []).filter((comment) => comment !== null);
   const reviewerLabels = (pullRequest?.reviewRequests?.nodes ?? [])
     .filter((request) => request?.requestedReviewer !== null && request?.requestedReviewer !== undefined)
     .map((request) => {
@@ -253,6 +271,10 @@ export function PullRequestDetailScreen({
                 <tr>
                   <th>レビュー依頼</th>
                   <td>{pullRequest?.reviewRequests?.totalCount ?? 0}</td>
+                </tr>
+                <tr>
+                  <th>本文コメント</th>
+                  <td>{pullRequest?.comments.totalCount ?? 0}</td>
                 </tr>
                 <tr>
                   <th>レビュー投稿</th>
@@ -567,9 +589,71 @@ export function PullRequestDetailScreen({
       </Panel>
 
       <Panel
-        title="レビューコメント（投稿順）"
-        action={<span className={MUTED_CLASS}>{reviews.length}件</span>}
+        title="本文コメント（投稿順）"
+        action={
+          <span className={MUTED_CLASS}>
+            {commentsConnection?.totalCount ?? pullRequest?.comments.totalCount ?? 0}件
+          </span>
+        }
       >
+        <div className="space-y-1.5 bg-slate-50 p-0.5">
+          {comments.length === 0 ? (
+            commentsQuery.loading ? (
+              <div className="border border-slate-300 bg-white p-3 text-xs text-slate-600">
+                GitHub から本文コメントを取得しています。
+              </div>
+            ) : commentsQuery.error ? (
+              <GitHubInlineState
+                tone="error"
+                title="本文コメントの取得に失敗しました。"
+                detail={
+                  describeGitHubError(commentsQuery.error, "GitHub からコメントを再取得してください。").detail
+                }
+                className="border border-slate-300 bg-white p-3 text-xs"
+              />
+            ) : (
+              <GitHubInlineState
+                tone="empty"
+                title="本文コメントはまだありません。"
+                detail="pullRequest.comments に投稿がありません。"
+                className="border border-slate-300 bg-white p-3 text-xs"
+              />
+            )
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className="border border-slate-300 bg-white p-2 text-xs">
+                <div className="mb-1 font-bold text-blue-900">
+                  ● {comment.author?.login ?? "不明"}
+                  <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
+                    {formatGitHubDateTime(comment.publishedAt)}
+                  </span>
+                </div>
+                <div className="whitespace-pre-wrap">
+                  {comment.bodyText.trim().length > 0 ? comment.bodyText : "本文なし"}
+                </div>
+                <div className="mt-2 text-right">
+                  <a href={comment.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                    GitHubで開く
+                  </a>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <CursorPager
+          currentPage={commentsPager.currentPage}
+          pageSize={PULL_REQUEST_DETAIL_COMMENTS_PAGE_SIZE}
+          visibleCount={comments.length}
+          totalCount={commentsConnection?.totalCount ?? pullRequest?.comments.totalCount}
+          hasNextPage={commentsConnection?.pageInfo.hasNextPage ?? false}
+          isLoading={commentsQuery.loading}
+          onFirstPage={commentsPager.goToFirstPage}
+          onPreviousPage={commentsPager.goToPreviousPage}
+          onNextPage={() => commentsPager.goToNextPage(commentsConnection?.pageInfo.endCursor)}
+        />
+      </Panel>
+
+      <Panel title="レビュー投稿（投稿順）" action={<span className={MUTED_CLASS}>{reviews.length}件</span>}>
         <div className="space-y-1.5 bg-slate-50 p-0.5">
           {reviews.length === 0 ? (
             <GitHubInlineState

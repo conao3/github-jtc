@@ -1,0 +1,26 @@
+query PullRequestComments($owner: String!, $name: String!, $number: Int!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    id
+    pullRequest(number: $number) {
+      id
+      comments(first: $first, after: $after) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          bodyText
+          publishedAt
+          url
+          author {
+            login
+            avatarUrl(size: 40)
+            url
+          }
+        }
+      }
+    }
+  }
+}
