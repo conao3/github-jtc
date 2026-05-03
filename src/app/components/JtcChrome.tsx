@@ -230,10 +230,12 @@ export function JtcChrome({
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={3}>
+                  <td>
                     <span className="lbl">セッション有効期限：</span>
                     <span className={clsx("val", MONO_CLASS)}>{expiresAt}</span>
-                    <span className="ml-3 lbl">GitHub連携：</span>
+                  </td>
+                  <td>
+                    <span className="lbl">GitHub連携：</span>
                     <span className="val">
                       {session?.provider === "github" ? "利用者情報取得済" : "未接続（社内認証のみ）"}
                     </span>
