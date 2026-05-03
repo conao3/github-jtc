@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useQuery } from "@apollo/client/react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -58,7 +59,7 @@ export function ProfileScreen(): JSX.Element {
   const accessToken = sessionQuery.data?.accessToken;
   const organizationsPager = useCursorPagerState();
   const repositoriesPager = useCursorPagerState();
-  const range = getProfileQueryRange();
+  const range = useMemo(() => getProfileQueryRange(), []);
   const profileQuery = useQuery(ViewerProfileDocument, {
     skip: accessToken === undefined,
     variables: {

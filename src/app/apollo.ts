@@ -1,4 +1,5 @@
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client";
+import { RetryLink } from "@apollo/client/link/retry";
 
 let githubAccessToken: string | undefined;
 
@@ -19,6 +20,34 @@ function createGitHubApolloClient(): ApolloClient {
 
     return forward(operation);
   });
+  const retryLink = new RetryLink({
+    delay: {
+      initial: 500,
+      max: 2_000,
+      jitter: true,
+    },
+    attempts: {
+      max: 2,
+      retryIf: (error) => {
+        if (!error) {
+          return false;
+        }
+
+        const withStatus = error as { statusCode?: number; response?: { status?: number } };
+        const status = withStatus.statusCode ?? withStatus.response?.status;
+
+        if (status === 408 || status === 429) {
+          return true;
+        }
+
+        if (status !== undefined) {
+          return status >= 500;
+        }
+
+        return true;
+      },
+    },
+  });
 
   const httpLink = new HttpLink({
     uri: import.meta.env.VITE_GITHUB_GRAPHQL_URL ?? "https://api.github.com/graphql",
@@ -27,7 +56,7 @@ function createGitHubApolloClient(): ApolloClient {
 
   const client = new ApolloClient({
     cache: new InMemoryCache(),
-    link: authLink.concat(httpLink),
+    link: authLink.concat(retryLink).concat(httpLink),
     devtools: {
       enabled: true,
       name: "GitHub JTC",
