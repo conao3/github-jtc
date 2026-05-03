@@ -31,8 +31,8 @@ export const PRODUCT_SUBTITLE_CLASS =
   "mt-1 border-t border-dashed border-blue-200 pt-1 text-xs font-semibold text-amber-100";
 export const USER_INFO_CELL_CLASS = "min-w-0 flex-1 px-3 py-2 text-xs";
 export const USER_INFO_TABLE_CLASS = "jtc-user-info-table";
-export const HEADER_ACTIONS_CLASS = "flex shrink-0 items-center gap-1.5 px-2 text-xs";
-export const FONT_SWITCHER_CLASS = "mr-2 inline-flex items-center gap-1";
+export const HEADER_ACTIONS_CLASS = "flex shrink-0 flex-col items-end justify-center gap-1 px-2 py-1 text-xs";
+export const FONT_SWITCHER_CLASS = "flex flex-col items-end gap-0.5";
 
 export const MENU_BAR_CLASS =
   "flex border-y border-t-white border-b-stone-700 bg-gradient-to-b from-sky-700 via-blue-800 to-blue-950";
