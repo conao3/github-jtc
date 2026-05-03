@@ -683,7 +683,7 @@ export function RepositoryDetailScreen({
                 <th className="w-16">番号</th>
                 <th>件名</th>
                 <th className="w-20">作成者</th>
-                <th className="w-16">状態</th>
+                <th className="w-20">状態</th>
                 <th className="w-16">コメント</th>
                 <th className="w-36">更新日時</th>
                 <th className="w-16">操作</th>
@@ -769,7 +769,7 @@ export function RepositoryDetailScreen({
           <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
             <label>状態：</label>
             <select
-              className="border border-slate-400 px-1 py-0.5"
+              className="min-w-24 border border-slate-400 px-1 py-0.5"
               value={pullRequestStateFilter}
               onChange={(event) =>
                 updateTabSearchParams("pullRequests", event.target.value as PullRequestStateFilter)
@@ -799,7 +799,7 @@ export function RepositoryDetailScreen({
                 <th className="w-16">番号</th>
                 <th>タイトル</th>
                 <th className="w-20">作成者</th>
-                <th className="w-16">状態</th>
+                <th className="w-20">状態</th>
                 <th className="w-16">コメント</th>
                 <th className="w-36">更新日時</th>
                 <th className="w-16">操作</th>

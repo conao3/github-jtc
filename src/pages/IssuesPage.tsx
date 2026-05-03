@@ -287,7 +287,7 @@ export function IssuesScreen(): JSX.Element {
           <form.Field name="state" validators={zodValidators(issueFilterFieldValidators.state)}>
             {(field) => (
               <select
-                className="border border-slate-400 px-1 py-0.5"
+                className="min-w-24 border border-slate-400 px-1 py-0.5"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value as IssueFilterValues["state"])}

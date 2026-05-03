@@ -261,7 +261,7 @@ export function PullRequestsScreen(): JSX.Element {
           <form.Field name="state" validators={zodValidators(pullRequestFilterFieldValidators.state)}>
             {(field) => (
               <select
-                className="border border-slate-400 px-1 py-0.5"
+                className="min-w-24 border border-slate-400 px-1 py-0.5"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) =>
@@ -340,7 +340,7 @@ export function PullRequestsScreen(): JSX.Element {
               <th className="w-24">プルリクエスト</th>
               <th>件名</th>
               <th className="w-32">リポジトリ</th>
-              <th className="w-16">状態</th>
+              <th className="w-20">状態</th>
               <th className="w-36">更新日時</th>
               <th className="w-20">変更</th>
               <th className="w-16">コメント</th>
