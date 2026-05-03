@@ -686,26 +686,25 @@ export function RepositoryDetailScreen({
                 <th className="w-20">状態</th>
                 <th className="w-16">コメント</th>
                 <th className="w-36">更新日時</th>
-                <th className="w-16">操作</th>
               </tr>
             </thead>
             <tbody>
               {issuesQuery.loading && recentIssues.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="empty"
                   title="チケット一覧を取得しています。"
                   detail="GitHub からこのリポジトリのチケットを読み込んでいます。"
                 />
               ) : issuesQuery.error ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="error"
                   {...describeGitHubError(issuesQuery.error, "チケット一覧の取得に失敗しました。")}
                 />
               ) : recentIssues.length === 0 ? (
                 <GitHubTableStateRow
-                  colSpan={7}
+                  colSpan={6}
                   tone="empty"
                   title="表示可能なチケットはありません。"
                   detail="このリポジトリで参照できるチケットがありません。"
@@ -717,17 +716,10 @@ export function RepositoryDetailScreen({
                   return (
                     <tr key={issue.id}>
                       <td className={clsx("text-center", MONO_CLASS)}>#{issue.number}</td>
-                      <td>{issue.title}</td>
-                      <td className="text-center">{issue.author?.login ?? "不明"}</td>
-                      <td className="text-center">
-                        <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
-                      </td>
-                      <td className={clsx("text-center", MONO_CLASS)}>{issue.comments.totalCount}</td>
-                      <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(issue.updatedAt)}</td>
-                      <td className="text-center">
+                      <td>
                         {coordinates === null ? (
                           <a href={issue.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                            GitHub
+                            {issue.title}
                           </a>
                         ) : (
                           <Link
@@ -738,10 +730,16 @@ export function RepositoryDetailScreen({
                             })}`}
                             className={TEXT_LINK_CLASS}
                           >
-                            詳細
+                            {issue.title}
                           </Link>
                         )}
                       </td>
+                      <td className="text-center">{issue.author?.login ?? "不明"}</td>
+                      <td className="text-center">
+                        <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
+                      </td>
+                      <td className={clsx("text-center", MONO_CLASS)}>{issue.comments.totalCount}</td>
+                      <td className={DATE_CELL_CLASS}>{formatGitHubDateTime(issue.updatedAt)}</td>
                     </tr>
                   );
                 })

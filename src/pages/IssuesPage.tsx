@@ -403,13 +403,11 @@ export function IssuesScreen(): JSX.Element {
 
                 return (
                   <tr key={issue.id}>
-                    <td className={clsx("text-center", MONO_CLASS)}>
-                      <Link to={`/issues/${routeId}`} className={TEXT_LINK_CLASS}>
-                        #{issue.number}
-                      </Link>
-                    </td>
+                    <td className={clsx("text-center", MONO_CLASS)}>#{issue.number}</td>
                     <td>
-                      <div className="font-bold">{issue.title}</div>
+                      <Link to={`/issues/${routeId}`} className={clsx("font-bold", TEXT_LINK_CLASS)}>
+                        {issue.title}
+                      </Link>
                       <div className={clsx("text-xs text-slate-600", MONO_CLASS)}>{issue.url}</div>
                     </td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
