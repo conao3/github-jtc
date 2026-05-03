@@ -1,0 +1,123 @@
+query RepositoryDetail(
+  $owner: String!
+  $name: String!
+  $rootExpression: String!
+  $readmeExpression: String!
+) {
+  repository(owner: $owner, name: $name) {
+    id
+    name
+    nameWithOwner
+    url
+    description
+    homepageUrl
+    createdAt
+    updatedAt
+    pushedAt
+    isPrivate
+    visibility
+    viewerPermission
+    stargazerCount
+    forkCount
+    watchers {
+      totalCount
+    }
+    issues(states: OPEN) {
+      totalCount
+    }
+    pullRequests(states: OPEN) {
+      totalCount
+    }
+    primaryLanguage {
+      name
+      color
+    }
+    languages(first: 6, orderBy: { field: SIZE, direction: DESC }) {
+      edges {
+        size
+        node {
+          id
+          name
+          color
+        }
+      }
+    }
+    owner {
+      __typename
+      login
+      ... on User {
+        name
+      }
+      ... on Organization {
+        name
+      }
+    }
+    defaultBranchRef {
+      name
+      target {
+        __typename
+        ... on Commit {
+          history(first: 1) {
+            totalCount
+          }
+          committedDate
+          messageHeadline
+          author {
+            name
+            user {
+              login
+              avatarUrl(size: 40)
+              url
+            }
+          }
+        }
+      }
+    }
+    refs(refPrefix: "refs/heads/", first: 10, orderBy: { field: ALPHABETICAL, direction: ASC }) {
+      totalCount
+      nodes {
+        id
+        name
+        target {
+          __typename
+          ... on Commit {
+            committedDate
+            messageHeadline
+            author {
+              name
+              user {
+                login
+              }
+            }
+          }
+        }
+      }
+    }
+    rootEntries: object(expression: $rootExpression) {
+      __typename
+      ... on Tree {
+        entries {
+          name
+          type
+          oid
+          mode
+          object {
+            __typename
+            ... on Blob {
+              byteSize
+              isBinary
+            }
+          }
+        }
+      }
+    }
+    readme: object(expression: $readmeExpression) {
+      __typename
+      ... on Blob {
+        byteSize
+        isBinary
+        text
+      }
+    }
+  }
+}

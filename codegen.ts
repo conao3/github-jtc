@@ -10,6 +10,8 @@ const config: CodegenConfig = {
       config: {
         useTypeImports: true,
         scalars: {
+          DateTime: "string",
+          GitObjectID: "string",
           URI: "string",
         },
       },

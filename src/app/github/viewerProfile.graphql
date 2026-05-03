@@ -1,0 +1,54 @@
+query ViewerProfile($from: DateTime!, $to: DateTime!) {
+  viewer {
+    id
+    login
+    name
+    avatarUrl(size: 160)
+    url
+    email
+    company
+    location
+    websiteUrl
+    bio
+    createdAt
+    followers {
+      totalCount
+    }
+    following {
+      totalCount
+    }
+    organizations(first: 10) {
+      totalCount
+      nodes {
+        id
+        login
+        name
+        url
+        avatarUrl(size: 40)
+      }
+    }
+    repositories(
+      first: 5
+      affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
+      orderBy: { field: PUSHED_AT, direction: DESC }
+      isFork: false
+    ) {
+      totalCount
+      nodes {
+        id
+        name
+        nameWithOwner
+        url
+        viewerPermission
+        updatedAt
+        isPrivate
+      }
+    }
+    contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalPullRequestContributions
+      totalIssueContributions
+      totalPullRequestReviewContributions
+    }
+  }
+}
