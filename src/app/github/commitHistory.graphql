@@ -43,6 +43,7 @@ query CommitHistory(
                 nodes {
                   id
                   number
+                  headRefName
                   url
                 }
               }

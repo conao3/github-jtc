@@ -199,7 +199,12 @@ export type CommitHistoryQuery = {
                 changedFilesIfAvailable: number | null;
                 author: { name: string | null; user: { login: string } | null } | null;
                 associatedPullRequests: {
-                  nodes: Array<{ id: string; number: number; url: string } | null> | null;
+                  nodes: Array<{
+                    id: string;
+                    number: number;
+                    headRefName: string;
+                    url: string;
+                  } | null> | null;
                 } | null;
                 parents: { totalCount: number };
               } | null> | null;
@@ -1158,6 +1163,10 @@ export const CommitHistoryDocument = {
                                                           {
                                                             kind: "Field",
                                                             name: { kind: "Name", value: "number" },
+                                                          },
+                                                          {
+                                                            kind: "Field",
+                                                            name: { kind: "Name", value: "headRefName" },
                                                           },
                                                           {
                                                             kind: "Field",

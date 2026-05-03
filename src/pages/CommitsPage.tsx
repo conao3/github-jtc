@@ -1,12 +1,15 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
+import { ClientPager } from "../app/components/ClientPager.tsx";
 import { GitHubInlineState, GitHubTableStateRow } from "../app/components/GitHubQueryState.tsx";
-import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
+import { JtcChrome } from "../app/components/JtcChrome.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import { zodValidators } from "../app/formValidation.ts";
 import {
   createRepositoryRouteId,
   describeGitHubError,
@@ -27,10 +30,35 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const REPOSITORY_PAGE_SIZE = 12;
-const HISTORY_PAGE_SIZE = 20;
+const REPOSITORY_PAGE_SIZE = 20;
+const HISTORY_PAGE_SIZE = 100;
 const TAG_PAGE_SIZE = 5;
 const BAR_DAYS = 30;
+const DISPLAY_PAGE_SIZE = 10;
+
+const commitFilterFieldValidators = {
+  branch: z.string(),
+  author: z.string(),
+  fromDate: z.string(),
+  toDate: z.string(),
+  query: z.string(),
+} as const;
+
+type CommitFilterValues = {
+  branch: string;
+  author: string;
+  fromDate: string;
+  toDate: string;
+  query: string;
+};
+
+const initialCommitFilterValues: CommitFilterValues = {
+  branch: "",
+  author: "",
+  fromDate: "",
+  toDate: "",
+  query: "",
+};
 
 type GitHubCommitTarget = NonNullable<
   NonNullable<GitHubCommitHistoryRepository["defaultBranchRef"]>["target"]
@@ -40,6 +68,10 @@ type GitHubHistoryCommit = NonNullable<NonNullable<GitHubCommitHistoryTarget["hi
 type GitHubTagRef = NonNullable<
   NonNullable<NonNullable<GitHubCommitHistoryRepository["refs"]>["nodes"]>[number]
 >;
+
+function isPresent<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
 
 function getCommitTarget(
   repository: GitHubCommitHistoryRepository | null | undefined,
@@ -60,6 +92,8 @@ function getCommitAuthorLabel(commit: GitHubHistoryCommit): string {
 function getCommitRelatedPullRequest(commit: GitHubHistoryCommit): {
   readonly label: string;
   readonly url: string;
+  readonly number: number;
+  readonly headRefName: string;
 } | null {
   const pullRequest =
     (commit.associatedPullRequests?.nodes ?? []).find(
@@ -73,7 +107,13 @@ function getCommitRelatedPullRequest(commit: GitHubHistoryCommit): {
   return {
     label: `プルリクエスト #${pullRequest.number}`,
     url: pullRequest.url,
+    number: pullRequest.number,
+    headRefName: pullRequest.headRefName,
   };
+}
+
+function getCommitBranchLabel(commit: GitHubHistoryCommit, defaultBranchName: string): string {
+  return getCommitRelatedPullRequest(commit)?.headRefName ?? defaultBranchName;
 }
 
 function getTagDate(ref: GitHubTagRef): string | null {
@@ -108,6 +148,10 @@ function formatShortDate(value: string | null | undefined): string {
 function buildCommitBars(
   commits: ReadonlyArray<GitHubHistoryCommit>,
 ): Array<{ readonly label: string; readonly count: number }> {
+  if (commits.length === 0) {
+    return [];
+  }
+
   const latestDate = commits[0]?.committedDate ?? new Date().toISOString();
   const end = new Date(latestDate);
   end.setHours(0, 0, 0, 0);
@@ -150,6 +194,138 @@ function buildAuthorRanking(
     .slice(0, 5);
 }
 
+function hasActiveCommitFilters(filters: CommitFilterValues): boolean {
+  return (
+    filters.branch.trim().length > 0 ||
+    filters.author.trim().length > 0 ||
+    filters.fromDate.trim().length > 0 ||
+    filters.toDate.trim().length > 0 ||
+    filters.query.trim().length > 0
+  );
+}
+
+function parseDateInput(value: string, endOfDay: boolean): number | null {
+  if (value.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  if (endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  } else {
+    parsed.setHours(0, 0, 0, 0);
+  }
+
+  return parsed.getTime();
+}
+
+function filterCommits(
+  commits: ReadonlyArray<GitHubHistoryCommit>,
+  filters: CommitFilterValues,
+  defaultBranchName: string,
+): GitHubHistoryCommit[] {
+  const branch = filters.branch.trim().toLowerCase();
+  const author = filters.author.trim().toLowerCase();
+  const query = filters.query.trim().toLowerCase();
+  const fromTime = parseDateInput(filters.fromDate, false);
+  const toTime = parseDateInput(filters.toDate, true);
+
+  return commits.filter((commit) => {
+    const commitBranch = getCommitBranchLabel(commit, defaultBranchName).toLowerCase();
+    const relatedPullRequest = getCommitRelatedPullRequest(commit);
+    const committedTime = new Date(commit.committedDate).getTime();
+
+    if (branch.length > 0 && commitBranch !== branch) {
+      return false;
+    }
+
+    if (author.length > 0 && !getCommitAuthorLabel(commit).toLowerCase().includes(author)) {
+      return false;
+    }
+
+    if (fromTime !== null && committedTime < fromTime) {
+      return false;
+    }
+
+    if (toTime !== null && committedTime > toTime) {
+      return false;
+    }
+
+    if (
+      query.length > 0 &&
+      !commit.messageHeadline.toLowerCase().includes(query) &&
+      !commit.abbreviatedOid.toLowerCase().includes(query) &&
+      !commit.oid.toLowerCase().includes(query) &&
+      !commitBranch.includes(query) &&
+      !(relatedPullRequest?.label.toLowerCase().includes(query) ?? false)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function escapeCsvCell(value: string | number): string {
+  const text = String(value).replaceAll('"', '""');
+  return `"${text}"`;
+}
+
+function downloadCommitCsv(
+  repositoryNameWithOwner: string,
+  commits: ReadonlyArray<GitHubHistoryCommit>,
+  defaultBranchName: string,
+): void {
+  const header = [
+    "コミットID",
+    "コミットメッセージ",
+    "ブランチ",
+    "作成者",
+    "日時",
+    "追加",
+    "削除",
+    "変更ファイル数",
+    "関連",
+  ];
+  const rows = commits.map((commit) => {
+    const relatedPullRequest = getCommitRelatedPullRequest(commit);
+
+    return [
+      commit.abbreviatedOid,
+      commit.messageHeadline,
+      getCommitBranchLabel(commit, defaultBranchName),
+      getCommitAuthorLabel(commit),
+      formatGitHubDateTime(commit.committedDate),
+      commit.additions,
+      commit.deletions,
+      commit.changedFilesIfAvailable ?? 0,
+      relatedPullRequest?.label ?? "－",
+    ];
+  });
+  const csv = [header, ...rows].map((row) => row.map((value) => escapeCsvCell(value)).join(",")).join("\r\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = `${repositoryNameWithOwner.replaceAll("/", "_")}_commit_history.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function copyRevertCommand(oid: string): Promise<void> {
+  if (typeof navigator.clipboard?.writeText !== "function") {
+    return;
+  }
+
+  await navigator.clipboard.writeText(`git revert ${oid}`);
+}
+
 export function CommitsScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
@@ -162,8 +338,17 @@ export function CommitsScreen(): JSX.Element {
         after: null,
       }),
   });
-  const repositories = (repositoriesQuery.data?.nodes ?? []).filter((repository) => repository !== null);
+  const repositories = (repositoriesQuery.data?.nodes ?? []).filter(isPresent);
   const [selectedRepoId, setSelectedRepoId] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState<CommitFilterValues>(initialCommitFilterValues);
+  const [currentPage, setCurrentPage] = useState(1);
+  const form = useForm({
+    defaultValues: initialCommitFilterValues,
+    onSubmit: async ({ value }) => {
+      setAppliedFilters(value);
+      setCurrentPage(1);
+    },
+  });
 
   useEffect(() => {
     if (selectedRepoId.length > 0 || repositories.length === 0) {
@@ -182,6 +367,12 @@ export function CommitsScreen(): JSX.Element {
       }),
     );
   }, [repositories, selectedRepoId]);
+
+  useEffect(() => {
+    setAppliedFilters(initialCommitFilterValues);
+    setCurrentPage(1);
+    form.reset(initialCommitFilterValues);
+  }, [selectedRepoId]);
 
   const selectedCoordinates = parseRepositoryRouteId(selectedRepoId);
   const selectedRepositoryMeta =
@@ -207,18 +398,42 @@ export function CommitsScreen(): JSX.Element {
   const repository = commitHistoryQuery.data;
   const commitTarget = getCommitTarget(repository);
   const history = commitTarget?.history ?? null;
-  const commits = (history?.nodes ?? []).filter(
-    (commit): commit is NonNullable<typeof commit> => commit !== null,
-  );
-  const tags = (repository?.refs?.nodes ?? []).filter((ref): ref is NonNullable<typeof ref> => ref !== null);
-  const authorRanking = buildAuthorRanking(commits);
-  const commitBars = buildCommitBars(commits);
+  const commits = (history?.nodes ?? []).filter(isPresent);
+  const tags = (repository?.refs?.nodes ?? []).filter(isPresent);
   const defaultBranchName =
-    repository?.defaultBranchRef?.name ?? selectedRepositoryMeta?.defaultBranchRef?.name ?? "－";
-  const commitsUrl =
-    repository?.url === undefined || defaultBranchName === "－"
-      ? "https://github.com"
-      : `${repository.url}/commits/${encodeURIComponent(defaultBranchName)}`;
+    repository?.defaultBranchRef?.name ?? selectedRepositoryMeta?.defaultBranchRef?.name ?? "main";
+  const repositoryNameWithOwner =
+    repository?.nameWithOwner ?? selectedRepositoryMeta?.nameWithOwner ?? "未選択";
+  const filteredCommits = filterCommits(commits, appliedFilters, defaultBranchName);
+  const authorRanking = buildAuthorRanking(filteredCommits);
+  const commitBars = buildCommitBars(filteredCommits);
+  const branchOptions = [
+    defaultBranchName,
+    ...new Set(commits.map((commit) => getCommitBranchLabel(commit, defaultBranchName))),
+  ].filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
+  const historyCount = history?.totalCount ?? commits.length;
+  const pageCount = Math.max(1, Math.ceil(Math.max(filteredCommits.length, 1) / DISPLAY_PAGE_SIZE));
+
+  useEffect(() => {
+    if (currentPage <= pageCount) {
+      return;
+    }
+
+    setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
+
+  const startIndex = (currentPage - 1) * DISPLAY_PAGE_SIZE;
+  const pagedCommits = filteredCommits.slice(startIndex, startIndex + DISPLAY_PAGE_SIZE);
+  const visibleFrom = filteredCommits.length === 0 ? 0 : startIndex + 1;
+  const visibleTo = Math.min(filteredCommits.length, startIndex + DISPLAY_PAGE_SIZE);
+  const barMax = Math.max(1, ...commitBars.map((bar) => bar.count));
+  const hasActiveFilters = hasActiveCommitFilters(appliedFilters);
+
+  function clearFilters(): void {
+    form.reset(initialCommitFilterValues);
+    setAppliedFilters(initialCommitFilterValues);
+    setCurrentPage(1);
+  }
 
   return (
     <JtcChrome
@@ -233,7 +448,7 @@ export function CommitsScreen(): JSX.Element {
               <thead>
                 <tr>
                   <th>作成者</th>
-                  <th className="w-12">件数</th>
+                  <th className="w-14">件数</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,7 +457,7 @@ export function CommitsScreen(): JSX.Element {
                     colSpan={2}
                     tone="empty"
                     title="作成者別ランキングはありません。"
-                    detail="表示対象のコミット履歴がまだありません。"
+                    detail="履歴取得後に上位 5 名を表示します。"
                   />
                 ) : (
                   authorRanking.map(({ author, count }, index) => (
@@ -265,31 +480,34 @@ export function CommitsScreen(): JSX.Element {
                   <GitHubInlineState
                     tone="empty"
                     title="タグはありません。"
-                    detail="タグ参照に表示可能なデータがありません。"
+                    detail="参照可能なタグ情報がまだありません。"
                     className="w-full py-1 text-xs"
                   />
                 </li>
               ) : (
-                tags.map((ref) => (
-                  <li key={ref.id} className={TODO_LIST_ITEM_CLASS}>
-                    <span className={MONO_CLASS}>{ref.name}</span>
+                tags.map((tag) => (
+                  <li key={tag.id} className={TODO_LIST_ITEM_CLASS}>
+                    <span className={MONO_CLASS}>{tag.name}</span>
                     <span className={clsx("text-xs", MONO_CLASS)}>
-                      {formatGitHubDateTime(getTagDate(ref))}
+                      {formatGitHubDateTime(getTagDate(tag))}
                     </span>
                   </li>
                 ))
               )}
             </ul>
           </Panel>
-
-          <Panel title="お問い合わせ">
-            <HelpDeskPanel />
-          </Panel>
         </>
       }
     >
       <Panel title="検索条件" bodyClassName="p-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
+        <form
+          className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void form.handleSubmit();
+          }}
+        >
           <label>リポジトリ：</label>
           <select
             className="border border-slate-400 px-1 py-0.5"
@@ -298,7 +516,7 @@ export function CommitsScreen(): JSX.Element {
             disabled={repositoriesQuery.isPending || repositories.length === 0}
           >
             {repositories.length === 0 ? (
-              <option value="">取得中</option>
+              <option value="">{repositoriesQuery.isPending ? "取得中" : "対象なし"}</option>
             ) : (
               repositories.map((repositoryOption: GitHubViewerRepository) => (
                 <option
@@ -313,29 +531,100 @@ export function CommitsScreen(): JSX.Element {
               ))
             )}
           </select>
+
           <label>ブランチ：</label>
-          <select className="border border-slate-400 px-1 py-0.5" value={defaultBranchName} disabled>
-            <option>{defaultBranchName}</option>
-          </select>
-          <span className={clsx("text-xs text-slate-600", MONO_CLASS)}>既定ブランチの履歴を表示</span>
-          <a
-            href={commitsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
+          <form.Field name="branch" validators={zodValidators(commitFilterFieldValidators.branch)}>
+            {(field) => (
+              <select
+                className="border border-slate-400 px-1 py-0.5"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              >
+                <option value="">──全て──</option>
+                {branchOptions.map((branch) => (
+                  <option key={branch} value={branch}>
+                    {branch}
+                  </option>
+                ))}
+              </select>
+            )}
+          </form.Field>
+
+          <label>作成者：</label>
+          <form.Field name="author" validators={zodValidators(commitFilterFieldValidators.author)}>
+            {(field) => (
+              <input
+                className={clsx("border border-slate-400 px-1.5 py-0.5", MONO_CLASS)}
+                placeholder="ユーザーID"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+
+          <label>期間：</label>
+          <form.Field name="fromDate" validators={zodValidators(commitFilterFieldValidators.fromDate)}>
+            {(field) => (
+              <input
+                className={clsx("w-28 border border-slate-400 px-1.5 py-0.5", MONO_CLASS)}
+                placeholder="2026-04-01"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+          <span>～</span>
+          <form.Field name="toDate" validators={zodValidators(commitFilterFieldValidators.toDate)}>
+            {(field) => (
+              <input
+                className={clsx("w-28 border border-slate-400 px-1.5 py-0.5", MONO_CLASS)}
+                placeholder="2026-05-03"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+
+          <label>キーワード：</label>
+          <form.Field name="query" validators={zodValidators(commitFilterFieldValidators.query)}>
+            {(field) => (
+              <input
+                className="border border-slate-400 px-1.5 py-0.5"
+                placeholder="コミットメッセージ"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            )}
+          </form.Field>
+
+          <button type="submit" className={buttonClassName({ tone: "primary" })}>
+            検索
+          </button>
+          <button type="button" className={buttonClassName()} onClick={clearFilters}>
+            クリア
+          </button>
+          <button
+            type="button"
+            className={buttonClassName()}
+            onClick={() => downloadCommitCsv(repositoryNameWithOwner, filteredCommits, defaultBranchName)}
           >
-            GitHubで履歴表示
-          </a>
-        </div>
+            CSV出力
+          </button>
+        </form>
       </Panel>
 
       <Panel
-        title={`コミット履歴一覧（${repository?.nameWithOwner ?? selectedRepositoryMeta?.nameWithOwner ?? "未選択"}）`}
+        title={`コミット履歴一覧（${repositoryNameWithOwner}）`}
         action={
           <span className={MUTED_CLASS}>
             {commitHistoryQuery.isPending
               ? "GitHub から読込中..."
-              : `履歴 ${history?.totalCount ?? commits.length}件 ／ ${commits.length}件表示`}
+              : `該当 ${filteredCommits.length}件　／　${visibleFrom}～${visibleTo}件を表示`}
           </span>
         }
         bodyClassName="p-0"
@@ -343,29 +632,29 @@ export function CommitsScreen(): JSX.Element {
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-6"> </th>
+              <th className="w-8"> </th>
               <th className="w-24">コミットID</th>
               <th>コミットメッセージ</th>
-              <th className="w-24">ブランチ</th>
+              <th className="w-28">ブランチ</th>
               <th className="w-24">作成者</th>
-              <th className="w-28">日時</th>
+              <th className="w-32">日時</th>
               <th className="w-28">変更</th>
-              <th className="w-20">関連</th>
-              <th className="w-20">操作</th>
+              <th className="w-24">関連</th>
+              <th className="w-24">操作</th>
             </tr>
           </thead>
           <tbody>
             {selectedCoordinates === null ? (
               <GitHubTableStateRow
                 colSpan={9}
-                tone="error"
-                title="対象リポジトリを解釈できませんでした。"
-                detail="一覧画面から対象リポジトリを選び直してください。"
+                tone="empty"
+                title="対象リポジトリを選択してください。"
+                detail="一覧から参照対象のリポジトリを選ぶと履歴を表示します。"
               />
             ) : commitHistoryQuery.isPending ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-600">
-                  GitHub から既定ブランチの履歴を取得しています。
+                  GitHub からコミット履歴を取得しています。
                 </td>
               </tr>
             ) : commitHistoryQuery.isError ? (
@@ -385,20 +674,29 @@ export function CommitsScreen(): JSX.Element {
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
-                title="既定ブランチのコミット履歴を取得できませんでした。"
+                title="既定ブランチの履歴を取得できませんでした。"
                 detail="既定ブランチが未設定か、対象参照がコミットを指していません。"
               />
-            ) : commits.length === 0 ? (
+            ) : pagedCommits.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={9}
                 tone="empty"
-                title="コミットはありません。"
-                detail="既定ブランチ上に表示対象のコミット履歴がありません。"
+                title={
+                  hasActiveFilters
+                    ? "条件に一致するコミットはありません。"
+                    : "表示対象のコミット履歴はありません。"
+                }
+                detail={
+                  hasActiveFilters
+                    ? "検索条件を緩めて再確認してください。"
+                    : "GitHub App が参照できる既定ブランチ履歴がありません。"
+                }
               />
             ) : (
-              commits.map((commit) => {
+              pagedCommits.map((commit) => {
                 const relatedPullRequest = getCommitRelatedPullRequest(commit);
                 const changedFiles = commit.changedFilesIfAvailable ?? 0;
+                const branchName = getCommitBranchLabel(commit, defaultBranchName);
                 const isMergeCommit = commit.parents.totalCount > 1;
 
                 return (
@@ -417,7 +715,7 @@ export function CommitsScreen(): JSX.Element {
                       </a>
                     </td>
                     <td>{commit.messageHeadline}</td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{defaultBranchName}</td>
+                    <td className={clsx("text-center text-xs", MONO_CLASS)}>{branchName}</td>
                     <td className={clsx("text-center text-xs", MONO_CLASS)}>
                       {getCommitAuthorLabel(commit)}
                     </td>
@@ -443,9 +741,21 @@ export function CommitsScreen(): JSX.Element {
                       )}
                     </td>
                     <td className="text-center">
-                      <a href={commit.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                        GitHub
-                      </a>
+                      <div className="flex items-center justify-center gap-1 text-xs">
+                        <a href={commit.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                          差分
+                        </a>
+                        <span className="text-slate-400">|</span>
+                        <button
+                          type="button"
+                          className="cursor-pointer bg-transparent p-0 text-blue-700 underline underline-offset-2 hover:text-blue-900"
+                          onClick={() => {
+                            void copyRevertCommand(commit.oid);
+                          }}
+                        >
+                          復元
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -453,24 +763,44 @@ export function CommitsScreen(): JSX.Element {
             )}
           </tbody>
         </table>
+        <ClientPager
+          currentPage={currentPage}
+          pageSize={DISPLAY_PAGE_SIZE}
+          totalCount={filteredCommits.length}
+          onPageChange={setCurrentPage}
+        />
       </Panel>
 
       <Panel title="日別コミット数（直近30日）">
-        {commits.length === 0 ? (
+        {commitHistoryQuery.isPending ? (
           <GitHubInlineState
             tone="empty"
-            title="履歴取得後にグラフを表示します。"
-            detail="コミット履歴が空のため、日別集計は表示されません。"
+            title="履歴取得後に日別集計を表示します。"
+            detail="GitHub から履歴を読込中です。"
+            className="px-3 py-6"
+          />
+        ) : commitBars.length === 0 ? (
+          <GitHubInlineState
+            tone="empty"
+            title={
+              hasActiveFilters
+                ? "絞込結果が 0 件のため集計はありません。"
+                : "履歴がないため集計はありません。"
+            }
+            detail="検索条件または GitHub 側の履歴状況を確認してください。"
             className="px-3 py-6"
           />
         ) : (
           <div className={clsx("p-2 text-xs", MONO_CLASS)}>
-            <div className="flex h-24 items-end gap-0.5 border-b border-b-slate-400 border-l border-l-slate-400 px-1">
+            <div className="flex h-24 items-end gap-0.5 border-l border-b border-slate-400 px-1">
               {commitBars.map((bar, index) => (
                 <div
                   key={`${bar.label}:${index}`}
                   className="flex-1 border border-blue-900 bg-gradient-to-t from-blue-900 to-blue-500"
-                  style={{ height: `${Math.max(bar.count, 1) * 10}px` }}
+                  style={{
+                    height:
+                      bar.count === 0 ? "6px" : `${Math.max(14, Math.round((bar.count / barMax) * 88))}px`,
+                  }}
                   title={`${bar.label}: ${bar.count}件`}
                 />
               ))}
@@ -482,31 +812,12 @@ export function CommitsScreen(): JSX.Element {
               <span>{commitBars[21]?.label ?? "－"}</span>
               <span>{commitBars[29]?.label ?? "－"}</span>
             </div>
+            <div className="mt-1 text-right text-slate-500">
+              既定ブランチ {defaultBranchName} の取得済 {Math.min(historyCount, HISTORY_PAGE_SIZE)} 件を集計
+            </div>
           </div>
         )}
       </Panel>
-
-      {selectedRepositoryMeta === null ? null : (
-        <Panel title="関連導線">
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/repositories/${createRepositoryRouteId({
-                owner: selectedRepositoryMeta.owner.login,
-                name: selectedRepositoryMeta.name,
-              })}`}
-              className={buttonClassName({ className: "inline-flex justify-center" })}
-            >
-              リポジトリ詳細
-            </Link>
-            <Link
-              to="/pull-requests"
-              className={buttonClassName({ className: "inline-flex justify-center" })}
-            >
-              プルリクエスト一覧
-            </Link>
-          </div>
-        </Panel>
-      )}
     </JtcChrome>
   );
 }
