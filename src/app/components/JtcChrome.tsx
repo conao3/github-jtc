@@ -279,23 +279,25 @@ export function JtcChrome({
                 大
               </button>
             </div>
-            <button type="button" className={buttonClassName({ size: "sm" })}>
-              ヘルプ
-            </button>
-            <button type="button" className={buttonClassName({ size: "sm" })}>
-              マニュアル
-            </button>
-            <button type="button" className={buttonClassName({ size: "sm" })}>
-              お問い合わせ
-            </button>
-            <button
-              type="button"
-              className={buttonClassName({ size: "sm", tone: "primary" })}
-              disabled={logoutMutation.isPending}
-              onClick={() => void handleLogout()}
-            >
-              {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
-            </button>
+            <div className="flex items-center gap-1">
+              <button type="button" className={buttonClassName({ size: "sm" })}>
+                ヘルプ
+              </button>
+              <button type="button" className={buttonClassName({ size: "sm" })}>
+                マニュアル
+              </button>
+              <button type="button" className={buttonClassName({ size: "sm" })}>
+                お問い合わせ
+              </button>
+              <button
+                type="button"
+                className={buttonClassName({ size: "sm", tone: "primary" })}
+                disabled={logoutMutation.isPending}
+                onClick={() => void handleLogout()}
+              >
+                {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
+              </button>
+            </div>
           </div>
         </header>
 
