@@ -644,12 +644,12 @@ export function CommitsScreen(): JSX.Element {
             )}
           </form.Field>
 
-          <label>キーワード：</label>
+          <label>ページ内キーワード：</label>
           <form.Field name="query" validators={zodValidators(commitFilterFieldValidators.query)}>
             {(field) => (
               <input
                 className="border border-slate-400 px-1.5 py-0.5"
-                placeholder="コミットメッセージ"
+                placeholder="取得済み行の絞込"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

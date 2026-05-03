@@ -6,9 +6,9 @@ import {
   type CommitHistoryPageQuery,
   type IssueDetailQuery,
   type PullRequestDetailQuery,
+  type SearchIssuesQuery,
+  type SearchPullRequestsQuery,
   ViewerDocument,
-  type ViewerPullRequestsQuery,
-  type ViewerIssuesQuery,
   type ViewerQuery,
   type ViewerRepositoriesQuery,
 } from "../gql/graphql.ts";
@@ -18,12 +18,16 @@ export type GitHubViewerRepositoriesConnection = ViewerRepositoriesQuery["viewer
 export type GitHubViewerRepository = NonNullable<
   NonNullable<GitHubViewerRepositoriesConnection["nodes"]>[number]
 >;
-export type GitHubViewerPullRequestsConnection = ViewerPullRequestsQuery["viewer"]["pullRequests"];
-export type GitHubViewerPullRequest = NonNullable<
-  NonNullable<GitHubViewerPullRequestsConnection["nodes"]>[number]
+export type GitHubSearchPullRequestsConnection = SearchPullRequestsQuery["search"];
+export type GitHubSearchPullRequest = Extract<
+  NonNullable<NonNullable<GitHubSearchPullRequestsConnection["nodes"]>[number]>,
+  { __typename: "PullRequest" }
 >;
-export type GitHubViewerIssuesConnection = ViewerIssuesQuery["viewer"]["issues"];
-export type GitHubViewerIssue = NonNullable<NonNullable<GitHubViewerIssuesConnection["nodes"]>[number]>;
+export type GitHubSearchIssuesConnection = SearchIssuesQuery["search"];
+export type GitHubSearchIssue = Extract<
+  NonNullable<NonNullable<GitHubSearchIssuesConnection["nodes"]>[number]>,
+  { __typename: "Issue" }
+>;
 export type GitHubCommitHistoryRepository = NonNullable<CommitHistoryQuery["repository"]>;
 export type GitHubCommitHistoryPageRepository = NonNullable<CommitHistoryPageQuery["repository"]>;
 export type GitHubPullRequestDetail = NonNullable<

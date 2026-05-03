@@ -17,10 +17,10 @@ import {
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
-  type GitHubViewerIssuesConnection,
-  type GitHubViewerIssue,
+  type GitHubSearchIssue,
+  type GitHubSearchIssuesConnection,
 } from "../app/github.ts";
-import { ViewerIssuesDocument } from "../gql/graphql.ts";
+import { SearchIssuesDocument } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -57,7 +57,7 @@ const initialIssueFilterValues: IssueFilterValues = {
   pageSize: "10",
 };
 
-function getIssueState(issue: GitHubViewerIssue): {
+function getIssueState(issue: GitHubSearchIssue): {
   readonly tone: "pending" | "done";
   readonly label: string;
 } {
@@ -79,7 +79,7 @@ function getIssueState(issue: GitHubViewerIssue): {
   }
 }
 
-function getAssigneeSummary(issue: GitHubViewerIssue): string {
+function getAssigneeSummary(issue: GitHubSearchIssue): string {
   const assignees = (issue.assignees.nodes ?? []).flatMap((assignee) =>
     assignee?.login === undefined ? [] : [assignee.login],
   );
@@ -95,7 +95,7 @@ function getAssigneeSummary(issue: GitHubViewerIssue): string {
   return `${assignees[0] ?? "担当者"} +${assignees.length - 1}`;
 }
 
-function renderLabelSummary(issue: GitHubViewerIssue): JSX.Element {
+function renderLabelSummary(issue: GitHubSearchIssue): JSX.Element {
   const labels = (issue.labels?.nodes ?? []).filter((label) => label !== null);
 
   if (labels.length === 0) {
@@ -126,50 +126,31 @@ function hasActiveIssueFilters(filters: IssueFilterValues): boolean {
   return filters.query.trim().length > 0 || filters.state !== "all" || filters.assignee.trim().length > 0;
 }
 
-function hasClientSideIssueFilters(filters: IssueFilterValues): boolean {
-  return filters.query.trim().length > 0 || filters.assignee.trim().length > 0;
-}
+function buildIssueSearchQuery(filters: IssueFilterValues): string {
+  const parts = ["is:issue", "involves:@me", "sort:updated-desc", "archived:false"];
 
-function getIssueQueryStates(state: IssueFilterValues["state"]): Array<"OPEN" | "CLOSED"> {
-  switch (state) {
+  switch (filters.state) {
     case "OPEN":
+      parts.push("state:open");
+      break;
     case "CLOSED":
-      return [state];
+      parts.push("is:closed");
+      break;
     default:
-      return ["OPEN", "CLOSED"];
+      break;
   }
-}
 
-function filterIssues(issues: readonly GitHubViewerIssue[], filters: IssueFilterValues): GitHubViewerIssue[] {
-  const query = filters.query.trim().toLowerCase();
-  const assignee = filters.assignee.trim().toLowerCase();
+  const assignee = filters.assignee.trim();
+  if (assignee.length > 0) {
+    parts.push(`assignee:${assignee}`);
+  }
 
-  return issues.filter((issue) => {
-    if (
-      query.length > 0 &&
-      !issue.title.toLowerCase().includes(query) &&
-      !`${issue.number}`.includes(query) &&
-      !issue.repository.nameWithOwner.toLowerCase().includes(query)
-    ) {
-      return false;
-    }
+  const query = filters.query.trim();
+  if (query.length > 0) {
+    parts.push(query);
+  }
 
-    if (filters.state !== "all" && issue.state !== filters.state) {
-      return false;
-    }
-
-    if (assignee.length > 0) {
-      const assignees = (issue.assignees.nodes ?? []).flatMap((node) =>
-        node?.login === undefined ? [] : [node.login.toLowerCase()],
-      );
-
-      if (!assignees.some((login) => login.includes(assignee))) {
-        return false;
-      }
-    }
-
-    return true;
-  });
+  return parts.join(" ");
 }
 
 export function IssuesScreen(): JSX.Element {
@@ -178,19 +159,21 @@ export function IssuesScreen(): JSX.Element {
   const [appliedFilters, setAppliedFilters] = useState<IssueFilterValues>(initialIssueFilterValues);
   const pageSize = Number(appliedFilters.pageSize);
   const pager = useCursorPagerState();
-  const issuesQuery = useQuery(ViewerIssuesDocument, {
+  const issuesQuery = useQuery(SearchIssuesDocument, {
     skip: accessToken === undefined,
     variables: {
       first: Math.min(pageSize, QUERY_SIZE),
       after: pager.currentCursor,
-      states: getIssueQueryStates(appliedFilters.state),
+      query: buildIssueSearchQuery(appliedFilters),
     },
     fetchPolicy: "network-only",
   });
-  const issueConnection = (issuesQuery.data?.viewer?.issues ?? issuesQuery.previousData?.viewer?.issues) as
-    | GitHubViewerIssuesConnection
+  const issueConnection = (issuesQuery.data?.search ?? issuesQuery.previousData?.search) as
+    | GitHubSearchIssuesConnection
     | undefined;
-  const issues = (issueConnection?.nodes ?? []).filter((value) => value !== null);
+  const issues = (issueConnection?.nodes ?? []).filter(
+    (value): value is GitHubSearchIssue => value?.__typename === "Issue",
+  );
   const form = useForm({
     defaultValues: initialIssueFilterValues,
     onSubmit: async ({ value }) => {
@@ -205,16 +188,11 @@ export function IssuesScreen(): JSX.Element {
     pager.resetPager();
   }
 
-  const filteredIssues = filterIssues(issues, appliedFilters);
-  const openCount = filteredIssues.filter((issue) => issue.state === "OPEN").length;
-  const closedCount = filteredIssues.filter((issue) => issue.state === "CLOSED").length;
-  const assignedCount = filteredIssues.filter((issue) => issue.assignees.totalCount > 0).length;
-  const unlabeledCount = filteredIssues.filter((issue) => (issue.labels?.totalCount ?? 0) === 0).length;
-  const hasClientFilters = hasClientSideIssueFilters(appliedFilters);
-  const totalIssueCount = issueConnection?.totalCount ?? issues.length;
-  const pagerSummary = hasClientFilters
-    ? `取得 ${issues.length}件中 ${filteredIssues.length}件を表示 / ページ ${pager.currentPage}`
-    : undefined;
+  const openCount = issues.filter((issue) => issue.state === "OPEN").length;
+  const closedCount = issues.filter((issue) => issue.state === "CLOSED").length;
+  const assignedCount = issues.filter((issue) => issue.assignees.totalCount > 0).length;
+  const unlabeledCount = issues.filter((issue) => (issue.labels?.totalCount ?? 0) === 0).length;
+  const totalIssueCount = issueConnection?.issueCount ?? issues.length;
 
   return (
     <JtcChrome
@@ -357,7 +335,7 @@ export function IssuesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {issuesQuery.loading
               ? "GitHub から読込中..."
-              : `表示 ${filteredIssues.length}件 / 取得 ${issues.length}件 / 全 ${totalIssueCount}件`}
+              : `表示 ${issues.length}件 / 検索結果 ${totalIssueCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -388,7 +366,7 @@ export function IssuesScreen(): JSX.Element {
                 tone="error"
                 {...describeGitHubError(issuesQuery.error, "チケット一覧の取得に失敗しました。")}
               />
-            ) : filteredIssues.length === 0 ? (
+            ) : issues.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={8}
                 tone="empty"
@@ -404,7 +382,7 @@ export function IssuesScreen(): JSX.Element {
                 }
               />
             ) : (
-              filteredIssues.map((issue) => {
+              issues.map((issue) => {
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: issue.repository.owner.login,
                   name: issue.repository.name,
@@ -445,9 +423,8 @@ export function IssuesScreen(): JSX.Element {
         <CursorPager
           currentPage={pager.currentPage}
           pageSize={pageSize}
-          visibleCount={filteredIssues.length}
-          totalCount={hasClientFilters ? undefined : totalIssueCount}
-          summary={pagerSummary}
+          visibleCount={issues.length}
+          totalCount={totalIssueCount}
           hasNextPage={issueConnection?.pageInfo.hasNextPage ?? false}
           isLoading={issuesQuery.loading}
           onFirstPage={pager.goToFirstPage}

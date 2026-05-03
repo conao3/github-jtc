@@ -17,10 +17,10 @@ import {
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
   formatGitHubDateTime,
-  type GitHubViewerPullRequestsConnection,
-  type GitHubViewerPullRequest,
+  type GitHubSearchPullRequestsConnection,
+  type GitHubSearchPullRequest,
 } from "../app/github.ts";
-import { ViewerPullRequestsDocument } from "../gql/graphql.ts";
+import { SearchPullRequestsDocument } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -57,7 +57,7 @@ const initialPullRequestFilterValues: PullRequestFilterValues = {
   pageSize: "10",
 };
 
-function getPullRequestState(pullRequest: GitHubViewerPullRequest): {
+function getPullRequestState(pullRequest: GitHubSearchPullRequest): {
   readonly tone: "new" | "review" | "pending" | "done" | "rejected";
   readonly label: string;
 } {
@@ -85,7 +85,7 @@ function getPullRequestState(pullRequest: GitHubViewerPullRequest): {
   }
 }
 
-function getPullRequestDelta(pullRequest: GitHubViewerPullRequest): string {
+function getPullRequestDelta(pullRequest: GitHubSearchPullRequest): string {
   return `${pullRequest.changedFiles}ファイル / +${pullRequest.additions} -${pullRequest.deletions}`;
 }
 
@@ -93,59 +93,37 @@ function hasActivePullRequestFilters(filters: PullRequestFilterValues): boolean 
   return filters.query.trim().length > 0 || filters.state !== "all" || filters.repository.trim().length > 0;
 }
 
-function hasClientSidePullRequestFilters(filters: PullRequestFilterValues): boolean {
-  return filters.query.trim().length > 0 || filters.repository.trim().length > 0 || filters.state === "DRAFT";
-}
+function buildPullRequestSearchQuery(filters: PullRequestFilterValues): string {
+  const parts = ["is:pr", "involves:@me", "sort:updated-desc", "archived:false"];
 
-function getPullRequestQueryStates(
-  state: PullRequestFilterValues["state"],
-): Array<"OPEN" | "MERGED" | "CLOSED"> {
-  switch (state) {
+  switch (filters.state) {
     case "OPEN":
-    case "MERGED":
-    case "CLOSED":
-      return [state];
+      parts.push("state:open", "-is:draft");
+      break;
     case "DRAFT":
-      return ["OPEN"];
+      parts.push("state:open", "is:draft");
+      break;
+    case "MERGED":
+      parts.push("is:merged");
+      break;
+    case "CLOSED":
+      parts.push("is:closed", "-is:merged");
+      break;
     default:
-      return ["OPEN", "MERGED", "CLOSED"];
+      break;
   }
-}
 
-function filterPullRequests(
-  pullRequests: readonly GitHubViewerPullRequest[],
-  filters: PullRequestFilterValues,
-): GitHubViewerPullRequest[] {
-  const query = filters.query.trim().toLowerCase();
-  const repository = filters.repository.trim().toLowerCase();
+  const repository = filters.repository.trim();
+  if (repository.length > 0) {
+    parts.push(`repo:${repository}`);
+  }
 
-  return pullRequests.filter((pullRequest) => {
-    if (
-      query.length > 0 &&
-      !pullRequest.title.toLowerCase().includes(query) &&
-      !`${pullRequest.number}`.includes(query) &&
-      !pullRequest.repository.nameWithOwner.toLowerCase().includes(query)
-    ) {
-      return false;
-    }
+  const query = filters.query.trim();
+  if (query.length > 0) {
+    parts.push(query);
+  }
 
-    if (repository.length > 0 && !pullRequest.repository.nameWithOwner.toLowerCase().includes(repository)) {
-      return false;
-    }
-
-    switch (filters.state) {
-      case "OPEN":
-        return pullRequest.state === "OPEN" && !pullRequest.isDraft;
-      case "MERGED":
-        return pullRequest.state === "MERGED";
-      case "CLOSED":
-        return pullRequest.state === "CLOSED";
-      case "DRAFT":
-        return pullRequest.isDraft;
-      default:
-        return true;
-    }
-  });
+  return parts.join(" ");
 }
 
 export function PullRequestsScreen(): JSX.Element {
@@ -156,18 +134,21 @@ export function PullRequestsScreen(): JSX.Element {
   );
   const pageSize = Number(appliedFilters.pageSize);
   const pager = useCursorPagerState();
-  const pullRequestsQuery = useQuery(ViewerPullRequestsDocument, {
+  const pullRequestsQuery = useQuery(SearchPullRequestsDocument, {
     skip: accessToken === undefined,
     variables: {
       first: Math.min(pageSize, QUERY_SIZE),
       after: pager.currentCursor,
-      states: getPullRequestQueryStates(appliedFilters.state),
+      query: buildPullRequestSearchQuery(appliedFilters),
     },
     fetchPolicy: "network-only",
   });
-  const pullRequestConnection = (pullRequestsQuery.data?.viewer?.pullRequests ??
-    pullRequestsQuery.previousData?.viewer?.pullRequests) as GitHubViewerPullRequestsConnection | undefined;
-  const pullRequests = (pullRequestConnection?.nodes ?? []).filter((value) => value !== null);
+  const pullRequestConnection = (pullRequestsQuery.data?.search ?? pullRequestsQuery.previousData?.search) as
+    | GitHubSearchPullRequestsConnection
+    | undefined;
+  const pullRequests = (pullRequestConnection?.nodes ?? []).filter(
+    (value): value is GitHubSearchPullRequest => value?.__typename === "PullRequest",
+  );
   const form = useForm({
     defaultValues: initialPullRequestFilterValues,
     onSubmit: async ({ value }) => {
@@ -182,18 +163,13 @@ export function PullRequestsScreen(): JSX.Element {
     pager.resetPager();
   }
 
-  const filteredPullRequests = filterPullRequests(pullRequests, appliedFilters);
-  const openCount = filteredPullRequests.filter(
+  const openCount = pullRequests.filter(
     (pullRequest) => pullRequest.state === "OPEN" && !pullRequest.isDraft,
   ).length;
-  const mergedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
-  const closedCount = filteredPullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
-  const draftCount = filteredPullRequests.filter((pullRequest) => pullRequest.isDraft).length;
-  const hasClientFilters = hasClientSidePullRequestFilters(appliedFilters);
-  const totalPullRequestCount = pullRequestConnection?.totalCount ?? pullRequests.length;
-  const pagerSummary = hasClientFilters
-    ? `取得 ${pullRequests.length}件中 ${filteredPullRequests.length}件を表示 / ページ ${pager.currentPage}`
-    : undefined;
+  const mergedCount = pullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
+  const closedCount = pullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
+  const draftCount = pullRequests.filter((pullRequest) => pullRequest.isDraft).length;
+  const totalPullRequestCount = pullRequestConnection?.issueCount ?? pullRequests.length;
 
   return (
     <JtcChrome
@@ -345,7 +321,7 @@ export function PullRequestsScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {pullRequestsQuery.loading
               ? "GitHub から読込中..."
-              : `表示 ${filteredPullRequests.length}件 / 取得 ${pullRequests.length}件 / 全 ${totalPullRequestCount}件`}
+              : `表示 ${pullRequests.length}件 / 検索結果 ${totalPullRequestCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -375,7 +351,7 @@ export function PullRequestsScreen(): JSX.Element {
                 tone="error"
                 {...describeGitHubError(pullRequestsQuery.error, "プルリクエスト一覧の取得に失敗しました。")}
               />
-            ) : filteredPullRequests.length === 0 ? (
+            ) : pullRequests.length === 0 ? (
               <GitHubTableStateRow
                 colSpan={7}
                 tone="empty"
@@ -391,7 +367,7 @@ export function PullRequestsScreen(): JSX.Element {
                 }
               />
             ) : (
-              filteredPullRequests.map((pullRequest) => {
+              pullRequests.map((pullRequest) => {
                 const state = getPullRequestState(pullRequest);
                 const routeId = createRepositoryScopedNumberRouteId({
                   owner: pullRequest.repository.owner.login,
@@ -437,9 +413,8 @@ export function PullRequestsScreen(): JSX.Element {
         <CursorPager
           currentPage={pager.currentPage}
           pageSize={pageSize}
-          visibleCount={filteredPullRequests.length}
-          totalCount={hasClientFilters ? undefined : totalPullRequestCount}
-          summary={pagerSummary}
+          visibleCount={pullRequests.length}
+          totalCount={totalPullRequestCount}
           hasNextPage={pullRequestConnection?.pageInfo.hasNextPage ?? false}
           isLoading={pullRequestsQuery.loading}
           onFirstPage={pager.goToFirstPage}

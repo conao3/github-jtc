@@ -1,0 +1,44 @@
+query SearchPullRequests($query: String!, $first: Int!, $after: String) {
+  search(query: $query, type: ISSUE, first: $first, after: $after) {
+    issueCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    nodes {
+      __typename
+      ... on PullRequest {
+        id
+        number
+        title
+        url
+        createdAt
+        updatedAt
+        state
+        isDraft
+        reviewDecision
+        additions
+        deletions
+        changedFiles
+        comments {
+          totalCount
+        }
+        commits {
+          totalCount
+        }
+        repository {
+          nameWithOwner
+          owner {
+            login
+          }
+          name
+        }
+        author {
+          login
+          avatarUrl(size: 40)
+          url
+        }
+      }
+    }
+  }
+}
