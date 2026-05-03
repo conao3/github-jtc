@@ -5,13 +5,19 @@ import {
   DashboardDocument,
   type DashboardQuery,
   type DashboardQueryVariables,
+  PullRequestDetailDocument,
+  type PullRequestDetailQuery,
+  type PullRequestDetailQueryVariables,
   RepositoryDetailDocument,
   type RepositoryDetailQuery,
   type RepositoryDetailQueryVariables,
   ViewerDocument,
+  type ViewerPullRequestsQuery,
+  type ViewerPullRequestsQueryVariables,
   type ViewerProfileQuery,
   type ViewerProfileQueryVariables,
   ViewerProfileDocument,
+  ViewerPullRequestsDocument,
   type ViewerQuery,
   type ViewerRepositoriesQuery,
   type ViewerRepositoriesQueryVariables,
@@ -24,12 +30,23 @@ export type GitHubViewerRepositoriesConnection = ViewerRepositoriesQuery["viewer
 export type GitHubViewerRepository = NonNullable<
   NonNullable<GitHubViewerRepositoriesConnection["nodes"]>[number]
 >;
+export type GitHubViewerPullRequestsConnection = ViewerPullRequestsQuery["viewer"]["pullRequests"];
+export type GitHubViewerPullRequest = NonNullable<
+  NonNullable<GitHubViewerPullRequestsConnection["nodes"]>[number]
+>;
 export type GitHubRepositoryDetail = NonNullable<RepositoryDetailQuery["repository"]>;
 export type GitHubDashboardPayload = DashboardQuery;
+export type GitHubPullRequestDetail = NonNullable<
+  NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
+>;
 
 export interface GitHubRepositoryCoordinates {
   readonly owner: string;
   readonly name: string;
+}
+
+export interface GitHubRepositoryScopedNumberCoordinates extends GitHubRepositoryCoordinates {
+  readonly number: number;
 }
 
 function createGitHubApolloClient(accessToken: string): ApolloClient {
@@ -109,6 +126,22 @@ export async function fetchGitHubDashboard(
   return await executeGitHubQuery(accessToken, DashboardDocument, variables);
 }
 
+export async function fetchGitHubViewerPullRequests(
+  accessToken: string,
+  variables: ViewerPullRequestsQueryVariables,
+): Promise<GitHubViewerPullRequestsConnection> {
+  const data = await executeGitHubQuery(accessToken, ViewerPullRequestsDocument, variables);
+  return data.viewer.pullRequests;
+}
+
+export async function fetchGitHubPullRequestDetail(
+  accessToken: string,
+  variables: PullRequestDetailQueryVariables,
+): Promise<GitHubPullRequestDetail | null> {
+  const data = await executeGitHubQuery(accessToken, PullRequestDetailDocument, variables);
+  return data.repository?.pullRequest ?? null;
+}
+
 export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | string): string {
   const [owner, name] = typeof input === "string" ? input.split("/", 2) : [input.owner, input.name];
 
@@ -117,6 +150,33 @@ export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | str
   }
 
   return `${encodeURIComponent(owner)}:${encodeURIComponent(name)}`;
+}
+
+export function createRepositoryScopedNumberRouteId(
+  input: GitHubRepositoryScopedNumberCoordinates | string,
+): string {
+  if (typeof input === "string") {
+    const [owner, name, numberText] = input.split("/", 3);
+    const number = Number(numberText);
+
+    if (
+      owner === undefined ||
+      name === undefined ||
+      numberText === undefined ||
+      !Number.isInteger(number) ||
+      number <= 0
+    ) {
+      throw new Error("Repository scoped route id requires owner, repository, and positive number.");
+    }
+
+    return `${encodeURIComponent(owner)}:${encodeURIComponent(name)}:${number}`;
+  }
+
+  if (!Number.isInteger(input.number) || input.number <= 0) {
+    throw new Error("Repository scoped route id requires a positive integer number.");
+  }
+
+  return `${encodeURIComponent(input.owner)}:${encodeURIComponent(input.name)}:${input.number}`;
 }
 
 export function parseRepositoryRouteId(
@@ -148,6 +208,50 @@ export function parseRepositoryRouteId(
   }
 
   return { owner, name };
+}
+
+export function parseRepositoryScopedNumberRouteId(
+  routeId: string | undefined,
+  fallbackOwner?: string,
+): GitHubRepositoryScopedNumberCoordinates | null {
+  if (routeId === undefined || routeId.length === 0) {
+    return null;
+  }
+
+  const parts = routeId.split(":");
+
+  if (parts.length === 1) {
+    return null;
+  }
+
+  if (parts.length === 2) {
+    if (fallbackOwner === undefined || fallbackOwner.length === 0) {
+      return null;
+    }
+
+    const [namePart, numberPart] = parts;
+    const number = Number(decodeURIComponent(numberPart ?? ""));
+
+    if (namePart === undefined || !Number.isInteger(number) || number <= 0) {
+      return null;
+    }
+
+    return {
+      owner: fallbackOwner,
+      name: decodeURIComponent(namePart),
+      number,
+    };
+  }
+
+  const owner = decodeURIComponent(parts[0] ?? "");
+  const name = decodeURIComponent(parts[1] ?? "");
+  const number = Number(decodeURIComponent(parts[2] ?? ""));
+
+  if (owner.length === 0 || name.length === 0 || !Number.isInteger(number) || number <= 0) {
+    return null;
+  }
+
+  return { owner, name, number };
 }
 
 export function formatGitHubDateTime(value: string | null | undefined): string {

@@ -1,9 +1,17 @@
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import {
+  fetchGitHubPullRequestDetail,
+  formatGitHubDateTime,
+  parseRepositoryScopedNumberRouteId,
+  type GitHubPullRequestDetail,
+} from "../app/github.ts";
 import {
   FLOW_STEP_META_CLASS,
   FLOW_STEP_NAME_CLASS,
@@ -20,67 +28,159 @@ import {
   flowStepClassName,
 } from "../app/styles.ts";
 
-const workflow = [
-  ["done", "STEP 1", "PR申請", ["申請者：山田 太郎", "申請日：R8/05/01 14:30"], "✓ 完了", "done"],
-  [
-    "done",
-    "STEP 2",
-    "自動チェック",
-    ["CI/CD：成功", "静的解析：警告 2件", "カバレッジ：87.3%"],
-    "✓ 完了",
-    "done",
-  ],
-  [
-    "current",
-    "STEP 3",
-    "課長レビュー",
-    ["レビュア：佐藤 課長", "状態：レビュー中", "期限：R8/05/03 18:00"],
-    "▶ 対応中",
-    "inProgress",
-  ],
-  ["future", "STEP 4", "セキュリティチェック", ["担当：セキュリティ室"], "申請必要", "required"],
-  ["future", "STEP 5", "マージ承認", ["担当：リリース管理委員会"], "申請必要", "required"],
-] as const;
+function getPullRequestState(pullRequest: GitHubPullRequestDetail): {
+  readonly tone: "new" | "review" | "pending" | "done" | "rejected";
+  readonly label: string;
+} {
+  if (pullRequest.isDraft) {
+    return { tone: "new", label: "下書き" };
+  }
 
-const changedFiles = [
-  ["src/main/java/jp/co/jtc/payment/PaymentService.java", "+76", "-32", "▮▮▮▮▮▮▮▯▯▯", "confirmed", "未確認"],
-  ["src/main/java/jp/co/jtc/payment/PaymentException.java", "+18", "-0", "▮▮▮▯▯▯▯▯▯▯", "done", "確認済"],
-  [
-    "src/test/java/jp/co/jtc/payment/PaymentServiceTest.java",
-    "+34",
-    "-10",
-    "▮▮▮▮▮▯▯▯▯▯",
-    "confirmed",
-    "未確認",
-  ],
-  ["doc/release-notes.md", "+0", "-0", "▯▯▯▯▯▯▯▯▯▯", "done", "確認済"],
-] as const;
+  if (pullRequest.state === "MERGED") {
+    return { tone: "done", label: "マージ済" };
+  }
 
-const comments = [
-  [
-    "佐藤 太一郎（課長）",
-    "R8/05/02 10:25",
-    "review",
-    "指摘",
-    "例外処理は概ね問題ありませんが、PaymentException のメッセージに勘定系連携IDを含める必要があります（運用ルール第7条）。修正をお願いします。また、ログ出力レベルが ERROR ではなく WARN になっている箇所があるようですので、併せてご確認ください。",
-  ],
-  [
-    "山田 太郎（起票者）",
-    "R8/05/02 11:48",
-    "done",
-    "対応済",
-    "佐藤課長 ご指摘ありがとうございます。ご指摘の2点について修正のうえ、コミット a4f3c1b2 として再プッシュいたしました。再度ご確認のほど、よろしくお願いいたします。",
-  ],
-  [
-    "鈴木 弘子（任意レビュア）",
-    "R8/05/02 14:02",
-    "new",
-    "補足",
-    "テストケース、境界値だけでなく異常値（タイムアウト発生時）も追加されていてとても良いと思います。なお、本変更については影響調査の結果、夜間バッチへの影響は無い旨確認しております。",
-  ],
-] as const;
+  if (pullRequest.state === "CLOSED") {
+    return { tone: "rejected", label: "クローズ" };
+  }
 
-export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly prId?: string }): JSX.Element {
+  switch (pullRequest.reviewDecision) {
+    case "APPROVED":
+      return { tone: "done", label: "承認済" };
+    case "CHANGES_REQUESTED":
+      return { tone: "rejected", label: "差戻し" };
+    case "REVIEW_REQUIRED":
+      return { tone: "review", label: "レビュー中" };
+    default:
+      return { tone: "pending", label: "オープン" };
+  }
+}
+
+function getReviewState(
+  review: NonNullable<NonNullable<NonNullable<GitHubPullRequestDetail["reviews"]>["nodes"]>[number]>,
+): {
+  readonly tone: "new" | "review" | "pending" | "done" | "rejected";
+  readonly label: string;
+} {
+  switch (review.state) {
+    case "APPROVED":
+      return { tone: "done", label: "承認" };
+    case "CHANGES_REQUESTED":
+      return { tone: "rejected", label: "差戻し" };
+    case "COMMENTED":
+      return { tone: "review", label: "コメント" };
+    case "DISMISSED":
+      return { tone: "rejected", label: "却下" };
+    case "PENDING":
+      return { tone: "pending", label: "保留" };
+    default:
+      return { tone: "new", label: review.state };
+  }
+}
+
+function getWorkflowSteps(pullRequest: GitHubPullRequestDetail) {
+  const state = getPullRequestState(pullRequest);
+  const latestReview = (pullRequest.reviews?.nodes ?? []).filter((review) => review !== null)[0] ?? null;
+  const reviewRequestCount = pullRequest.reviewRequests?.totalCount ?? 0;
+
+  return [
+    {
+      state: "done" as const,
+      step: "STEP 1",
+      title: "PR作成",
+      meta: [
+        `作成者：${pullRequest.author?.login ?? "unknown"}`,
+        `作成日時：${formatGitHubDateTime(pullRequest.createdAt)}`,
+      ],
+      status: <JtcStatusTag tone="done">✓ 完了</JtcStatusTag>,
+    },
+    {
+      state: reviewRequestCount > 0 ? ("done" as const) : ("current" as const),
+      step: "STEP 2",
+      title: "レビュー依頼",
+      meta: [`依頼数：${reviewRequestCount}`, `コメント数：${pullRequest.comments.totalCount}`],
+      status: (
+        <JtcStatusTag tone={reviewRequestCount > 0 ? "done" : "pending"}>
+          {reviewRequestCount > 0 ? "✓ 依頼済" : "依頼なし"}
+        </JtcStatusTag>
+      ),
+    },
+    {
+      state:
+        state.tone === "done"
+          ? ("done" as const)
+          : state.tone === "rejected" || state.tone === "review"
+            ? ("current" as const)
+            : ("future" as const),
+      step: "STEP 3",
+      title: "レビュー結果",
+      meta: [
+        `reviewDecision：${pullRequest.reviewDecision ?? "未判定"}`,
+        `最新レビュー：${latestReview?.author?.login ?? "なし"}`,
+      ],
+      status: <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>,
+    },
+    {
+      state: pullRequest.state === "MERGED" ? ("done" as const) : ("future" as const),
+      step: "STEP 4",
+      title: "マージ状態",
+      meta: [`mergeable：${pullRequest.mergeable}`, `mergeStateStatus：${pullRequest.mergeStateStatus}`],
+      status: (
+        <JtcStatusTag tone={pullRequest.state === "MERGED" ? "done" : "required"}>
+          {pullRequest.state === "MERGED" ? "✓ 完了" : "未マージ"}
+        </JtcStatusTag>
+      ),
+    },
+  ] as const;
+}
+
+export function PullRequestDetailScreen({
+  prId = "conao3:github-jtc:1",
+}: {
+  readonly prId?: string;
+}): JSX.Element {
+  const sessionQuery = useAuthSession();
+  const accessToken = sessionQuery.data?.accessToken;
+  const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
+  const detailQuery = useQuery({
+    queryKey: ["github", "pull-request-detail", coordinates?.owner, coordinates?.name, coordinates?.number],
+    enabled: accessToken !== undefined && coordinates !== null,
+    queryFn: () =>
+      fetchGitHubPullRequestDetail(accessToken ?? "", {
+        owner: coordinates?.owner ?? "",
+        name: coordinates?.name ?? "",
+        number: coordinates?.number ?? 0,
+        filesFirst: 20,
+        reviewsFirst: 10,
+        threadsFirst: 20,
+        commitsFirst: 10,
+      }),
+  });
+  const pullRequest = detailQuery.data;
+  const state = pullRequest === null || pullRequest === undefined ? null : getPullRequestState(pullRequest);
+  const workflow = pullRequest === null || pullRequest === undefined ? [] : getWorkflowSteps(pullRequest);
+  const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
+  const reviews = (pullRequest?.reviews?.nodes ?? []).filter((review) => review !== null);
+  const closingIssues = (pullRequest?.closingIssuesReferences?.nodes ?? []).filter((issue) => issue !== null);
+  const reviewerLabels = (pullRequest?.reviewRequests?.nodes ?? [])
+    .filter((request) => request?.requestedReviewer !== null && request?.requestedReviewer !== undefined)
+    .map((request) => {
+      const reviewer = request?.requestedReviewer;
+
+      switch (reviewer?.__typename) {
+        case "User":
+          return reviewer.login;
+        case "Team":
+          return reviewer.combinedSlug;
+        case "Bot":
+          return reviewer.login;
+        case "Mannequin":
+          return reviewer.login;
+        default:
+          return "unknown";
+      }
+    });
+
   return (
     <JtcChrome
       screenId="JTC-PR-003"
@@ -93,71 +193,72 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
       activeSideItem="プルリクエスト一覧"
       rightColumn={
         <>
-          <Panel title="承認情報" bodyClassName="p-0">
+          <Panel title="レビュー情報" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 <tr>
-                  <th>承認期限</th>
-                  <td className={MONO_CLASS}>
-                    <b className="text-red-700">R8/05/03 18:00</b>
-                  </td>
+                  <th>reviewDecision</th>
+                  <td>{pullRequest?.reviewDecision ?? "未判定"}</td>
                 </tr>
                 <tr>
-                  <th>残時間</th>
-                  <td className={MONO_CLASS}>
-                    <b>9時間18分</b>
-                  </td>
+                  <th>mergeable</th>
+                  <td>{pullRequest?.mergeable ?? "UNKNOWN"}</td>
                 </tr>
                 <tr>
-                  <th>必須レビュア</th>
-                  <td>佐藤課長</td>
+                  <th>レビュー依頼</th>
+                  <td>{pullRequest?.reviewRequests?.totalCount ?? 0}</td>
                 </tr>
                 <tr>
-                  <th>承認済</th>
-                  <td>0 / 1</td>
+                  <th>レビュー投稿</th>
+                  <td>{pullRequest?.reviews?.totalCount ?? 0}</td>
                 </tr>
               </tbody>
             </table>
           </Panel>
 
-          <Panel title="関連プルリクエスト" bodyClassName="p-0">
+          <Panel title="関連Issue" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
-                <tr>
-                  <td className={MONO_CLASS}>PR-25-00075</td>
-                  <td>ログ出力カラム追加</td>
-                </tr>
-                <tr>
-                  <td className={MONO_CLASS}>PR-25-00062</td>
-                  <td>マスタ更新追加</td>
-                </tr>
-                <tr>
-                  <td className={MONO_CLASS}>PR-25-00059</td>
-                  <td>OIDC連携初期実装</td>
-                </tr>
+                {closingIssues.length === 0 ? (
+                  <tr>
+                    <td className="text-center text-slate-600">関連Issueなし</td>
+                  </tr>
+                ) : (
+                  closingIssues.map((issue) => (
+                    <tr key={issue.id}>
+                      <td className={MONO_CLASS}>#{issue.number}</td>
+                      <td>{issue.title}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </Panel>
 
-          <Panel title="CI/CD実行結果" bodyClassName="p-0">
+          <Panel title="レビュー投稿一覧" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
-              {[
-                ["ビルド", "成功", "green"],
-                ["単体テスト", "187/187", "green"],
-                ["静的解析", "警告 2", "yellow"],
-                ["脆弱性検査", "問題無", "green"],
-                ["カバレッジ", "87.3%", "green"],
-              ].map(([label, value, color]) => (
-                <li key={label} className={TODO_LIST_ITEM_CLASS}>
-                  <span>
-                    <span
-                      className={`mr-1 inline-block h-2 w-2 rounded-full ${color === "yellow" ? "bg-amber-300" : "bg-green-700"}`}
-                    />
-                    {label}
-                  </span>
-                  <span className={clsx("text-xs", MONO_CLASS)}>{value}</span>
+              {reviews.length === 0 ? (
+                <li className={TODO_LIST_ITEM_CLASS}>
+                  <span>レビューなし</span>
+                  <span className={clsx("text-xs", MONO_CLASS)}>0</span>
                 </li>
-              ))}
+              ) : (
+                reviews.map((review) => {
+                  const reviewState = getReviewState(review);
+
+                  return (
+                    <li key={review.id} className={TODO_LIST_ITEM_CLASS}>
+                      <span>
+                        <JtcStatusTag tone={reviewState.tone}>{reviewState.label}</JtcStatusTag>
+                        <span className="ml-1">{review.author?.login ?? "unknown"}</span>
+                      </span>
+                      <span className={clsx("text-xs", MONO_CLASS)}>
+                        {formatGitHubDateTime(review.submittedAt)}
+                      </span>
+                    </li>
+                  );
+                })
+              )}
             </ul>
           </Panel>
 
@@ -168,106 +269,115 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
       }
     >
       <div className={WARN_LINE_CLASS}>
-        <b>承認依頼：</b>本プルリクエストはあなたの<b>承認</b>を必要としています（期限：令和8年5月3日
-        18:00）。 内容を確認のうえ、画面下部の承認ボタンを押下してください。
+        <b>レビュー導線：</b>この画面は GitHub GraphQL の pull request
+        詳細を表示しています。最終的な承認・マージ操作は
+        <span className={TEXT_LINK_CLASS}> GitHub 本体 </span>
+        で実施してください。
       </div>
 
       <Panel
-        title={`プルリクエスト基本情報 ${prId}`}
-        action={<span className={MUTED_CLASS}>登録日：R8/05/01 14:30</span>}
+        title={`プルリクエスト基本情報 ${coordinates?.number ?? "?"}`}
+        action={
+          <span className={MUTED_CLASS}>
+            {pullRequest === undefined || pullRequest === null
+              ? "GitHub から読込中..."
+              : `更新日：${formatGitHubDateTime(pullRequest.updatedAt)}`}
+          </span>
+        }
         bodyClassName="p-0"
       >
-        <table className={TABLE_CLASS}>
-          <tbody>
-            <tr>
-              <th>
-                件名<span className="font-bold text-red-700">※</span>
-              </th>
-              <td colSpan={3}>
-                <b>決済処理の例外ハンドリング追加対応（IS-2025-00125 起票分）</b>
-              </td>
-            </tr>
-            <tr>
-              <th>リポジトリ</th>
-              <td className={MONO_CLASS}>payment-system-core</td>
-              <th>状態</th>
-              <td>
-                <JtcStatusTag tone="review">レビュー中</JtcStatusTag>
-              </td>
-            </tr>
-            <tr>
-              <th>マージ元（source）</th>
-              <td className={MONO_CLASS}>feat/IS-2025-00125-exception-handling</td>
-              <th>マージ先（target）</th>
-              <td className={MONO_CLASS}>develop</td>
-            </tr>
-            <tr>
-              <th>申請者</th>
-              <td>山田 太郎（基盤開発二課）</td>
-              <th>レビュア</th>
-              <td>佐藤 太一郎（必須）／ 鈴木 弘子（任意）</td>
-            </tr>
-            <tr>
-              <th>関連課題</th>
-              <td>
-                <span className={TEXT_LINK_CLASS}>ISS-25-00125</span> 決済処理でエラーになる
-              </td>
-              <th>関連変更管理</th>
-              <td>
-                <span className={TEXT_LINK_CLASS}>CHG-2025-00472</span>
-              </td>
-            </tr>
-            <tr>
-              <th>コミット数</th>
-              <td>3</td>
-              <th>変更行数</th>
-              <td className={MONO_CLASS}>+128 / -42（4ファイル）</td>
-            </tr>
-            <tr>
-              <th>影響範囲</th>
-              <td colSpan={3}>
-                <b>限定的</b> ／ 決済処理本体（PaymentService.java）、テストコード ／ DB変更：<b>無し</b> ／
-                設定変更：<b>無し</b>
-              </td>
-            </tr>
-            <tr>
-              <th>説明</th>
-              <td colSpan={3}>
-                決済処理において DB
-                接続タイムアウト発生時、適切な例外がハンドリングされず処理が継続されてしまう不具合を修正しました。
-                <br />
-                具体的には、PaymentService.java の executePayment() メソッド内で、SQLException
-                が発生した場合に PaymentException でラップして上位に伝播するように修正しています。
-                <br />
-                テストケースについても境界値・異常系を追加しております。詳細は別添「修正概要書.docx」をご参照ください。
-              </td>
-            </tr>
-            <tr>
-              <th>添付資料</th>
-              <td colSpan={3}>
-                📄 <span className={TEXT_LINK_CLASS}>修正概要書.docx</span> ／ 📄{" "}
-                <span className={TEXT_LINK_CLASS}>影響調査結果.xlsx</span> ／ 📄{" "}
-                <span className={TEXT_LINK_CLASS}>単体テスト結果.xlsx</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {coordinates === null ? (
+          <div className="py-8 text-center text-red-800">PR 識別子を解釈できませんでした。</div>
+        ) : detailQuery.isPending ? (
+          <div className="py-8 text-center text-slate-600">GitHub から PR 詳細を取得しています。</div>
+        ) : detailQuery.isError ? (
+          <div className="py-8 text-center text-red-800">
+            {detailQuery.error instanceof Error ? detailQuery.error.message : "PR 詳細の取得に失敗しました。"}
+          </div>
+        ) : pullRequest === null || pullRequest === undefined ? (
+          <div className="py-8 text-center text-slate-600">
+            {coordinates.owner}/{coordinates.name} の PR #{coordinates.number} は参照できません。
+          </div>
+        ) : (
+          <table className={TABLE_CLASS}>
+            <tbody>
+              <tr>
+                <th>
+                  件名<span className="font-bold text-red-700">※</span>
+                </th>
+                <td colSpan={3}>
+                  <b>{pullRequest.title}</b>
+                </td>
+              </tr>
+              <tr>
+                <th>リポジトリ</th>
+                <td className={MONO_CLASS}>
+                  {coordinates.owner}/{coordinates.name}
+                </td>
+                <th>状態</th>
+                <td>
+                  {state === null ? "－" : <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>}
+                </td>
+              </tr>
+              <tr>
+                <th>source</th>
+                <td className={MONO_CLASS}>{pullRequest.headRefName}</td>
+                <th>target</th>
+                <td className={MONO_CLASS}>{pullRequest.baseRefName}</td>
+              </tr>
+              <tr>
+                <th>作成者</th>
+                <td>{pullRequest.author?.login ?? "unknown"}</td>
+                <th>レビュー依頼先</th>
+                <td>{reviewerLabels.length === 0 ? "なし" : reviewerLabels.join(" / ")}</td>
+              </tr>
+              <tr>
+                <th>関連Issue</th>
+                <td>
+                  {closingIssues.length === 0
+                    ? "なし"
+                    : closingIssues.map((issue) => `#${issue.number}`).join(" / ")}
+                </td>
+                <th>mergeStateStatus</th>
+                <td>{pullRequest.mergeStateStatus}</td>
+              </tr>
+              <tr>
+                <th>コミット数</th>
+                <td>{pullRequest.commits.totalCount}</td>
+                <th>変更行数</th>
+                <td className={MONO_CLASS}>
+                  +{pullRequest.additions} / -{pullRequest.deletions}（{pullRequest.changedFiles}ファイル）
+                </td>
+              </tr>
+              <tr>
+                <th>mergeable</th>
+                <td>{pullRequest.mergeable}</td>
+                <th>コメント数</th>
+                <td>{pullRequest.comments.totalCount}</td>
+              </tr>
+              <tr>
+                <th>本文</th>
+                <td colSpan={3} className="whitespace-pre-wrap">
+                  {pullRequest.body && pullRequest.body.length > 0 ? pullRequest.body : "本文はありません。"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </Panel>
 
-      <Panel title="承認フロー（現在ステータス）">
+      <Panel title="承認フロー（GitHub実データ派生）">
         <div className={FLOW_WRAP_CLASS}>
-          {workflow.map(([state, step, title, meta, label, tone]) => (
-            <div key={step} className={flowStepClassName(state)}>
-              <div className={FLOW_STEP_NO_CLASS}>{step}</div>
-              <div className={FLOW_STEP_NAME_CLASS}>{title}</div>
+          {workflow.map((step) => (
+            <div key={step.step} className={flowStepClassName(step.state)}>
+              <div className={FLOW_STEP_NO_CLASS}>{step.step}</div>
+              <div className={FLOW_STEP_NAME_CLASS}>{step.title}</div>
               <div className={FLOW_STEP_META_CLASS}>
-                {meta.map((line) => (
+                {step.meta.map((line) => (
                   <div key={line}>{line}</div>
                 ))}
               </div>
-              <div className="mt-2">
-                <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
-              </div>
+              <div className="mt-2">{step.status}</div>
             </div>
           ))}
         </div>
@@ -275,96 +385,109 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
 
       <Panel
         title="変更ファイル一覧"
-        action={<span className={MUTED_CLASS}>合計：4ファイル / +128 / -42</span>}
+        action={
+          <span className={MUTED_CLASS}>
+            合計：{pullRequest?.files?.totalCount ?? 0}ファイル / +{pullRequest?.additions ?? 0} / -
+            {pullRequest?.deletions ?? 0}
+          </span>
+        }
         bodyClassName="p-0"
       >
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-6"> </th>
               <th>ファイルパス</th>
-              <th className="w-20">追加</th>
-              <th className="w-20">削除</th>
-              <th className="w-20">差分</th>
-              <th className="w-28">レビュー状態</th>
-              <th className="w-20">操作</th>
+              <th className="w-16">追加</th>
+              <th className="w-16">削除</th>
+              <th className="w-16">種別</th>
+              <th className="w-20">閲覧状態</th>
+              <th className="w-16">操作</th>
             </tr>
           </thead>
           <tbody>
-            {changedFiles.map(([path, add, del, bar, tone, label]) => (
-              <tr key={path}>
-                <td className="text-center">📄</td>
-                <td className={MONO_CLASS}>{path}</td>
-                <td className="text-right text-green-700">{add}</td>
-                <td className="text-right text-red-700">{del}</td>
-                <td className="text-center">{bar}</td>
-                <td className="text-center">
-                  <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
-                </td>
-                <td className="text-center">
-                  <Link to={`/pull-requests/${prId}/diff`} className={TEXT_LINK_CLASS}>
-                    差分
-                  </Link>
+            {files.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-slate-600">
+                  変更ファイルはありません。
                 </td>
               </tr>
-            ))}
+            ) : (
+              files.map((file) => (
+                <tr key={file.path}>
+                  <td className={MONO_CLASS}>{file.path}</td>
+                  <td className="text-right text-green-700">+{file.additions}</td>
+                  <td className="text-right text-red-700">-{file.deletions}</td>
+                  <td className="text-center">{file.changeType}</td>
+                  <td className="text-center">
+                    <JtcStatusTag tone={file.viewerViewedState === "VIEWED" ? "done" : "confirmed"}>
+                      {file.viewerViewedState === "VIEWED" ? "確認済" : "未確認"}
+                    </JtcStatusTag>
+                  </td>
+                  <td className="text-center">
+                    <Link to={`/pull-requests/${prId}/diff`} className={TEXT_LINK_CLASS}>
+                      差分
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </Panel>
 
-      <Panel title="レビューコメント（時系列）" action={<span className={MUTED_CLASS}>3件</span>}>
+      <Panel
+        title="レビューコメント（投稿順）"
+        action={<span className={MUTED_CLASS}>{reviews.length}件</span>}
+      >
         <div className="space-y-1.5 bg-slate-50 p-0.5">
-          {comments.map(([author, date, tone, label, body]) => (
-            <div key={`${author}:${date}`} className="border border-slate-300 bg-white p-2 text-xs">
-              <div className="mb-1 font-bold text-blue-900">
-                ● {author}
-                <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>{date}</span>
-                <span className="ml-2">
-                  <JtcStatusTag tone={tone}>{label}</JtcStatusTag>
-                </span>
-              </div>
-              <div>{body}</div>
+          {reviews.length === 0 ? (
+            <div className="border border-slate-300 bg-white p-3 text-xs text-slate-600">
+              レビュー投稿はまだありません。
             </div>
-          ))}
-          <div className="border border-dashed border-amber-500 bg-amber-50 p-2 text-xs">
-            <div className="mb-1 font-bold">＋ 新規コメント</div>
-            <textarea
-              className="h-12 w-full border border-slate-400 px-1.5 py-1"
-              placeholder="コメントを入力してください（マークダウン記法対応）"
-            />
-            <div className="mt-1 text-right">
-              <button type="button" className={buttonClassName()}>
-                下書き保存
-              </button>
-              <span className="px-1" />
-              <button type="button" className={buttonClassName({ tone: "primary" })}>
-                投稿する
-              </button>
-            </div>
-          </div>
+          ) : (
+            reviews.map((review) => {
+              const reviewState = getReviewState(review);
+
+              return (
+                <div key={review.id} className="border border-slate-300 bg-white p-2 text-xs">
+                  <div className="mb-1 font-bold text-blue-900">
+                    ● {review.author?.login ?? "unknown"}
+                    <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
+                      {formatGitHubDateTime(review.submittedAt)}
+                    </span>
+                    <span className="ml-2">
+                      <JtcStatusTag tone={reviewState.tone}>{reviewState.label}</JtcStatusTag>
+                    </span>
+                  </div>
+                  <div>{review.body && review.body.length > 0 ? review.body : "本文なし"}</div>
+                </div>
+              );
+            })
+          )}
         </div>
       </Panel>
 
-      <Panel title="承認・差戻し操作">
+      <Panel title="GitHub操作">
         <div className="p-3 text-center">
           <div className="mb-2 text-xs text-slate-600">
-            ※承認ボタンの押下は取り消しできません。内容を十分にご確認のうえ操作してください。
+            最終的なレビュー操作は GitHub 本体で行ってください。GraphQL では表示を担当し、mutation
+            は未接続です。
           </div>
-          <button type="button" className={buttonClassName({ tone: "primary", size: "lg" })}>
-            ✓ 承認する
-          </button>
+          <a
+            href={pullRequest?.url}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClassName({ tone: "primary", size: "lg", className: "inline-flex" })}
+          >
+            GitHubでレビュー
+          </a>
           <span className="px-1" />
-          <button type="button" className={buttonClassName({ size: "lg" })}>
-            差戻し
-          </button>
-          <span className="px-1" />
-          <button type="button" className={buttonClassName({ tone: "danger", size: "lg" })}>
-            却下
-          </button>
-          <span className="px-1" />
-          <button type="button" className={buttonClassName({ size: "lg" })}>
-            保留
-          </button>
+          <Link
+            to={`/pull-requests/${prId}/diff`}
+            className={buttonClassName({ size: "lg", className: "inline-flex" })}
+          >
+            差分表示
+          </Link>
         </div>
       </Panel>
     </JtcChrome>
@@ -374,5 +497,5 @@ export function PullRequestDetailScreen({ prId = "PR-2025-00089" }: { readonly p
 export default function PullRequestDetailPage(): JSX.Element {
   const { prId } = useParams();
 
-  return <PullRequestDetailScreen prId={prId ?? "PR-2025-00089"} />;
+  return <PullRequestDetailScreen prId={prId ?? "conao3:github-jtc:1"} />;
 }

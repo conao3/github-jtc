@@ -1,51 +1,79 @@
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
 import {
+  createRepositoryScopedNumberRouteId,
+  fetchGitHubViewerPullRequests,
+  formatGitHubDateTime,
+  type GitHubViewerPullRequest,
+} from "../app/github.ts";
+import {
   MONO_CLASS,
   MUTED_CLASS,
   TABLE_CLASS,
-  TEXT_LINK_CLASS,
   TODO_LIST_CLASS,
   TODO_LIST_ITEM_CLASS,
   buttonClassName,
 } from "../app/styles.ts";
 
-const rows = [
-  [
-    "PR-2025-00089",
-    "決済処理の例外ハンドリング追加対応（IS-2025-00125 起票分）",
-    "山田 太郎",
-    "高",
-    "レビュー中",
-    "R8/05/01 14:30",
-    "4ファイル / +128 -42",
-  ],
-  [
-    "PR-2025-00075",
-    "ログ出力カラム追加",
-    "佐藤 雄樹",
-    "中",
-    "承認待ち",
-    "R8/04/30 16:10",
-    "2ファイル / +21 -8",
-  ],
-  ["PR-2025-00062", "マスタ更新追加", "田中 健太", "低", "承認済", "R8/04/28 10:12", "6ファイル / +83 -19"],
-  [
-    "PR-2025-00058",
-    "会員検索APIのタイムアウト値見直し",
-    "小林 美咲",
-    "中",
-    "差戻し",
-    "R8/04/27 15:48",
-    "3ファイル / +15 -6",
-  ],
-] as const;
+const PAGE_SIZE = 10;
+
+function getPullRequestState(pullRequest: GitHubViewerPullRequest): {
+  readonly tone: "new" | "review" | "pending" | "done" | "rejected";
+  readonly label: string;
+} {
+  if (pullRequest.isDraft) {
+    return { tone: "new", label: "下書き" };
+  }
+
+  if (pullRequest.state === "MERGED") {
+    return { tone: "done", label: "マージ済" };
+  }
+
+  if (pullRequest.state === "CLOSED") {
+    return { tone: "rejected", label: "クローズ" };
+  }
+
+  switch (pullRequest.reviewDecision) {
+    case "APPROVED":
+      return { tone: "done", label: "承認済" };
+    case "CHANGES_REQUESTED":
+      return { tone: "rejected", label: "差戻し" };
+    case "REVIEW_REQUIRED":
+      return { tone: "review", label: "レビュー中" };
+    default:
+      return { tone: "pending", label: "オープン" };
+  }
+}
+
+function getPullRequestDelta(pullRequest: GitHubViewerPullRequest): string {
+  return `${pullRequest.changedFiles}ファイル / +${pullRequest.additions} -${pullRequest.deletions}`;
+}
 
 export function PullRequestsScreen(): JSX.Element {
+  const sessionQuery = useAuthSession();
+  const accessToken = sessionQuery.data?.accessToken;
+  const pullRequestsQuery = useQuery({
+    queryKey: ["github", "viewer-pull-requests", PAGE_SIZE],
+    enabled: accessToken !== undefined,
+    queryFn: () =>
+      fetchGitHubViewerPullRequests(accessToken ?? "", {
+        first: PAGE_SIZE,
+        after: null,
+        states: ["OPEN", "MERGED", "CLOSED"],
+      }),
+  });
+  const pullRequests = (pullRequestsQuery.data?.nodes ?? []).filter((value) => value !== null);
+  const openCount = pullRequests.filter((pullRequest) => pullRequest.state === "OPEN").length;
+  const mergedCount = pullRequests.filter((pullRequest) => pullRequest.state === "MERGED").length;
+  const closedCount = pullRequests.filter((pullRequest) => pullRequest.state === "CLOSED").length;
+  const draftCount = pullRequests.filter((pullRequest) => pullRequest.isDraft).length;
+
   return (
     <JtcChrome
       screenId="JTC-PR-001"
@@ -57,10 +85,10 @@ export function PullRequestsScreen(): JSX.Element {
           <Panel title="レビュー状況" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
-                ["承認待ち", "4件"],
-                ["レビュー中", "3件"],
-                ["差戻し", "1件"],
-                ["期限超過", "0件"],
+                ["Open", `${openCount}件`],
+                ["Merged", `${mergedCount}件`],
+                ["Closed", `${closedCount}件`],
+                ["Draft", `${draftCount}件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -72,11 +100,16 @@ export function PullRequestsScreen(): JSX.Element {
 
           <Panel title="よく使う操作">
             <div className="flex flex-col gap-1">
-              <button type="button" className={buttonClassName({ tone: "primary" })}>
-                ＋ PR作成
-              </button>
+              <a
+                href="https://github.com/pulls"
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClassName({ tone: "primary", className: "inline-flex justify-center" })}
+              >
+                GitHubでPR作成
+              </a>
               <button type="button" className={buttonClassName()}>
-                レビュー待ちのみ表示
+                Openのみ表示
               </button>
               <button type="button" className={buttonClassName()}>
                 CSV出力
@@ -92,18 +125,18 @@ export function PullRequestsScreen(): JSX.Element {
     >
       <Panel title="照会条件" bodyClassName="p-0">
         <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
-          <label>申請番号/件名</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="PR-2025-00089" />
+          <label>PR番号/件名</label>
+          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="github-jtc #1" />
           <label>状態</label>
           <select className="border border-slate-400 px-1 py-0.5">
             <option>──全て──</option>
-            <option>承認待ち</option>
-            <option>レビュー中</option>
-            <option>差戻し</option>
-            <option>承認済</option>
+            <option>Open</option>
+            <option>Merged</option>
+            <option>Closed</option>
+            <option>Draft</option>
           </select>
-          <label>申請者</label>
-          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="山田 太郎" />
+          <label>リポジトリ</label>
+          <input className="border border-slate-400 px-1.5 py-0.5" placeholder="owner/repo" />
           <button type="button" className={buttonClassName({ tone: "primary" })}>
             検索
           </button>
@@ -113,49 +146,98 @@ export function PullRequestsScreen(): JSX.Element {
         </div>
       </Panel>
 
-      <Panel title="対象申請一覧" action={<span className={MUTED_CLASS}>該当 3件</span>} bodyClassName="p-0">
+      <Panel
+        title="対象PR一覧"
+        action={
+          <span className={MUTED_CLASS}>
+            {pullRequestsQuery.isPending
+              ? "GitHub から読込中..."
+              : `viewer.pullRequests ${pullRequestsQuery.data?.totalCount ?? pullRequests.length}件`}
+          </span>
+        }
+        bodyClassName="p-0"
+      >
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-32">申請番号</th>
+              <th className="w-24">PR</th>
               <th>件名</th>
-              <th className="w-24">申請者</th>
-              <th className="w-16">優先</th>
-              <th className="w-24">状態</th>
-              <th className="w-32">提出日時</th>
-              <th className="w-40">変更</th>
+              <th className="w-32">リポジトリ</th>
+              <th className="w-16">状態</th>
+              <th className="w-24">更新日時</th>
+              <th className="w-20">変更</th>
+              <th className="w-16">コメント</th>
+              <th className="w-16">操作</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(([id, title, author, priority, status, submitted, delta]) => (
-              <tr key={id}>
-                <td className={clsx("text-center", MONO_CLASS)}>
-                  <Link to={`/pull-requests/${id}`} className={TEXT_LINK_CLASS}>
-                    {id}
-                  </Link>
+            {pullRequestsQuery.isPending ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center text-slate-600">
+                  GitHub から PR 一覧を取得しています。
                 </td>
-                <td>{title}</td>
-                <td className="text-center">{author}</td>
-                <td className="text-center">{priority}</td>
-                <td className="text-center">
-                  <JtcStatusTag
-                    tone={
-                      status === "承認済"
-                        ? "done"
-                        : status === "差戻し"
-                          ? "rejected"
-                          : status === "承認待ち"
-                            ? "pending"
-                            : "review"
-                    }
-                  >
-                    {status}
-                  </JtcStatusTag>
-                </td>
-                <td className={clsx("text-center", MONO_CLASS)}>{submitted}</td>
-                <td className={clsx("text-center", MONO_CLASS)}>{delta}</td>
               </tr>
-            ))}
+            ) : pullRequestsQuery.isError ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center text-red-800">
+                  {pullRequestsQuery.error instanceof Error
+                    ? pullRequestsQuery.error.message
+                    : "PR 一覧の取得に失敗しました。"}
+                </td>
+              </tr>
+            ) : pullRequests.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center text-slate-600">
+                  viewer に紐づく PR はありません。
+                </td>
+              </tr>
+            ) : (
+              pullRequests.map((pullRequest) => {
+                const state = getPullRequestState(pullRequest);
+                const routeId = createRepositoryScopedNumberRouteId({
+                  owner: pullRequest.repository.owner.login,
+                  name: pullRequest.repository.name,
+                  number: pullRequest.number,
+                });
+
+                return (
+                  <tr key={pullRequest.id}>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      <Link to={`/pull-requests/${routeId}`} className="text-blue-900 underline">
+                        #{pullRequest.number}
+                      </Link>
+                    </td>
+                    <td>
+                      <div className="font-bold">{pullRequest.title}</div>
+                      <div className={clsx("text-xs text-slate-600", MONO_CLASS)}>
+                        author: {pullRequest.author?.login ?? "unknown"}
+                      </div>
+                    </td>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      {pullRequest.repository.nameWithOwner}
+                    </td>
+                    <td className="text-center">
+                      <JtcStatusTag tone={state.tone}>{state.label}</JtcStatusTag>
+                    </td>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      {formatGitHubDateTime(pullRequest.updatedAt)}
+                    </td>
+                    <td className={clsx("text-center", MONO_CLASS)}>{getPullRequestDelta(pullRequest)}</td>
+                    <td className={clsx("text-center", MONO_CLASS)}>{pullRequest.comments.totalCount}</td>
+                    <td className="text-center">
+                      <a
+                        href={pullRequest.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-900 underline"
+                      >
+                        GitHub
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </Panel>

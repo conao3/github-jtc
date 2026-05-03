@@ -1,0 +1,162 @@
+query PullRequestDetail(
+  $owner: String!
+  $name: String!
+  $number: Int!
+  $filesFirst: Int!
+  $reviewsFirst: Int!
+  $threadsFirst: Int!
+  $commitsFirst: Int!
+) {
+  repository(owner: $owner, name: $name) {
+    id
+    name
+    nameWithOwner
+    url
+    pullRequest(number: $number) {
+      id
+      number
+      title
+      url
+      state
+      isDraft
+      createdAt
+      updatedAt
+      mergedAt
+      closedAt
+      additions
+      deletions
+      changedFiles
+      body
+      reviewDecision
+      mergeable
+      mergeStateStatus
+      baseRefName
+      headRefName
+      comments {
+        totalCount
+      }
+      commits(first: $commitsFirst) {
+        totalCount
+        nodes {
+          id
+          commit {
+            oid
+            committedDate
+            messageHeadline
+            authors(first: 2) {
+              nodes {
+                name
+                email
+                user {
+                  login
+                  avatarUrl(size: 40)
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+      files(first: $filesFirst) {
+        totalCount
+        nodes {
+          additions
+          deletions
+          changeType
+          path
+          viewerViewedState
+        }
+      }
+      author {
+        login
+        avatarUrl(size: 40)
+        url
+      }
+      assignees(first: 5) {
+        nodes {
+          id
+          login
+          avatarUrl(size: 40)
+          url
+        }
+      }
+      reviewRequests(first: 10) {
+        totalCount
+        nodes {
+          asCodeOwner
+          requestedReviewer {
+            __typename
+            ... on User {
+              id
+              login
+              avatarUrl(size: 40)
+              url
+            }
+            ... on Team {
+              id
+              combinedSlug
+            }
+            ... on Bot {
+              id
+              login
+              avatarUrl(size: 40)
+              url
+            }
+            ... on Mannequin {
+              id
+              login
+            }
+          }
+        }
+      }
+      reviews(first: $reviewsFirst) {
+        totalCount
+        nodes {
+          id
+          state
+          body
+          submittedAt
+          comments {
+            totalCount
+          }
+          author {
+            login
+            avatarUrl(size: 40)
+            url
+          }
+        }
+      }
+      reviewThreads(first: $threadsFirst) {
+        totalCount
+        nodes {
+          id
+          isResolved
+          isOutdated
+          path
+          comments(first: 10) {
+            nodes {
+              id
+              body
+              createdAt
+              diffHunk
+              author {
+                login
+                avatarUrl(size: 40)
+                url
+              }
+            }
+          }
+        }
+      }
+      closingIssuesReferences(first: 5) {
+        nodes {
+          id
+          number
+          title
+          url
+          state
+        }
+      }
+    }
+  }
+}

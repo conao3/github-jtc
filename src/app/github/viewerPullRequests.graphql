@@ -1,0 +1,48 @@
+query ViewerPullRequests($first: Int!, $after: String, $states: [PullRequestState!]) {
+  viewer {
+    pullRequests(
+      first: $first
+      after: $after
+      states: $states
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        number
+        title
+        url
+        createdAt
+        updatedAt
+        state
+        isDraft
+        reviewDecision
+        additions
+        deletions
+        changedFiles
+        comments {
+          totalCount
+        }
+        commits {
+          totalCount
+        }
+        repository {
+          nameWithOwner
+          owner {
+            login
+          }
+          name
+        }
+        author {
+          login
+          avatarUrl(size: 40)
+          url
+        }
+      }
+    }
+  }
+}

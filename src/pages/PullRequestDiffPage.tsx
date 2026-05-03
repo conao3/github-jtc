@@ -1,9 +1,17 @@
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import { useAuthSession } from "../app/auth.tsx";
 import { HelpDeskPanel, JtcChrome } from "../app/components/JtcChrome.tsx";
 import { JtcStatusTag } from "../app/components/JtcIndicators.tsx";
 import { Panel } from "../app/components/Panel.tsx";
+import {
+  fetchGitHubPullRequestDetail,
+  formatGitHubDateTime,
+  parseRepositoryScopedNumberRouteId,
+} from "../app/github.ts";
 import {
   MONO_CLASS,
   TABLE_CLASS,
@@ -12,45 +20,65 @@ import {
   buttonClassName,
 } from "../app/styles.ts";
 
-const oldLines = [
-  [41, "    public PaymentResult executePayment(PaymentRequest req) {"],
-  [42, "        try {"],
-  [43, "            Connection conn = dataSource.getConnection();"],
-  [44, "            // 決済処理の実行"],
-  [45, "            return paymentDao.execute(conn, req);"],
-  [46, "        } catch (SQLException e) {"],
-  [47, "            // ログ出力なしで継続（不具合）"],
-  [48, "            return PaymentResult.failure();"],
-  [49, "        }"],
-  [50, "    }"],
-] as const;
+export function PullRequestDiffScreen({
+  prId = "conao3:github-jtc:1",
+}: {
+  readonly prId?: string;
+}): JSX.Element {
+  const sessionQuery = useAuthSession();
+  const accessToken = sessionQuery.data?.accessToken;
+  const coordinates = parseRepositoryScopedNumberRouteId(prId, sessionQuery.data?.user.login);
+  const detailQuery = useQuery({
+    queryKey: ["github", "pull-request-diff", coordinates?.owner, coordinates?.name, coordinates?.number],
+    enabled: accessToken !== undefined && coordinates !== null,
+    queryFn: () =>
+      fetchGitHubPullRequestDetail(accessToken ?? "", {
+        owner: coordinates?.owner ?? "",
+        name: coordinates?.name ?? "",
+        number: coordinates?.number ?? 0,
+        filesFirst: 50,
+        reviewsFirst: 10,
+        threadsFirst: 50,
+        commitsFirst: 10,
+      }),
+  });
+  const pullRequest = detailQuery.data;
+  const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
+  const [selectedPath, setSelectedPath] = useState<string>("");
 
-const newLines = [
-  [41, "    public PaymentResult executePayment(PaymentRequest req) throws PaymentException {"],
-  [42, '        Objects.requireNonNull(req, "req must not be null");'],
-  [43, "        final String tranId = req.getTransactionId();"],
-  [44, "        try (Connection conn = dataSource.getConnection()) {"],
-  [45, '            log.info("[PAY-START] tranId={} amount={}", tranId, req.getAmount());'],
-  [46, "            return paymentDao.execute(conn, req);"],
-  [47, "        } catch (SQLTimeoutException e) {"],
-  [48, '            log.error("[PAY-TIMEOUT] tranId={} 勘定系連携ID={}", tranId, req.getKanjoId(), e);'],
-  [49, '            throw new PaymentException("E0042", "DB接続タイムアウト", tranId, e);'],
-  [50, "        } catch (SQLException e) {"],
-  [51, '            log.error("[PAY-DB-ERROR] tranId={}", tranId, e);'],
-  [52, '            throw new PaymentException("E0099", "DBエラー", tranId, e);'],
-  [53, "        }"],
-  [54, "    }"],
-] as const;
+  useEffect(() => {
+    if (selectedPath.length === 0 && files[0] !== undefined) {
+      setSelectedPath(files[0].path);
+    }
+  }, [files, selectedPath]);
 
-export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prId?: string }): JSX.Element {
+  const selectedFile = files.find((file) => file.path === selectedPath) ?? files[0] ?? null;
+  const threadComments = useMemo(
+    () =>
+      (pullRequest?.reviewThreads?.nodes ?? [])
+        .filter((thread) => thread !== null && thread.path === selectedFile?.path)
+        .flatMap((thread) =>
+          (thread?.comments.nodes ?? [])
+            .filter((comment) => comment !== null)
+            .map((comment) => ({
+              id: comment.id,
+              path: thread?.path ?? selectedFile?.path ?? "",
+              body: comment.body,
+              createdAt: comment.createdAt,
+              diffHunk: comment.diffHunk,
+              author: comment.author?.login ?? "unknown",
+              resolved: thread?.isResolved ?? false,
+              outdated: thread?.isOutdated ?? false,
+            })),
+        ),
+    [pullRequest?.reviewThreads?.nodes, selectedFile?.path],
+  );
+  const commits = (pullRequest?.commits?.nodes ?? []).filter((commit) => commit !== null);
   const reviewChecklist = [
-    { label: "例外処理が適切である", checked: true },
-    { label: "ログ出力規約に準拠", checked: true },
-    { label: "テストケースが網羅的", checked: true },
-    { label: "影響範囲調査済", checked: false },
-    { label: "セキュリティ確認済", checked: false },
-    { label: "設計書との整合確認", checked: false },
-    { label: "性能影響評価済", checked: false },
+    { label: "対象ファイルを確認", checked: selectedFile !== null },
+    { label: "viewerViewedState を確認", checked: selectedFile?.viewerViewedState === "VIEWED" },
+    { label: "レビューコメントを確認", checked: threadComments.length > 0 },
+    { label: "コミット履歴を確認", checked: commits.length > 0 },
   ] as const;
 
   return (
@@ -68,20 +96,29 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
         <>
           <Panel title="変更ファイル" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
-              <li className={clsx(TODO_LIST_ITEM_CLASS, "bg-amber-100 font-bold")}>
-                <span>📄 PaymentService.java</span>
-                <span className={clsx("text-xs", MONO_CLASS)}>+76 -32</span>
-              </li>
-              {[
-                ["📄 PaymentException.java", "+18 -0"],
-                ["📄 PaymentServiceTest.java", "+34 -10"],
-                ["📄 release-notes.md", "+0 -0"],
-              ].map(([label, delta]) => (
-                <li key={label} className={TODO_LIST_ITEM_CLASS}>
-                  <span>{label}</span>
-                  <span className={clsx("text-xs", MONO_CLASS)}>{delta}</span>
+              {files.length === 0 ? (
+                <li className={TODO_LIST_ITEM_CLASS}>
+                  <span>ファイルなし</span>
+                  <span className={clsx("text-xs", MONO_CLASS)}>0</span>
                 </li>
-              ))}
+              ) : (
+                files.map((file) => (
+                  <li
+                    key={file.path}
+                    className={clsx(
+                      TODO_LIST_ITEM_CLASS,
+                      file.path === selectedFile?.path && "bg-amber-100 font-bold",
+                    )}
+                  >
+                    <button type="button" className="text-left" onClick={() => setSelectedPath(file.path)}>
+                      📄 {file.path}
+                    </button>
+                    <span className={clsx("text-xs", MONO_CLASS)}>
+                      +{file.additions} -{file.deletions}
+                    </span>
+                  </li>
+                ))
+              )}
             </ul>
           </Panel>
 
@@ -90,11 +127,13 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
               {reviewChecklist.map(({ label, checked }) => (
                 <div key={label}>
                   <label>
-                    <input type="checkbox" defaultChecked={checked} /> {label}
+                    <input type="checkbox" checked={checked} readOnly /> {label}
                   </label>
                 </div>
               ))}
-              <div className="pt-1 text-xs text-slate-600">※全項目チェックで承認可能</div>
+              <div className="pt-1 text-xs text-slate-600">
+                ※ GraphQL では patch 本文は取得できないため GitHub 本体への遷移が必要です。
+              </div>
             </div>
           </Panel>
 
@@ -105,187 +144,175 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
       }
     >
       <Panel
-        title={`差分表示 ${prId} ／ PaymentService.java`}
+        title={`差分表示 PR #${coordinates?.number ?? "?"} ／ ${selectedFile?.path ?? "file not selected"}`}
         action={
           <span>
             表示モード：
             <select className="ml-1 border border-slate-400 px-1 py-0.5 text-xs">
-              <option>横並び（Side-by-Side）</option>
-              <option>縦並び（Unified）</option>
-            </select>
-            <span className="ml-2">空白：</span>
-            <select className="ml-1 border border-slate-400 px-1 py-0.5 text-xs">
-              <option>無視する</option>
-              <option>無視しない</option>
+              <option>ファイル要約</option>
             </select>
           </span>
         }
         bodyClassName="p-0"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
-          <label>ファイル：</label>
-          <select className="min-w-72 border border-slate-400 px-1 py-0.5">
-            <option>(1/4) src/main/java/jp/co/jtc/payment/PaymentService.java</option>
-            <option>(2/4) src/main/java/jp/co/jtc/payment/PaymentException.java</option>
-            <option>(3/4) src/test/java/jp/co/jtc/payment/PaymentServiceTest.java</option>
-            <option>(4/4) doc/release-notes.md</option>
-          </select>
-          <button type="button" className={buttonClassName({ size: "sm" })}>
-            ＜ 前ファイル
-          </button>
-          <button type="button" className={buttonClassName({ size: "sm" })}>
-            次ファイル ＞
-          </button>
-          <span className="text-xs text-slate-600">
-            追加：<b className="text-green-700">+76行</b> 削除：<b className="text-red-700">-32行</b>
-          </span>
-          <span className="ml-auto text-xs">
-            <label>
-              <input type="checkbox" defaultChecked /> 行番号表示
-            </label>
-            <span className="px-1" />
-            <label>
-              <input type="checkbox" defaultChecked /> 文字色強調
-            </label>
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 border-t border-t-slate-300">
-          <div className="border-r border-r-slate-300">
-            <div className="border-b border-b-slate-300 bg-gradient-to-b from-red-100 to-red-200 px-2 py-1 text-xs font-bold">
-              変更前（develop @ 7e2d9f88）
+        {coordinates === null ? (
+          <div className="py-8 text-center text-red-800">PR 識別子を解釈できませんでした。</div>
+        ) : detailQuery.isPending ? (
+          <div className="py-8 text-center text-slate-600">GitHub から差分情報を取得しています。</div>
+        ) : detailQuery.isError ? (
+          <div className="py-8 text-center text-red-800">
+            {detailQuery.error instanceof Error
+              ? detailQuery.error.message
+              : "差分情報の取得に失敗しました。"}
+          </div>
+        ) : pullRequest === null || pullRequest === undefined || selectedFile === null ? (
+          <div className="py-8 text-center text-slate-600">表示できる差分データがありません。</div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
+              <label>ファイル：</label>
+              <select
+                className="min-w-72 border border-slate-400 px-1 py-0.5"
+                value={selectedFile.path}
+                onChange={(event) => setSelectedPath(event.target.value)}
+              >
+                {files.map((file, index) => (
+                  <option key={file.path} value={file.path}>
+                    ({index + 1}/{files.length}) {file.path}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-slate-600">
+                追加：<b className="text-green-700">+{selectedFile.additions}行</b> 削除：
+                <b className="text-red-700">-{selectedFile.deletions}行</b>
+              </span>
             </div>
-            <table className={clsx("w-full border-collapse text-xs", MONO_CLASS)}>
+
+            <table className={TABLE_CLASS}>
               <tbody>
-                {oldLines.map(([line, content]) => {
-                  const removed = [44, 47, 48].includes(line);
-                  return (
-                    <tr key={line} className={removed ? "bg-red-100" : "bg-white"}>
-                      <td className="w-10 border-r border-r-slate-200 px-1.5 py-px text-right text-slate-400">
-                        {line}
-                      </td>
-                      <td className="whitespace-pre px-2 py-px">
-                        {removed ? "- " : "  "}
-                        {content}
-                      </td>
-                    </tr>
-                  );
-                })}
+                <tr>
+                  <th>変更種別</th>
+                  <td>{selectedFile.changeType}</td>
+                  <th>viewerViewedState</th>
+                  <td>
+                    <JtcStatusTag tone={selectedFile.viewerViewedState === "VIEWED" ? "done" : "confirmed"}>
+                      {selectedFile.viewerViewedState}
+                    </JtcStatusTag>
+                  </td>
+                </tr>
+                <tr>
+                  <th>PR</th>
+                  <td className={MONO_CLASS}>#{pullRequest.number}</td>
+                  <th>リポジトリ</th>
+                  <td className={MONO_CLASS}>
+                    {coordinates.owner}/{coordinates.name}
+                  </td>
+                </tr>
+                <tr>
+                  <th>最新更新</th>
+                  <td className={MONO_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
+                  <th>レビューコメント数</th>
+                  <td>{threadComments.length}</td>
+                </tr>
               </tbody>
             </table>
-          </div>
-          <div>
-            <div className="border-b border-b-slate-300 bg-gradient-to-b from-green-100 to-green-200 px-2 py-1 text-xs font-bold">
-              変更後（feat/IS-2025-00125 @ a4f3c1b2）
-            </div>
-            <table className={clsx("w-full border-collapse text-xs", MONO_CLASS)}>
-              <tbody>
-                {newLines.map(([line, content]) => {
-                  const added = [41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52].includes(line);
-                  return (
-                    <tr key={line} className={added ? "bg-green-100" : "bg-white"}>
-                      <td className="w-10 border-r border-r-slate-200 px-1.5 py-px text-right text-slate-400">
-                        {line}
-                      </td>
-                      <td className="whitespace-pre px-2 py-px">
-                        {added ? "+ " : "  "}
-                        {content}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        <div className="border-t border-t-slate-300 bg-slate-50 p-2">
-          <div className="mb-1 text-xs font-bold">■ 行コメント（45行目）</div>
-          <div className="mb-1 border border-slate-300 bg-white p-2 text-xs">
-            <div className="font-bold text-blue-900">
-              ● 佐藤太一郎（課長）
-              <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
-                R8/05/02 10:25
-              </span>
+            <div className="border-t border-t-slate-300 bg-slate-50 p-2 text-xs text-slate-700">
+              GitHub GraphQL API では patch hunk 本文そのものは返らないため、この画面では
+              <b>ファイル単位の差分メタデータ</b>と<b>レビューコメント</b>
+              を表示しています。完全な unified / side-by-side diff は GitHub 本体で確認してください。
             </div>
-            <div>
-              ログメッセージのフォーマットですが、運用統括部の標準ログ規約（社内規程
-              Sec-013）に準拠する必要があります。
-              <br />
-              規約上、決済処理は「[PAY-XXX]」プレフィックス＋tranId＋勘定系連携ID＋金額の順で出力してください。
+          </>
+        )}
+      </Panel>
+
+      <Panel title="レビューコメント / スレッド" action={<span>{threadComments.length}件</span>}>
+        <div className="space-y-1.5 bg-slate-50 p-0.5">
+          {threadComments.length === 0 ? (
+            <div className="border border-slate-300 bg-white p-3 text-xs text-slate-600">
+              このファイルに紐づくレビューコメントはありません。
             </div>
-          </div>
-          <div className="mb-1 border border-slate-300 bg-white p-2 text-xs">
-            <div className="font-bold text-blue-900">
-              ● 山田太郎
-              <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
-                R8/05/02 11:30
-              </span>
-              <span className="ml-2">
-                <JtcStatusTag tone="done">対応済</JtcStatusTag>
-              </span>
-            </div>
-            <div>
-              ご指摘ありがとうございます。45行目および48行目について、ログ規約に準拠する形に修正いたしました（コミット：a4f3c1b2）。
-            </div>
-          </div>
-          <div className="border border-dashed border-amber-500 bg-amber-50 p-2 text-xs">
-            <textarea
-              className="h-9 w-full border border-slate-400 px-1.5 py-1"
-              placeholder="行コメントを入力（マークダウン記法対応）"
-            />
-            <div className="mt-1 text-right">
-              <button type="button" className={buttonClassName({ size: "sm", tone: "primary" })}>
-                コメント追加
-              </button>
-            </div>
-          </div>
+          ) : (
+            threadComments.map((comment) => (
+              <div key={comment.id} className="border border-slate-300 bg-white p-2 text-xs">
+                <div className="mb-1 font-bold text-blue-900">
+                  ● {comment.author}
+                  <span className={clsx("ml-2 text-xs font-normal text-slate-600", MONO_CLASS)}>
+                    {formatGitHubDateTime(comment.createdAt)}
+                  </span>
+                  <span className="ml-2">
+                    <JtcStatusTag
+                      tone={comment.resolved ? "done" : comment.outdated ? "confirmed" : "review"}
+                    >
+                      {comment.resolved ? "resolved" : comment.outdated ? "outdated" : "open"}
+                    </JtcStatusTag>
+                  </span>
+                </div>
+                <div className="mb-2 whitespace-pre-wrap">{comment.body}</div>
+                {comment.diffHunk === null ? null : (
+                  <pre
+                    className={clsx(
+                      "overflow-auto border border-slate-200 bg-slate-50 p-2 text-xs",
+                      MONO_CLASS,
+                    )}
+                  >
+                    {comment.diffHunk}
+                  </pre>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </Panel>
 
-      <Panel
-        title="静的解析結果（SonarQube連携）"
-        action={<span>警告 2件 / エラー 0件</span>}
-        bodyClassName="p-0"
-      >
+      <Panel title="関連コミット" action={<span>{commits.length}件</span>} bodyClassName="p-0">
         <table className={TABLE_CLASS}>
           <thead>
             <tr>
-              <th className="w-10">No</th>
-              <th className="w-20">区分</th>
-              <th className="w-12">行</th>
-              <th>指摘内容</th>
-              <th className="w-24">ルール</th>
-              <th className="w-20">状態</th>
+              <th className="w-28">OID</th>
+              <th>メッセージ</th>
+              <th className="w-24">Author</th>
+              <th className="w-28">日時</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="text-center">1</td>
-              <td className="text-center">
-                <JtcStatusTag tone="review">警告</JtcStatusTag>
-              </td>
-              <td className={clsx("text-center", MONO_CLASS)}>42</td>
-              <td>Objects.requireNonNull の代わりに @NonNull アノテーションの使用を推奨します。</td>
-              <td className={clsx("text-center", MONO_CLASS)}>JTC-CODE-S013</td>
-              <td className="text-center">
-                <JtcStatusTag tone="rejected">未対応</JtcStatusTag>
-              </td>
-            </tr>
-            <tr>
-              <td className="text-center">2</td>
-              <td className="text-center">
-                <JtcStatusTag tone="review">警告</JtcStatusTag>
-              </td>
-              <td className={clsx("text-center", MONO_CLASS)}>51</td>
-              <td>例外メッセージはメッセージリソース化することを推奨します（多言語対応規程）。</td>
-              <td className={clsx("text-center", MONO_CLASS)}>JTC-CODE-M008</td>
-              <td className="text-center">
-                <JtcStatusTag tone="confirmed">確認中</JtcStatusTag>
-              </td>
-            </tr>
+            {commits.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-slate-600">
+                  関連コミットはありません。
+                </td>
+              </tr>
+            ) : (
+              commits.map((commit) => {
+                const author = (commit.commit.authors.nodes ?? [])[0];
+
+                return (
+                  <tr key={commit.id}>
+                    <td className={MONO_CLASS}>{commit.commit.oid.slice(0, 12)}</td>
+                    <td>{commit.commit.messageHeadline}</td>
+                    <td className="text-center">{author?.user?.login ?? author?.name ?? "unknown"}</td>
+                    <td className={clsx("text-center", MONO_CLASS)}>
+                      {formatGitHubDateTime(commit.commit.committedDate)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
+      </Panel>
+
+      <Panel title="GitHubで完全差分を開く">
+        <div className="p-3 text-center">
+          <a
+            href={pullRequest?.url}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClassName({ tone: "primary", size: "lg", className: "inline-flex" })}
+          >
+            GitHubのDiffを開く
+          </a>
+        </div>
       </Panel>
     </JtcChrome>
   );
@@ -294,5 +321,5 @@ export function PullRequestDiffScreen({ prId = "PR-2025-00089" }: { readonly prI
 export default function PullRequestDiffPage(): JSX.Element {
   const { prId } = useParams();
 
-  return <PullRequestDiffScreen prId={prId ?? "PR-2025-00089"} />;
+  return <PullRequestDiffScreen prId={prId ?? "conao3:github-jtc:1"} />;
 }

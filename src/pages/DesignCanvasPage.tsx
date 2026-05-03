@@ -118,18 +118,18 @@ const sections: SectionDefinition[] = [
       {
         id: "pr-detail",
         label: "⑤-1 プルリクエスト詳細（承認フロー付き）",
-        route: "/pull-requests/PR-2025-00089",
+        route: "/pull-requests/conao3:github-jtc:1",
         width: 1280,
         height: 1321,
-        render: () => <PullRequestDetailScreen prId="PR-2025-00089" />,
+        render: () => <PullRequestDetailScreen prId="conao3:github-jtc:1" />,
       },
       {
         id: "pr-diff",
         label: "⑤-2 PR差分表示（コードdiff）",
-        route: "/pull-requests/PR-2025-00089/diff",
+        route: "/pull-requests/conao3:github-jtc:1/diff",
         width: 1280,
         height: 878,
-        render: () => <PullRequestDiffScreen prId="PR-2025-00089" />,
+        render: () => <PullRequestDiffScreen prId="conao3:github-jtc:1" />,
       },
       {
         id: "issue-detail",
