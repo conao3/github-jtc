@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -742,9 +743,12 @@ export function CommitsScreen(): JSX.Element {
                     </td>
                     <td className="text-center">
                       <div className="flex items-center justify-center gap-1 text-xs">
-                        <a href={commit.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                        <Link
+                          to={`/commits/${selectedRepoId}/${commit.oid}/diff`}
+                          className={TEXT_LINK_CLASS}
+                        >
                           差分
-                        </a>
+                        </Link>
                         <span className="text-slate-400">|</span>
                         <button
                           type="button"

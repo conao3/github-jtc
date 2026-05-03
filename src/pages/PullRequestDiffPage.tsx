@@ -11,6 +11,7 @@ import { Panel } from "../app/components/Panel.tsx";
 import {
   describeGitHubError,
   fetchGitHubPullRequestDetail,
+  fetchGitHubPullRequestDiffFiles,
   formatGitHubDateTime,
   formatGitHubFileChangeType,
   formatGitHubViewedState,
@@ -19,10 +20,24 @@ import {
 import {
   MONO_CLASS,
   TABLE_CLASS,
+  TEXT_LINK_CLASS,
   TODO_LIST_CLASS,
   TODO_LIST_ITEM_CLASS,
   buttonClassName,
 } from "../app/styles.ts";
+
+interface PullRequestDiffFileEntry {
+  readonly path: string;
+  readonly additions: number;
+  readonly deletions: number;
+  readonly changes: number;
+  readonly changeType: string;
+  readonly viewerViewedState: string | null;
+  readonly patch?: string;
+  readonly blobUrl: string | null;
+  readonly rawUrl: string | null;
+  readonly previousFilename?: string;
+}
 
 export function PullRequestDiffScreen({
   prId = "conao3:github-jtc:1",
@@ -46,17 +61,71 @@ export function PullRequestDiffScreen({
         commitsFirst: 10,
       }),
   });
+  const restFilesQuery = useQuery({
+    queryKey: [
+      "github",
+      "pull-request-diff-files",
+      coordinates?.owner,
+      coordinates?.name,
+      coordinates?.number,
+    ],
+    enabled: accessToken !== undefined && coordinates !== null,
+    queryFn: () =>
+      fetchGitHubPullRequestDiffFiles(accessToken ?? "", {
+        owner: coordinates?.owner ?? "",
+        name: coordinates?.name ?? "",
+        number: coordinates?.number ?? 0,
+      }),
+  });
   const pullRequest = detailQuery.data;
   const files = (pullRequest?.files?.nodes ?? []).filter((file) => file !== null);
+  const restFiles = restFilesQuery.data ?? [];
   const [selectedPath, setSelectedPath] = useState<string>("");
 
-  useEffect(() => {
-    if (selectedPath.length === 0 && files[0] !== undefined) {
-      setSelectedPath(files[0].path);
-    }
-  }, [files, selectedPath]);
+  const fileEntries = useMemo(() => {
+    const byPath = new Map<string, PullRequestDiffFileEntry>();
 
-  const selectedFile = files.find((file) => file.path === selectedPath) ?? files[0] ?? null;
+    for (const file of restFiles) {
+      byPath.set(file.filename, {
+        path: file.filename,
+        additions: file.additions,
+        deletions: file.deletions,
+        changes: file.changes,
+        changeType: file.status,
+        patch: file.patch,
+        blobUrl: file.blob_url,
+        rawUrl: file.raw_url,
+        previousFilename: file.previous_filename,
+        viewerViewedState: null,
+      });
+    }
+
+    for (const file of files) {
+      const current = byPath.get(file.path);
+      byPath.set(file.path, {
+        path: file.path,
+        additions: current?.additions ?? file.additions,
+        deletions: current?.deletions ?? file.deletions,
+        changes: current?.changes ?? file.additions + file.deletions,
+        changeType: current?.changeType ?? file.changeType,
+        patch: current?.patch,
+        blobUrl: current?.blobUrl ?? null,
+        rawUrl: current?.rawUrl ?? null,
+        previousFilename: current?.previousFilename,
+        viewerViewedState: file.viewerViewedState,
+      });
+    }
+
+    return [...byPath.values()];
+  }, [files, restFiles]);
+
+  useEffect(() => {
+    if (selectedPath.length === 0 && fileEntries[0] !== undefined) {
+      setSelectedPath(fileEntries[0].path);
+    }
+  }, [fileEntries, selectedPath]);
+
+  const selectedFile = fileEntries.find((file) => file.path === selectedPath) ?? fileEntries[0] ?? null;
   const threadComments = useMemo(
     () =>
       (pullRequest?.reviewThreads?.nodes ?? [])
@@ -84,6 +153,9 @@ export function PullRequestDiffScreen({
     { label: "レビューコメントを確認", checked: threadComments.length > 0 },
     { label: "コミット履歴を確認", checked: commits.length > 0 },
   ] as const;
+  const isPending = detailQuery.isPending || restFilesQuery.isPending;
+  const error = detailQuery.error ?? restFilesQuery.error;
+  const isError = detailQuery.isError || restFilesQuery.isError;
 
   return (
     <JtcChrome
@@ -100,13 +172,13 @@ export function PullRequestDiffScreen({
         <>
           <Panel title="変更ファイル" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
-              {files.length === 0 ? (
+              {fileEntries.length === 0 ? (
                 <li className={TODO_LIST_ITEM_CLASS}>
                   <span>ファイルなし</span>
                   <span className={clsx("text-xs", MONO_CLASS)}>0</span>
                 </li>
               ) : (
-                files.map((file) => (
+                fileEntries.map((file) => (
                   <li
                     key={file.path}
                     className={clsx(
@@ -136,7 +208,7 @@ export function PullRequestDiffScreen({
                 </div>
               ))}
               <div className="pt-1 text-xs text-slate-600">
-                ※ GraphQL ではパッチ本文は取得できないため GitHub 本体への遷移が必要です。
+                ※ パッチ本文は GitHub REST API から取得しています。
               </div>
             </div>
           </Panel>
@@ -166,13 +238,13 @@ export function PullRequestDiffScreen({
             detail="一覧画面から対象プルリクエストを選び直してください。"
             className="py-8"
           />
-        ) : detailQuery.isPending ? (
+        ) : isPending ? (
           <div className="py-8 text-center text-slate-600">GitHub から差分情報を取得しています。</div>
-        ) : detailQuery.isError ? (
+        ) : isError ? (
           <GitHubInlineState
             tone="error"
             className="py-8"
-            {...describeGitHubError(detailQuery.error, "差分情報の取得に失敗しました。")}
+            {...describeGitHubError(error, "差分情報の取得に失敗しました。")}
           />
         ) : pullRequest === null || pullRequest === undefined || selectedFile === null ? (
           <GitHubInlineState
@@ -190,9 +262,9 @@ export function PullRequestDiffScreen({
                 value={selectedFile.path}
                 onChange={(event) => setSelectedPath(event.target.value)}
               >
-                {files.map((file, index) => (
+                {fileEntries.map((file, index) => (
                   <option key={file.path} value={file.path}>
-                    ({index + 1}/{files.length}) {file.path}
+                    ({index + 1}/{fileEntries.length}) {file.path}
                   </option>
                 ))}
               </select>
@@ -225,16 +297,49 @@ export function PullRequestDiffScreen({
                 <tr>
                   <th>最新更新</th>
                   <td className={MONO_CLASS}>{formatGitHubDateTime(pullRequest.updatedAt)}</td>
+                  <th>変更量</th>
+                  <td className={clsx("text-xs", MONO_CLASS)}>{selectedFile.changes}行</td>
+                </tr>
+                <tr>
+                  <th>旧ファイル名</th>
+                  <td className={clsx("text-xs", MONO_CLASS)}>{selectedFile.previousFilename ?? "－"}</td>
                   <th>レビューコメント数</th>
                   <td>{threadComments.length}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div className="border-t border-t-slate-300 bg-slate-50 p-2 text-xs text-slate-700">
-              GitHub GraphQL API ではパッチ本文そのものは返らないため、この画面では
-              <b>ファイル単位の差分情報</b>と<b>レビューコメント</b>
-              を表示しています。完全な統合差分や左右比較差分は GitHub 本体で確認してください。
+            <div className="border-t border-t-slate-300 bg-slate-50 p-2">
+              {selectedFile.patch === undefined ? (
+                <GitHubInlineState
+                  tone="empty"
+                  title="このファイルのパッチ本文は取得できませんでした。"
+                  detail="バイナリファイル、または GitHub がパッチ生成対象外とした変更の可能性があります。"
+                  className="border border-slate-300 bg-white p-4 text-xs"
+                />
+              ) : (
+                <pre
+                  className={clsx(
+                    "h-96 overflow-auto border border-slate-300 bg-white p-3 text-xs whitespace-pre-wrap",
+                    MONO_CLASS,
+                  )}
+                >
+                  {selectedFile.patch}
+                </pre>
+              )}
+
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                {selectedFile.blobUrl === null ? null : (
+                  <a href={selectedFile.blobUrl} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                    Blobを開く
+                  </a>
+                )}
+                {selectedFile.rawUrl === null ? null : (
+                  <a href={selectedFile.rawUrl} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
+                    Rawを開く
+                  </a>
+                )}
+              </div>
             </div>
           </>
         )}

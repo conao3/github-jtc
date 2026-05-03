@@ -58,6 +58,70 @@ export type GitHubPullRequestDetail = NonNullable<
   NonNullable<PullRequestDetailQuery["repository"]>["pullRequest"]
 >;
 export type GitHubIssueDetail = NonNullable<NonNullable<IssueDetailQuery["repository"]>["issue"]>;
+export type GitHubRestCommitDiffFile = {
+  readonly sha: string;
+  readonly filename: string;
+  readonly status: string;
+  readonly additions: number;
+  readonly deletions: number;
+  readonly changes: number;
+  readonly blob_url: string | null;
+  readonly raw_url: string | null;
+  readonly contents_url: string | null;
+  readonly patch?: string;
+  readonly previous_filename?: string;
+};
+export type GitHubRestCommitDiff = {
+  readonly sha: string;
+  readonly html_url: string;
+  readonly commit: {
+    readonly message: string;
+    readonly author: {
+      readonly name: string;
+      readonly email: string;
+      readonly date: string;
+    };
+    readonly committer: {
+      readonly name: string;
+      readonly email: string;
+      readonly date: string;
+    };
+  };
+  readonly author: {
+    readonly login: string;
+    readonly avatar_url: string;
+    readonly html_url: string;
+  } | null;
+  readonly committer: {
+    readonly login: string;
+    readonly avatar_url: string;
+    readonly html_url: string;
+  } | null;
+  readonly parents: ReadonlyArray<{
+    readonly sha: string;
+    readonly html_url: string;
+    readonly url: string;
+  }>;
+  readonly stats: {
+    readonly additions: number;
+    readonly deletions: number;
+    readonly total: number;
+  };
+  readonly files: ReadonlyArray<GitHubRestCommitDiffFile>;
+};
+export type GitHubRestPullRequestDiffFile = {
+  readonly sha: string;
+  readonly filename: string;
+  readonly status: string;
+  readonly additions: number;
+  readonly deletions: number;
+  readonly changes: number;
+  readonly blob_url: string | null;
+  readonly raw_url: string | null;
+  readonly contents_url: string | null;
+  readonly patch?: string;
+  readonly previous_filename?: string;
+};
 
 export interface GitHubErrorDescriptor {
   readonly kind: "permission_denied" | "rate_limited" | "not_found" | "network" | "unknown";
@@ -92,6 +156,54 @@ function createGitHubApolloClient(accessToken: string): ApolloClient {
       },
     },
   });
+}
+
+function getGitHubRestBaseUrl(): string {
+  return import.meta.env["VITE_GITHUB_REST_URL"]?.trim() ?? "https://api.github.com";
+}
+
+async function parseGitHubRestError(response: Response): Promise<string> {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const payload = (await response.json()) as { message?: string };
+    if (typeof payload.message === "string" && payload.message.length > 0) {
+      return payload.message;
+    }
+  }
+
+  const text = await response.text();
+  if (text.length > 0) {
+    return text;
+  }
+
+  return `${response.status} ${response.statusText}`;
+}
+
+async function executeGitHubRestRequest<TResponse>(
+  accessToken: string,
+  path: string,
+  init?: RequestInit,
+): Promise<TResponse> {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/vnd.github+json");
+  }
+
+  headers.set("Authorization", `Bearer ${accessToken}`);
+  headers.set("X-GitHub-Api-Version", "2022-11-28");
+
+  const response = await fetch(new URL(path, getGitHubRestBaseUrl()).toString(), {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseGitHubRestError(response));
+  }
+
+  return (await response.json()) as TResponse;
 }
 
 async function executeGitHubQuery<TData, TVariables extends Record<string, unknown>>(
@@ -218,6 +330,86 @@ export async function fetchGitHubIssueDetail(
 ): Promise<GitHubIssueDetail | null> {
   const data = await executeGitHubQuery(accessToken, IssueDetailDocument, variables);
   return data.repository?.issue ?? null;
+}
+
+export async function fetchGitHubCommitDiff(
+  accessToken: string,
+  variables: {
+    readonly owner: string;
+    readonly name: string;
+    readonly ref: string;
+  },
+): Promise<GitHubRestCommitDiff> {
+  const perPage = 100;
+  let page = 1;
+  let firstPage: Omit<GitHubRestCommitDiff, "files"> | null = null;
+  const files: GitHubRestCommitDiffFile[] = [];
+
+  for (;;) {
+    const response = await executeGitHubRestRequest<GitHubRestCommitDiff>(
+      accessToken,
+      `/repos/${encodeURIComponent(variables.owner)}/${encodeURIComponent(variables.name)}/commits/${encodeURIComponent(variables.ref)}?per_page=${perPage}&page=${page}`,
+    );
+
+    if (firstPage === null) {
+      const { files: responseFiles, ...meta } = response;
+      firstPage = meta;
+      files.push(...responseFiles);
+    } else {
+      files.push(...response.files);
+    }
+
+    if (response.files.length < perPage) {
+      break;
+    }
+
+    page += 1;
+    if (page > 30) {
+      break;
+    }
+  }
+
+  if (firstPage === null) {
+    throw new Error("GitHub REST API のコミット差分結果にデータがありません。");
+  }
+
+  return {
+    ...firstPage,
+    files,
+  };
+}
+
+export async function fetchGitHubPullRequestDiffFiles(
+  accessToken: string,
+  variables: {
+    readonly owner: string;
+    readonly name: string;
+    readonly number: number;
+  },
+): Promise<GitHubRestPullRequestDiffFile[]> {
+  const perPage = 100;
+  let page = 1;
+  const files: GitHubRestPullRequestDiffFile[] = [];
+
+  for (;;) {
+    const response = await executeGitHubRestRequest<GitHubRestPullRequestDiffFile[]>(
+      accessToken,
+      `/repos/${encodeURIComponent(variables.owner)}/${encodeURIComponent(variables.name)}/pulls/${variables.number}/files?per_page=${perPage}&page=${page}`,
+    );
+
+    files.push(...response);
+
+    if (response.length < perPage) {
+      break;
+    }
+
+    page += 1;
+    if (page > 30) {
+      break;
+    }
+  }
+
+  return files;
 }
 
 export function createRepositoryRouteId(input: GitHubRepositoryCoordinates | string): string {
@@ -481,18 +673,25 @@ export function formatGitHubViewedState(value: string | null | undefined): strin
 export function formatGitHubFileChangeType(value: string | null | undefined): string {
   switch (value) {
     case "ADDED":
+    case "added":
       return "追加";
     case "CHANGED":
+    case "changed":
       return "変更";
     case "COPIED":
+    case "copied":
       return "複製";
     case "DELETED":
+    case "removed":
       return "削除";
     case "MODIFIED":
+    case "modified":
       return "修正";
     case "RENAMED":
+    case "renamed":
       return "名前変更";
     case "UNCHANGED":
+    case "unchanged":
       return "変更なし";
     default:
       return value ?? "－";

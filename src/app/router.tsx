@@ -16,6 +16,7 @@ const PullRequestDiffPage = lazy(() => import("../pages/PullRequestDiffPage.tsx"
 const IssuesPage = lazy(() => import("../pages/IssuesPage.tsx"));
 const IssueDetailPage = lazy(() => import("../pages/IssueDetailPage.tsx"));
 const CommitsPage = lazy(() => import("../pages/CommitsPage.tsx"));
+const CommitDiffPage = lazy(() => import("../pages/CommitDiffPage.tsx"));
 const ProfilePage = lazy(() => import("../pages/ProfilePage.tsx"));
 
 export function AppRoutes(): JSX.Element {
@@ -35,6 +36,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/issues" element={<IssuesPage />} />
         <Route path="/issues/:issueId" element={<IssueDetailPage />} />
         <Route path="/commits" element={<CommitsPage />} />
+        <Route path="/commits/:repoId/:commitRef/diff" element={<CommitDiffPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
