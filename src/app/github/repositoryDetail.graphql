@@ -25,8 +25,24 @@ query RepositoryDetail(
     issues(states: OPEN) {
       totalCount
     }
-    pullRequests(states: OPEN) {
+    pullRequests(first: 10, states: OPEN, orderBy: { field: UPDATED_AT, direction: DESC }) {
       totalCount
+      nodes {
+        id
+        number
+        title
+        url
+        updatedAt
+        state
+        isDraft
+        reviewDecision
+        comments {
+          totalCount
+        }
+        author {
+          login
+        }
+      }
     }
     primaryLanguage {
       name
@@ -57,8 +73,29 @@ query RepositoryDetail(
       target {
         __typename
         ... on Commit {
-          history(first: 1) {
+          history(first: 10) {
             totalCount
+            nodes {
+              id
+              oid
+              abbreviatedOid
+              messageHeadline
+              committedDate
+              url
+              author {
+                name
+                user {
+                  login
+                }
+              }
+              associatedPullRequests(first: 1) {
+                nodes {
+                  id
+                  number
+                  url
+                }
+              }
+            }
           }
           committedDate
           messageHeadline
@@ -87,6 +124,27 @@ query RepositoryDetail(
               name
               user {
                 login
+              }
+            }
+          }
+        }
+      }
+    }
+    tagRefs: refs(refPrefix: "refs/tags/", first: 10, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
+      totalCount
+      nodes {
+        id
+        name
+        target {
+          __typename
+          ... on Commit {
+            committedDate
+          }
+          ... on Tag {
+            target {
+              __typename
+              ... on Commit {
+                committedDate
               }
             }
           }
