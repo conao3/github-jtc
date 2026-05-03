@@ -3,12 +3,16 @@
 @utility jtc-user-info-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 
   & td {
     vertical-align: top;
-    padding-right: 0.5rem;
+    overflow: hidden;
+    padding-right: 0.375rem;
     padding-bottom: 0.125rem;
     font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   & td .lbl {
@@ -16,7 +20,13 @@
   }
 
   & td .val {
+    display: inline-block;
     font-weight: 700;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+    white-space: nowrap;
   }
 }
 

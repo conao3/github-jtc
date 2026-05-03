@@ -22,7 +22,7 @@ export const HEADER_ROW_CLASS = clsx(
   "bg-gradient-to-b from-white via-slate-100 to-blue-100",
 );
 export const LOGO_CELL_CLASS = clsx(
-  "flex w-72 shrink-0 flex-col justify-center border-r border-blue-950 px-3 py-2 text-white shadow-inner",
+  "flex w-60 shrink-0 flex-col justify-center border-r border-blue-950 px-3 py-2 text-white shadow-inner xl:w-72",
   "bg-gradient-to-b from-sky-600 via-blue-800 to-blue-950",
 );
 export const PRODUCT_NAME_CLASS = "text-lg font-bold tracking-wide text-white drop-shadow-sm";
@@ -31,16 +31,17 @@ export const PRODUCT_SUBTITLE_CLASS =
   "mt-1 border-t border-dashed border-blue-200 pt-1 text-xs font-semibold text-amber-100";
 export const USER_INFO_CELL_CLASS = "min-w-0 flex-1 px-3 py-2 text-xs";
 export const USER_INFO_TABLE_CLASS = "jtc-user-info-table";
-export const HEADER_ACTIONS_CLASS = "flex shrink-0 flex-col items-end justify-center gap-1 px-2 py-1 text-xs";
-export const FONT_SWITCHER_CLASS = "flex items-center gap-1";
+export const HEADER_ACTIONS_CLASS =
+  "flex shrink-0 flex-col items-end justify-center gap-1 px-2 py-1 text-xs whitespace-nowrap";
+export const FONT_SWITCHER_CLASS = "flex items-center gap-1 whitespace-nowrap";
 
 export const MENU_BAR_CLASS =
   "flex border-y border-t-white border-b-stone-700 bg-gradient-to-b from-sky-700 via-blue-800 to-blue-950";
 export const MENU_BAR_LEFT_CLASS =
-  "w-72 shrink-0 border-r border-black/50 bg-gradient-to-b from-blue-950 to-slate-950 px-3 py-1.5 text-xs font-bold text-white";
-export const MENU_ITEMS_ROW_CLASS = "flex min-w-0 flex-1 flex-wrap";
+  "w-60 shrink-0 border-r border-black/50 bg-gradient-to-b from-blue-950 to-slate-950 px-3 py-1.5 text-xs font-bold text-white xl:w-72";
+export const MENU_ITEMS_ROW_CLASS = "flex min-w-0 flex-1 overflow-x-auto whitespace-nowrap";
 export const MENU_ITEM_CLASS = clsx(
-  "inline-flex items-center gap-1 border-l border-black/20 border-r border-white/20 px-4 py-1.5",
+  "inline-flex shrink-0 items-center gap-1 border-l border-black/20 border-r border-white/20 px-3 py-1.5 xl:px-4",
   "text-xs font-bold text-white hover:bg-blue-600 hover:text-amber-50",
 );
 export const MENU_ITEM_ACTIVE_CLASS =
@@ -49,11 +50,11 @@ export const MENU_ITEM_ACTIVE_CLASS =
 export const SCREEN_ID_CELL_CLASS =
   "shrink-0 border-r border-slate-400 bg-slate-100 px-3 py-1 text-slate-700";
 export const BREADCRUMBS_CLASS =
-  "flex min-w-0 flex-1 flex-wrap items-center bg-gradient-to-b from-white to-slate-200 px-3 py-1";
+  "flex min-w-0 flex-1 items-center overflow-x-auto bg-gradient-to-b from-white to-slate-200 px-3 py-1 whitespace-nowrap";
 
 export const BODY_GRID_CLASS = "flex min-h-0 flex-1 overflow-hidden";
 export const SIDE_MENU_CLASS =
-  "w-44 shrink-0 overflow-auto border-r border-slate-400 bg-gradient-to-r from-slate-100 to-slate-200 pb-2 text-xs";
+  "w-40 shrink-0 overflow-auto border-r border-slate-400 bg-gradient-to-r from-slate-100 to-slate-200 pb-2 text-xs xl:w-44";
 export const SIDE_MENU_TITLE_CLASS =
   "bg-gradient-to-b from-blue-900 to-blue-950 px-2 py-1 text-xs font-bold text-white";
 export const SIDE_GROUP_SUMMARY_CLASS =
@@ -70,10 +71,10 @@ export const IE_NOTICE_CLASS =
 
 export const MAIN_COL_CLASS = "min-w-0 flex-1 overflow-auto bg-slate-50 p-2";
 export const RIGHT_COL_CLASS =
-  "w-60 shrink-0 overflow-auto border-l border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 p-2";
+  "w-52 shrink-0 overflow-auto border-l border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 p-2 xl:w-60";
 
 export const FOOTER_CLASS = clsx(
-  "flex shrink-0 items-center justify-between gap-2 border-t border-slate-400",
+  "flex shrink-0 items-center justify-between gap-2 overflow-x-auto whitespace-nowrap border-t border-slate-400",
   "bg-gradient-to-b from-slate-100 to-slate-200 px-3 py-1.5 text-xs text-slate-700",
 );
 
@@ -82,7 +83,7 @@ export const WARN_LINE_CLASS =
 
 export const PANEL_CLASS = "mb-2 overflow-hidden border border-slate-500 bg-white shadow-sm";
 export const PANEL_HEADER_CLASS =
-  "flex items-center justify-between gap-2 border-b border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 px-2 py-1 text-xs font-bold text-slate-950";
+  "flex items-center justify-between gap-2 overflow-x-auto border-b border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 px-2 py-1 text-xs font-bold text-slate-950 whitespace-nowrap";
 export const PANEL_BODY_CLASS = "p-2";
 
 export const BUTTON_BASE_CLASS = clsx(
@@ -103,9 +104,9 @@ export const FORM_ERROR_LIST_CLASS = "mt-1 space-y-0.5 text-xs text-red-800";
 
 export const TABLE_CLASS = "jtc-data-table";
 export const TABS_ROW_CLASS =
-  "flex flex-wrap gap-1 border-b border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 px-2 pt-1";
+  "flex gap-1 overflow-x-auto border-b border-slate-400 bg-gradient-to-b from-slate-100 to-slate-200 px-2 pt-1 whitespace-nowrap";
 export const TAB_CLASS =
-  "border border-b-0 border-slate-500 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-1 text-xs font-bold";
+  "shrink-0 border border-b-0 border-slate-500 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-1 text-xs font-bold";
 export const TAB_ACTIVE_CLASS = "bg-white";
 export const TAB_BADGE_CLASS =
   "ml-1 inline-flex min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-xs text-white";
@@ -143,7 +144,7 @@ export const CONTACT_BOX_CLASS =
 export const CONTACT_BOX_TITLE_CLASS = "mb-1 font-bold";
 
 export const PAGER_CLASS =
-  "flex flex-wrap items-center gap-1 border-t border-slate-400 bg-gradient-to-b from-slate-50 to-slate-100 px-2 py-1";
+  "flex items-center gap-1 overflow-x-auto border-t border-slate-400 bg-gradient-to-b from-slate-50 to-slate-100 px-2 py-1 whitespace-nowrap";
 export const PAGER_LINK_CLASS =
   "border border-slate-500 bg-gradient-to-b from-white to-slate-200 px-1.5 py-0.5 text-xs";
 export const PAGER_LINK_ACTIVE_CLASS = "bg-gradient-to-b from-amber-200 to-yellow-400 font-bold";
