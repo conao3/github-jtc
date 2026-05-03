@@ -1205,6 +1205,45 @@ export type SearchPullRequestsQuery = {
   };
 };
 
+export type SearchRepositoriesQueryVariables = Exact<{
+  query: string;
+  first: number;
+  after?: string | null | undefined;
+}>;
+
+export type SearchRepositoriesQuery = {
+  search: {
+    repositoryCount: number;
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+    nodes: Array<
+      | { __typename: "App" }
+      | { __typename: "Discussion" }
+      | { __typename: "Issue" }
+      | { __typename: "MarketplaceListing" }
+      | { __typename: "Organization" }
+      | { __typename: "PullRequest" }
+      | {
+          __typename: "Repository";
+          id: string;
+          name: string;
+          nameWithOwner: string;
+          url: string;
+          description: string | null;
+          visibility: RepositoryVisibility;
+          pushedAt: string | null;
+          viewerPermission: RepositoryPermission | null;
+          stargazerCount: number;
+          forkCount: number;
+          primaryLanguage: { name: string } | null;
+          owner: { name: string | null; login: string } | { name: string | null; login: string };
+          defaultBranchRef: { name: string } | null;
+        }
+      | { __typename: "User" }
+      | null
+    > | null;
+  };
+};
+
 export type ViewerQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ViewerQuery = {
@@ -5959,6 +5998,158 @@ export const SearchPullRequestsDocument = {
     },
   ],
 } as unknown as DocumentNode<SearchPullRequestsQuery, SearchPullRequestsQueryVariables>;
+export const SearchRepositoriesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "SearchRepositories" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "query" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "first" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "after" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "search" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: { kind: "Variable", name: { kind: "Name", value: "query" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "type" },
+                value: { kind: "EnumValue", value: "REPOSITORY" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "Variable", name: { kind: "Name", value: "first" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "after" },
+                value: { kind: "Variable", name: { kind: "Name", value: "after" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "repositoryCount" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pageInfo" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                      { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "nodes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                      {
+                        kind: "InlineFragment",
+                        typeCondition: { kind: "NamedType", name: { kind: "Name", value: "Repository" } },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "id" } },
+                            { kind: "Field", name: { kind: "Name", value: "name" } },
+                            { kind: "Field", name: { kind: "Name", value: "nameWithOwner" } },
+                            { kind: "Field", name: { kind: "Name", value: "url" } },
+                            { kind: "Field", name: { kind: "Name", value: "description" } },
+                            { kind: "Field", name: { kind: "Name", value: "visibility" } },
+                            { kind: "Field", name: { kind: "Name", value: "pushedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "viewerPermission" } },
+                            { kind: "Field", name: { kind: "Name", value: "stargazerCount" } },
+                            { kind: "Field", name: { kind: "Name", value: "forkCount" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "primaryLanguage" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "owner" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "login" } },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "Organization" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
+                                    },
+                                  },
+                                  {
+                                    kind: "InlineFragment",
+                                    typeCondition: {
+                                      kind: "NamedType",
+                                      name: { kind: "Name", value: "User" },
+                                    },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "defaultBranchRef" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [{ kind: "Field", name: { kind: "Name", value: "name" } }],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SearchRepositoriesQuery, SearchRepositoriesQueryVariables>;
 export const ViewerDocument = {
   kind: "Document",
   definitions: [

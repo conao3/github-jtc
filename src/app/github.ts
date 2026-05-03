@@ -8,6 +8,7 @@ import {
   type PullRequestDetailQuery,
   type SearchIssuesQuery,
   type SearchPullRequestsQuery,
+  type SearchRepositoriesQuery,
   ViewerDocument,
   type ViewerQuery,
   type ViewerRepositoriesQuery,
@@ -17,6 +18,11 @@ export type GitHubViewerProfile = ViewerQuery["viewer"];
 export type GitHubViewerRepositoriesConnection = ViewerRepositoriesQuery["viewer"]["repositories"];
 export type GitHubViewerRepository = NonNullable<
   NonNullable<GitHubViewerRepositoriesConnection["nodes"]>[number]
+>;
+export type GitHubSearchRepositoriesConnection = SearchRepositoriesQuery["search"];
+export type GitHubSearchRepository = Extract<
+  NonNullable<NonNullable<GitHubSearchRepositoriesConnection["nodes"]>[number]>,
+  { __typename: "Repository" }
 >;
 export type GitHubSearchPullRequestsConnection = SearchPullRequestsQuery["search"];
 export type GitHubSearchPullRequest = Extract<

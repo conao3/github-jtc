@@ -16,9 +16,10 @@ import {
   formatGitHubDateTime,
   formatGitHubPermission,
   formatGitHubVisibility,
-  type GitHubViewerRepository,
+  type GitHubSearchRepositoriesConnection,
+  type GitHubSearchRepository,
 } from "../app/github.ts";
-import { ViewerRepositoriesDocument } from "../gql/graphql.ts";
+import { SearchRepositoriesDocument } from "../gql/graphql.ts";
 import {
   DATE_CELL_CLASS,
   MONO_CLASS,
@@ -61,15 +62,11 @@ const initialRepositoryFilterValues: RepositoryFilterValues = {
   permission: "all",
 };
 
-function isPresent<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
-}
-
-function getOwnerLabel(repository: GitHubViewerRepository): string {
+function getOwnerLabel(repository: GitHubSearchRepository): string {
   return repository.owner.name ?? repository.owner.login;
 }
 
-function getLanguageStats(repositories: readonly GitHubViewerRepository[]): Array<[string, number]> {
+function getLanguageStats(repositories: readonly GitHubSearchRepository[]): Array<[string, number]> {
   const counts = new Map<string, number>();
 
   for (const repository of repositories) {
@@ -93,60 +90,77 @@ function hasActiveRepositoryFilters(filters: RepositoryFilterValues): boolean {
 }
 
 function filterRepositories(
-  repositories: readonly GitHubViewerRepository[],
+  repositories: readonly GitHubSearchRepository[],
   filters: RepositoryFilterValues,
-): GitHubViewerRepository[] {
-  const repositoryName = filters.repositoryName.trim().toLowerCase();
-  const owner = filters.owner.trim().toLowerCase();
-  const language = filters.language.trim().toLowerCase();
+): GitHubSearchRepository[] {
+  if (filters.permission === "all") {
+    return [...repositories];
+  }
 
-  return repositories.filter((repository) => {
-    if (
-      repositoryName.length > 0 &&
-      !repository.nameWithOwner.toLowerCase().includes(repositoryName) &&
-      !(repository.description ?? "").toLowerCase().includes(repositoryName)
-    ) {
-      return false;
+  return repositories.filter((repository) => repository.viewerPermission === filters.permission);
+}
+
+function buildRepositorySearchQuery(filters: RepositoryFilterValues): string {
+  const parts = ["archived:false", "sort:updated-desc"];
+  const repositoryName = filters.repositoryName.trim();
+  const owner = filters.owner.trim();
+  const language = filters.language.trim();
+
+  if (repositoryName.length > 0) {
+    if (repositoryName.includes("/")) {
+      parts.push(`repo:${repositoryName}`);
+    } else {
+      parts.push(repositoryName);
     }
+  }
 
-    if (
-      owner.length > 0 &&
-      !repository.owner.login.toLowerCase().includes(owner) &&
-      !(repository.owner.name ?? "").toLowerCase().includes(owner)
-    ) {
-      return false;
-    }
+  if (owner.length > 0) {
+    parts.push(`(user:${owner} OR org:${owner})`);
+  }
 
-    if (filters.visibility !== "all" && repository.visibility !== filters.visibility) {
-      return false;
-    }
+  switch (filters.visibility) {
+    case "PRIVATE":
+      parts.push("visibility:private");
+      break;
+    case "INTERNAL":
+      parts.push("visibility:internal");
+      break;
+    case "PUBLIC":
+      parts.push("visibility:public");
+      break;
+    default:
+      break;
+  }
 
-    if (language.length > 0 && !(repository.primaryLanguage?.name ?? "").toLowerCase().includes(language)) {
-      return false;
-    }
+  if (language.length > 0) {
+    parts.push(`language:${language}`);
+  }
 
-    if (filters.permission !== "all" && repository.viewerPermission !== filters.permission) {
-      return false;
-    }
-
-    return true;
-  });
+  return parts.join(" ");
 }
 
 export function RepositoriesScreen(): JSX.Element {
   const sessionQuery = useAuthSession();
   const accessToken = sessionQuery.data?.accessToken;
+  const viewerLogin = sessionQuery.data?.user.login ?? "";
+  const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
   const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
   const [currentPage, setCurrentPage] = useState(1);
   const currentCursor = cursorHistory[currentPage - 1] ?? null;
-  const repositoriesQuery = useQuery(ViewerRepositoriesDocument, {
+  const repositoriesQuery = useQuery(SearchRepositoriesDocument, {
     skip: accessToken === undefined,
-    variables: { first: QUERY_SIZE, after: currentCursor },
+    variables: {
+      first: QUERY_SIZE,
+      after: currentCursor,
+      query: buildRepositorySearchQuery(appliedFilters),
+    },
     fetchPolicy: "network-only",
   });
-  const repositoriesConnection = repositoriesQuery.data?.viewer.repositories;
-  const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
-  const [appliedFilters, setAppliedFilters] = useState<RepositoryFilterValues>(initialRepositoryFilterValues);
+  const repositoriesConnection = (repositoriesQuery.data?.search ??
+    repositoriesQuery.previousData?.search) as GitHubSearchRepositoriesConnection | undefined;
+  const repositories = (repositoriesConnection?.nodes ?? []).filter(
+    (value): value is GitHubSearchRepository => value?.__typename === "Repository",
+  );
   const form = useForm({
     defaultValues: initialRepositoryFilterValues,
     onSubmit: async ({ value }) => {
@@ -213,19 +227,24 @@ export function RepositoriesScreen(): JSX.Element {
     (repository) => repository.visibility === "INTERNAL",
   ).length;
   const publicCount = filteredRepositories.filter((repository) => repository.visibility === "PUBLIC").length;
-  const totalCount = repositoriesConnection?.totalCount ?? repositories.length;
+  const totalCount = repositoriesConnection?.repositoryCount ?? repositories.length;
   const visibleFrom = repositories.length === 0 ? 0 : (currentPage - 1) * QUERY_SIZE + 1;
   const visibleTo = repositories.length === 0 ? 0 : visibleFrom + repositories.length - 1;
   const hasNextPage = repositoriesConnection?.pageInfo.hasNextPage ?? false;
+  const hasPageLocalPermissionFilter = appliedFilters.permission !== "all";
   const quickFilters = [
     {
       label: "★ 直近プッシュ順",
       filters: initialRepositoryFilterValues,
     },
-    {
-      label: "★ 自分が書込権限を持つもの",
-      filters: { ...initialRepositoryFilterValues, permission: "WRITE" },
-    },
+    ...(viewerLogin.length === 0
+      ? []
+      : [
+          {
+            label: "★ 自分名義リポジトリ",
+            filters: { ...initialRepositoryFilterValues, owner: viewerLogin },
+          },
+        ]),
     {
       label: "★ 公開リポジトリ",
       filters: { ...initialRepositoryFilterValues, visibility: "PUBLIC" },
@@ -260,7 +279,7 @@ export function RepositoriesScreen(): JSX.Element {
             </ul>
           </Panel>
 
-          <Panel title="統計（表示中）" bodyClassName="p-0">
+          <Panel title="統計（表示中ページ）" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 {[
@@ -278,7 +297,7 @@ export function RepositoriesScreen(): JSX.Element {
             </table>
           </Panel>
 
-          <Panel title="主要言語（表示中 上位6件）" bodyClassName="p-0">
+          <Panel title="主要言語（表示中ページ 上位6件）" bodyClassName="p-0">
             <table className={TABLE_CLASS}>
               <tbody>
                 {languageStats.length === 0 ? (
@@ -306,7 +325,11 @@ export function RepositoriesScreen(): JSX.Element {
         </>
       }
     >
-      <Panel title="検索条件" bodyClassName="p-0">
+      <Panel
+        title="検索条件"
+        action={<span className={MUTED_CLASS}>権限以外は GitHub 全件検索 / 権限のみ表示中ページ絞込</span>}
+        bodyClassName="p-0"
+      >
         <form
           className="flex flex-col gap-1 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5"
           onSubmit={(event) => {
@@ -378,7 +401,7 @@ export function RepositoriesScreen(): JSX.Element {
             </form.Field>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label>権限：</label>
+            <label>権限（ページ内）：</label>
             <form.Field
               name="permission"
               validators={zodValidators(repositoryFilterFieldValidators.permission)}
@@ -421,7 +444,9 @@ export function RepositoriesScreen(): JSX.Element {
           <span className={MUTED_CLASS}>
             {repositoriesQuery.loading
               ? "GitHub から読込中..."
-              : `取得 ${visibleFrom}～${visibleTo}件目 / 表示 ${filteredRepositories.length}件 / 利用可能全 ${totalCount}件`}
+              : hasPageLocalPermissionFilter
+                ? `取得 ${visibleFrom}～${visibleTo}件目 / 権限絞込後 ${filteredRepositories.length}件 / 検索結果全 ${totalCount}件`
+                : `取得 ${visibleFrom}～${visibleTo}件目 / 表示 ${filteredRepositories.length}件 / 検索結果全 ${totalCount}件`}
           </span>
         }
         bodyClassName="p-0"
@@ -458,12 +483,16 @@ export function RepositoriesScreen(): JSX.Element {
                 tone="empty"
                 title={
                   hasActiveRepositoryFilters(appliedFilters)
-                    ? "条件に一致するリポジトリはありません。"
+                    ? hasPageLocalPermissionFilter
+                      ? "この取得ページ内で条件に一致するリポジトリはありません。"
+                      : "条件に一致するリポジトリはありません。"
                     : "閲覧可能なリポジトリはありません。"
                 }
                 detail={
                   hasActiveRepositoryFilters(appliedFilters)
-                    ? "検索条件を緩めて再確認してください。"
+                    ? hasPageLocalPermissionFilter
+                      ? "権限条件は表示中ページだけに適用されます。条件を緩めるか次ページも確認してください。"
+                      : "検索条件を緩めて再確認してください。"
                     : "GitHub App が参照できるリポジトリがない可能性があります。"
                 }
               />
