@@ -370,7 +370,6 @@ export function CommitsScreen(): JSX.Element {
       first: REPOSITORY_PAGE_SIZE,
       after: null,
     },
-    fetchPolicy: "network-only",
   });
   const repositoriesConnection = repositoriesQuery.data?.viewer.repositories;
   const repositories = (repositoriesConnection?.nodes ?? []).filter(isPresent);
@@ -438,7 +437,6 @@ export function CommitsScreen(): JSX.Element {
     variables: {
       login: authorLoginLookup ?? "",
     },
-    fetchPolicy: "network-only",
   });
   const historyAuthor: CommitAuthor | undefined =
     authorInput.length === 0
@@ -469,7 +467,6 @@ export function CommitsScreen(): JSX.Element {
       historyUntil,
       tagsFirst: TAG_PAGE_SIZE,
     },
-    fetchPolicy: "network-only",
   });
   const commitHistoryPageQuery = useQuery(CommitHistoryPageDocument, {
     skip:
@@ -483,7 +480,6 @@ export function CommitsScreen(): JSX.Element {
       historySince,
       historyUntil,
     },
-    fetchPolicy: "network-only",
   });
   const repository = commitHistoryQuery.data?.repository ?? commitHistoryQuery.previousData?.repository;
   const commitPageRepository =

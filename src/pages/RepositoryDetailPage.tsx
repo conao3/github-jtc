@@ -298,7 +298,6 @@ export function RepositoryDetailScreen({
       name: coordinates?.name ?? "",
       readmeExpression: "HEAD:README.md",
     },
-    fetchPolicy: "network-only",
   });
   const issuesQuery = useQuery(RepositoryIssuesDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -308,7 +307,6 @@ export function RepositoryDetailScreen({
       first: REPOSITORY_DETAIL_ISSUE_PAGE_SIZE,
       after: issuesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const pullRequestsQuery = useQuery(RepositoryPullRequestsDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -319,7 +317,6 @@ export function RepositoryDetailScreen({
       after: pullRequestsPager.currentCursor,
       states: getPullRequestStates(pullRequestStateFilter),
     },
-    fetchPolicy: "network-only",
   });
   const branchesQuery = useQuery(RepositoryBranchesDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -329,7 +326,6 @@ export function RepositoryDetailScreen({
       first: REPOSITORY_DETAIL_BRANCH_PAGE_SIZE,
       after: branchesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const tagsQuery = useQuery(RepositoryTagsDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -339,7 +335,6 @@ export function RepositoryDetailScreen({
       first: REPOSITORY_DETAIL_TAG_PAGE_SIZE,
       after: tagsPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const languagesQuery = useQuery(RepositoryLanguagesDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -349,7 +344,6 @@ export function RepositoryDetailScreen({
       first: REPOSITORY_DETAIL_LANGUAGE_PAGE_SIZE,
       after: languagesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const commitHistoryQuery = useQuery(CommitHistoryDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -360,7 +354,6 @@ export function RepositoryDetailScreen({
       historyAfter: currentCommitCursor,
       tagsFirst: 1,
     },
-    fetchPolicy: "network-only",
   });
   const fileBrowserQuery = useQuery(RepositoryFileBrowserDocument, {
     skip: accessToken === undefined || coordinates === null || activeTab !== "files",
@@ -369,7 +362,6 @@ export function RepositoryDetailScreen({
       name: coordinates?.name ?? "",
       expression: buildRepositoryObjectExpression(browserPath),
     },
-    fetchPolicy: "network-only",
   });
   const repository = repositoryQuery.data?.repository ?? repositoryQuery.previousData?.repository;
   const latestCommit =

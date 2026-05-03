@@ -264,7 +264,6 @@ export function DashboardScreen(): JSX.Element {
       issueAssignmentQuery: `is:open is:issue archived:false assignee:${viewerLogin} sort:updated-desc`,
       authoredPrQuery: `is:open is:pr archived:false author:${viewerLogin} sort:updated-desc`,
     },
-    fetchPolicy: "network-only",
   });
   const recentRepositoriesQuery = useQuery(DashboardRecentRepositoriesDocument, {
     skip: accessToken === undefined || viewerLogin.length === 0,
@@ -272,7 +271,6 @@ export function DashboardScreen(): JSX.Element {
       first: 6,
       after: recentRepositoriesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const dashboard = dashboardQuery.data ?? dashboardQuery.previousData;
   const isDashboardInitialLoading = dashboardQuery.loading && dashboard === undefined;

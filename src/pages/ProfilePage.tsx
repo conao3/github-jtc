@@ -65,7 +65,6 @@ export function ProfileScreen(): JSX.Element {
     variables: {
       ...range,
     },
-    fetchPolicy: "network-only",
   });
   const repositoryQuery = useQuery(ViewerProfileRepositoriesDocument, {
     skip: accessToken === undefined,
@@ -73,7 +72,6 @@ export function ProfileScreen(): JSX.Element {
       first: PROFILE_REPOSITORIES_PAGE_SIZE,
       after: repositoriesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const organizationsQuery = useQuery(ViewerProfileOrganizationsDocument, {
     skip: accessToken === undefined,
@@ -81,7 +79,6 @@ export function ProfileScreen(): JSX.Element {
       first: PROFILE_ORGANIZATIONS_PAGE_SIZE,
       after: organizationsPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const profile = profileQuery.data?.viewer ?? profileQuery.previousData?.viewer;
   const repositoriesConnection =

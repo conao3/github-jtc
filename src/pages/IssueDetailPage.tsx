@@ -212,7 +212,6 @@ export function IssueDetailScreen({
       labelsFirst: 10,
       assigneesFirst: 10,
     },
-    fetchPolicy: "network-only",
   });
   const timelineQuery = useQuery(IssueTimelineDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -223,7 +222,6 @@ export function IssueDetailScreen({
       timelineFirst: 20,
       timelineAfter: timelinePager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const issue = detailQuery.data?.repository?.issue ?? detailQuery.previousData?.repository?.issue;
   const state = issue === null || issue === undefined ? null : getIssueState(issue);

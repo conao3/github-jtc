@@ -166,7 +166,6 @@ export function IssuesScreen(): JSX.Element {
       after: pager.currentCursor,
       query: buildIssueSearchQuery(appliedFilters),
     },
-    fetchPolicy: "network-only",
   });
   const issueConnection = (issuesQuery.data?.search ?? issuesQuery.previousData?.search) as
     | GitHubSearchIssuesConnection

@@ -360,7 +360,9 @@ export function useGitHubCallbackMutation() {
 
   return useMutation({
     mutationFn: exchangeGitHubCodeForSession,
-    onSuccess: ({ session }) => {
+    onSuccess: async ({ session }) => {
+      await clearGitHubApolloStore();
+      setGitHubAccessToken(session.accessToken);
       queryClient.setQueryData(AUTH_QUERY_KEY, session);
     },
   });

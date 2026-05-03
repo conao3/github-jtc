@@ -153,7 +153,6 @@ export function RepositoriesScreen(): JSX.Element {
     variables: {
       login: ownerInput,
     },
-    fetchPolicy: "network-only",
   });
   const ownerLookupResult = ownerLookupQuery.data?.repositoryOwner;
   const ownerQualifier =
@@ -176,7 +175,6 @@ export function RepositoriesScreen(): JSX.Element {
       after: currentCursor,
       query: buildRepositorySearchQuery(appliedFilters, ownerQualifier),
     },
-    fetchPolicy: "network-only",
   });
   const repositoriesConnection = (repositoriesQuery.data?.search ??
     repositoriesQuery.previousData?.search) as GitHubSearchRepositoriesConnection | undefined;

@@ -202,7 +202,6 @@ export function PullRequestDetailScreen({
       reviewsFirst: 10,
       threadsFirst: 20,
     },
-    fetchPolicy: "network-only",
   });
   const filesQuery = useQuery(PullRequestFilesDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -213,7 +212,6 @@ export function PullRequestDetailScreen({
       filesFirst: PULL_REQUEST_DETAIL_FILES_PAGE_SIZE,
       filesAfter: filesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const closingIssuesQuery = useQuery(PullRequestClosingIssuesDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -224,7 +222,6 @@ export function PullRequestDetailScreen({
       first: PULL_REQUEST_DETAIL_CLOSING_ISSUES_PAGE_SIZE,
       after: closingIssuesPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const commentsQuery = useQuery(PullRequestCommentsDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -235,7 +232,6 @@ export function PullRequestDetailScreen({
       first: PULL_REQUEST_DETAIL_COMMENTS_PAGE_SIZE,
       after: commentsPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const pullRequest =
     detailQuery.data?.repository?.pullRequest ?? detailQuery.previousData?.repository?.pullRequest;

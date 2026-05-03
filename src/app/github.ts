@@ -177,7 +177,9 @@ async function executeGitHubQuery<TData, TVariables extends Record<string, unkno
   const result = await githubApolloClient.query({
     query,
     variables,
-    fetchPolicy: "network-only",
+    // The auth bootstrap path must reflect the current bearer token and must not
+    // reuse or populate cross-user cache entries such as `viewer`.
+    fetchPolicy: "no-cache",
   });
 
   if (result.data === undefined || result.data === null) {

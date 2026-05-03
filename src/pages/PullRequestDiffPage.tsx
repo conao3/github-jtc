@@ -63,7 +63,6 @@ export function PullRequestDiffScreen({
       filesFirst: 50,
       threadsFirst: 50,
     },
-    fetchPolicy: "network-only",
   });
   const commitsQuery = useApolloQuery(PullRequestCommitsDocument, {
     skip: accessToken === undefined || coordinates === null,
@@ -74,7 +73,6 @@ export function PullRequestDiffScreen({
       first: PULL_REQUEST_DIFF_COMMITS_PAGE_SIZE,
       after: commitsPager.currentCursor,
     },
-    fetchPolicy: "network-only",
   });
   const restFilesQuery = useQuery({
     queryKey: [

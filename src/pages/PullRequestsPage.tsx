@@ -141,7 +141,6 @@ export function PullRequestsScreen(): JSX.Element {
       after: pager.currentCursor,
       query: buildPullRequestSearchQuery(appliedFilters),
     },
-    fetchPolicy: "network-only",
   });
   const pullRequestConnection = (pullRequestsQuery.data?.search ?? pullRequestsQuery.previousData?.search) as
     | GitHubSearchPullRequestsConnection

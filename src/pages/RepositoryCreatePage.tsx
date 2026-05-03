@@ -130,7 +130,6 @@ export function RepositoryCreateScreen(): JSX.Element {
   const accessToken = sessionQuery.data?.accessToken;
   const viewerQuery = useQuery(ViewerDocument, {
     skip: accessToken === undefined,
-    fetchPolicy: "network-only",
   });
   const [runCreateRepository, createRepositoryMutation] = useMutation(CreateRepositoryDocument);
   const form = useForm({
