@@ -248,58 +248,54 @@ export function JtcChrome({
           <div className={HEADER_ACTIONS_CLASS}>
             <div className={FONT_SWITCHER_CLASS}>
               <span className={MUTED_CLASS}>文字サイズ</span>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  className={buttonClassName({
-                    size: "sm",
-                    tone: fontScale === "small" ? "primary" : "default",
-                  })}
-                  onClick={() => setFontScale("small")}
-                >
-                  小
-                </button>
-                <button
-                  type="button"
-                  className={buttonClassName({
-                    size: "sm",
-                    tone: fontScale === "medium" ? "primary" : "default",
-                  })}
-                  onClick={() => setFontScale("medium")}
-                >
-                  中
-                </button>
-                <button
-                  type="button"
-                  className={buttonClassName({
-                    size: "sm",
-                    tone: fontScale === "large" ? "primary" : "default",
-                  })}
-                  onClick={() => setFontScale("large")}
-                >
-                  大
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <button type="button" className={buttonClassName({ size: "sm" })}>
-                ヘルプ
-              </button>
-              <button type="button" className={buttonClassName({ size: "sm" })}>
-                マニュアル
-              </button>
-              <button type="button" className={buttonClassName({ size: "sm" })}>
-                お問い合わせ
+              <button
+                type="button"
+                className={buttonClassName({
+                  size: "sm",
+                  tone: fontScale === "small" ? "primary" : "default",
+                })}
+                onClick={() => setFontScale("small")}
+              >
+                小
               </button>
               <button
                 type="button"
-                className={buttonClassName({ size: "sm", tone: "primary" })}
-                disabled={logoutMutation.isPending}
-                onClick={() => void handleLogout()}
+                className={buttonClassName({
+                  size: "sm",
+                  tone: fontScale === "medium" ? "primary" : "default",
+                })}
+                onClick={() => setFontScale("medium")}
               >
-                {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
+                中
+              </button>
+              <button
+                type="button"
+                className={buttonClassName({
+                  size: "sm",
+                  tone: fontScale === "large" ? "primary" : "default",
+                })}
+                onClick={() => setFontScale("large")}
+              >
+                大
               </button>
             </div>
+            <button type="button" className={buttonClassName({ size: "sm" })}>
+              ヘルプ
+            </button>
+            <button type="button" className={buttonClassName({ size: "sm" })}>
+              マニュアル
+            </button>
+            <button type="button" className={buttonClassName({ size: "sm" })}>
+              お問い合わせ
+            </button>
+            <button
+              type="button"
+              className={buttonClassName({ size: "sm", tone: "primary" })}
+              disabled={logoutMutation.isPending}
+              onClick={() => void handleLogout()}
+            >
+              {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
+            </button>
           </div>
         </header>
 
