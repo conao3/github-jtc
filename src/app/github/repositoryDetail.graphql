@@ -1,9 +1,4 @@
-query RepositoryDetail(
-  $owner: String!
-  $name: String!
-  $rootExpression: String!
-  $readmeExpression: String!
-) {
+query RepositoryDetail($owner: String!, $name: String!, $readmeExpression: String!) {
   repository(owner: $owner, name: $name) {
     id
     name
@@ -78,24 +73,6 @@ query RepositoryDetail(
     }
     tagRefs: refs(refPrefix: "refs/tags/", first: 1, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
       totalCount
-    }
-    rootEntries: object(expression: $rootExpression) {
-      __typename
-      ... on Tree {
-        entries {
-          name
-          type
-          oid
-          mode
-          object {
-            __typename
-            ... on Blob {
-              byteSize
-              isBinary
-            }
-          }
-        }
-      }
     }
     readme: object(expression: $readmeExpression) {
       __typename

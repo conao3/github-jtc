@@ -975,7 +975,6 @@ export type RepositoryBranchesQuery = {
 export type RepositoryDetailQueryVariables = Exact<{
   owner: string;
   name: string;
-  rootExpression: string;
   readmeExpression: string;
 }>;
 
@@ -1024,8 +1023,26 @@ export type RepositoryDetailQuery = {
     } | null;
     branchRefsSummary: { totalCount: number } | null;
     tagRefs: { totalCount: number } | null;
-    rootEntries:
-      | { __typename: "Blob" }
+    readme:
+      | { __typename: "Blob"; byteSize: number; isBinary: boolean | null; text: string | null }
+      | { __typename: "Commit" }
+      | { __typename: "Tag" }
+      | { __typename: "Tree" }
+      | null;
+  } | null;
+};
+
+export type RepositoryFileBrowserQueryVariables = Exact<{
+  owner: string;
+  name: string;
+  expression: string;
+}>;
+
+export type RepositoryFileBrowserQuery = {
+  repository: {
+    id: string;
+    fileObject:
+      | { __typename: "Blob"; oid: string; byteSize: number; isBinary: boolean | null; text: string | null }
       | { __typename: "Commit" }
       | { __typename: "Tag" }
       | {
@@ -1043,12 +1060,6 @@ export type RepositoryDetailQuery = {
               | null;
           }> | null;
         }
-      | null;
-    readme:
-      | { __typename: "Blob"; byteSize: number; isBinary: boolean | null; text: string | null }
-      | { __typename: "Commit" }
-      | { __typename: "Tag" }
-      | { __typename: "Tree" }
       | null;
   } | null;
 };
@@ -4903,11 +4914,6 @@ export const RepositoryDetailDocument = {
         },
         {
           kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "rootExpression" } },
-          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
-        },
-        {
-          kind: "VariableDefinition",
           variable: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
         },
@@ -5242,13 +5248,97 @@ export const RepositoryDetailDocument = {
                 },
                 {
                   kind: "Field",
-                  alias: { kind: "Name", value: "rootEntries" },
+                  alias: { kind: "Name", value: "readme" },
                   name: { kind: "Name", value: "object" },
                   arguments: [
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "expression" },
-                      value: { kind: "Variable", name: { kind: "Name", value: "rootExpression" } },
+                      value: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                      {
+                        kind: "InlineFragment",
+                        typeCondition: { kind: "NamedType", name: { kind: "Name", value: "Blob" } },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "byteSize" } },
+                            { kind: "Field", name: { kind: "Name", value: "isBinary" } },
+                            { kind: "Field", name: { kind: "Name", value: "text" } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RepositoryDetailQuery, RepositoryDetailQueryVariables>;
+export const RepositoryFileBrowserDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "RepositoryFileBrowser" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "expression" } },
+          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "repository" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "owner" },
+                value: { kind: "Variable", name: { kind: "Name", value: "owner" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  alias: { kind: "Name", value: "fileObject" },
+                  name: { kind: "Name", value: "object" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "expression" },
+                      value: { kind: "Variable", name: { kind: "Name", value: "expression" } },
                     },
                   ],
                   selectionSet: {
@@ -5301,30 +5391,13 @@ export const RepositoryDetailDocument = {
                           ],
                         },
                       },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  alias: { kind: "Name", value: "readme" },
-                  name: { kind: "Name", value: "object" },
-                  arguments: [
-                    {
-                      kind: "Argument",
-                      name: { kind: "Name", value: "expression" },
-                      value: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
-                    },
-                  ],
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "__typename" } },
                       {
                         kind: "InlineFragment",
                         typeCondition: { kind: "NamedType", name: { kind: "Name", value: "Blob" } },
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
+                            { kind: "Field", name: { kind: "Name", value: "oid" } },
                             { kind: "Field", name: { kind: "Name", value: "byteSize" } },
                             { kind: "Field", name: { kind: "Name", value: "isBinary" } },
                             { kind: "Field", name: { kind: "Name", value: "text" } },
@@ -5341,7 +5414,7 @@ export const RepositoryDetailDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<RepositoryDetailQuery, RepositoryDetailQueryVariables>;
+} as unknown as DocumentNode<RepositoryFileBrowserQuery, RepositoryFileBrowserQueryVariables>;
 export const RepositoryIssuesDocument = {
   kind: "Document",
   definitions: [

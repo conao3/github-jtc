@@ -28,6 +28,7 @@ import {
   CommitHistoryDocument,
   RepositoryBranchesDocument,
   RepositoryDetailDocument,
+  RepositoryFileBrowserDocument,
   RepositoryIssuesDocument,
   RepositoryLanguagesDocument,
   RepositoryPullRequestsDocument,
@@ -230,6 +231,40 @@ function parseCommitPage(searchParams: URLSearchParams): number {
   return Math.min(page, availablePageCount);
 }
 
+function normalizeRepositoryBrowserPath(value: string | null): string {
+  const segments: string[] = [];
+
+  for (const rawSegment of (value ?? "").split("/")) {
+    const segment = rawSegment.trim();
+
+    if (segment.length === 0 || segment === ".") {
+      continue;
+    }
+
+    if (segment === "..") {
+      segments.pop();
+      continue;
+    }
+
+    segments.push(segment);
+  }
+
+  return segments.join("/");
+}
+
+function buildRepositoryObjectExpression(path: string): string {
+  return path.length === 0 ? "HEAD:" : `HEAD:${path}`;
+}
+
+function getRepositoryBrowserPathSegments(path: string): string[] {
+  return path.length === 0 ? [] : path.split("/");
+}
+
+function getRepositoryBrowserParentPath(path: string): string {
+  const segments = getRepositoryBrowserPathSegments(path);
+  return segments.slice(0, -1).join("/");
+}
+
 export function RepositoryDetailScreen({
   repoId = "payment-system-core",
 }: {
@@ -255,12 +290,12 @@ export function RepositoryDetailScreen({
   const accessToken = sessionQuery.data?.accessToken;
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
   const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
+  const browserPath = normalizeRepositoryBrowserPath(searchParams.get("path"));
   const repositoryQuery = useQuery(RepositoryDetailDocument, {
     skip: accessToken === undefined || coordinates === null,
     variables: {
       owner: coordinates?.owner ?? "",
       name: coordinates?.name ?? "",
-      rootExpression: "HEAD:",
       readmeExpression: "HEAD:README.md",
     },
     fetchPolicy: "network-only",
@@ -327,6 +362,15 @@ export function RepositoryDetailScreen({
     },
     fetchPolicy: "network-only",
   });
+  const fileBrowserQuery = useQuery(RepositoryFileBrowserDocument, {
+    skip: accessToken === undefined || coordinates === null || activeTab !== "files",
+    variables: {
+      owner: coordinates?.owner ?? "",
+      name: coordinates?.name ?? "",
+      expression: buildRepositoryObjectExpression(browserPath),
+    },
+    fetchPolicy: "network-only",
+  });
   const repository = repositoryQuery.data?.repository ?? repositoryQuery.previousData?.repository;
   const latestCommit =
     repository?.defaultBranchRef?.target?.__typename === "Commit" ? repository.defaultBranchRef.target : null;
@@ -336,10 +380,11 @@ export function RepositoryDetailScreen({
     commitHistoryRepository?.defaultBranchRef?.target?.__typename === "Commit"
       ? commitHistoryRepository.defaultBranchRef.target
       : null;
-  const rootEntries =
-    repository?.rootEntries?.__typename === "Tree"
-      ? (repository.rootEntries.entries ?? []).filter(isPresent)
-      : [];
+  const browserRepository = fileBrowserQuery.data?.repository ?? fileBrowserQuery.previousData?.repository;
+  const browserObject = browserRepository?.fileObject;
+  const browserEntries =
+    browserObject?.__typename === "Tree" ? (browserObject.entries ?? []).filter(isPresent) : [];
+  const browserBlob = browserObject?.__typename === "Blob" ? browserObject : null;
   const recentCommits = (commitHistoryTarget?.history.nodes ?? []).filter(isPresent);
   const issuesConnection =
     issuesQuery.data?.repository?.issues ?? issuesQuery.previousData?.repository?.issues;
@@ -356,7 +401,9 @@ export function RepositoryDetailScreen({
     tagsQuery.data?.repository?.tagRefs ?? tagsQuery.previousData?.repository?.tagRefs;
   const tagRefs = (tagRefsConnection?.nodes ?? []).filter(isPresent);
   const readmeText =
-    repository?.readme?.__typename === "Blob" && !repository.readme.isBinary ? repository.readme.text : null;
+    repository?.readme?.__typename === "Blob" && !repository.readme.isBinary
+      ? (repository.readme.text ?? null)
+      : null;
   const languagesConnection =
     languagesQuery.data?.repository?.languages ?? languagesQuery.previousData?.repository?.languages;
   const languageEdges = languagesConnection?.edges ?? [];
@@ -365,6 +412,7 @@ export function RepositoryDetailScreen({
     coordinates === null ? null : createRepositoryPath({ owner: coordinates.owner, name: coordinates.name });
   const combinedRefCount =
     (repository?.branchRefsSummary?.totalCount ?? 0) + (repository?.tagRefs?.totalCount ?? 0);
+  const browserPathSegments = getRepositoryBrowserPathSegments(browserPath);
 
   useEffect(() => {
     setActiveTab(parseRepositoryDetailTab(searchParams.get("tab"), searchParams.get("prState")));
@@ -410,7 +458,27 @@ export function RepositoryDetailScreen({
       }
     }
 
+    if (browserPath.length > 0) {
+      nextSearchParams.set("path", browserPath);
+    } else {
+      nextSearchParams.delete("path");
+    }
+
     setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function createFileBrowserSearch(nextPath: string): string {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "files");
+
+    if (nextPath.length > 0) {
+      nextSearchParams.set("path", nextPath);
+    } else {
+      nextSearchParams.delete("path");
+    }
+
+    const search = nextSearchParams.toString();
+    return search.length === 0 ? "" : `?${search}`;
   }
 
   function updateTabSearchParams(tab: RepositoryDetailTab, pullRequestState: PullRequestStateFilter): void {
@@ -477,11 +545,44 @@ export function RepositoryDetailScreen({
 
   function renderTabContent(): JSX.Element {
     if (activeTab === "files") {
+      const parentBrowserPath = getRepositoryBrowserParentPath(browserPath);
+      const sortedEntries = browserEntries.slice().sort((left, right) => {
+        if (left.type === right.type) {
+          return left.name.localeCompare(right.name);
+        }
+
+        if (left.type === "tree") {
+          return -1;
+        }
+
+        if (right.type === "tree") {
+          return 1;
+        }
+
+        return left.name.localeCompare(right.name);
+      });
+
       return (
         <>
           <div className="flex flex-wrap items-center gap-2 border-b border-b-slate-300 bg-slate-50 px-2 py-1.5">
             <label>パス：</label>
-            <span className={MONO_CLASS}>/</span>
+            <span className={MONO_CLASS}>
+              <Link to={createFileBrowserSearch("")} className={TEXT_LINK_CLASS}>
+                /
+              </Link>
+              {browserPathSegments.map((segment, index) => {
+                const segmentPath = browserPathSegments.slice(0, index + 1).join("/");
+
+                return (
+                  <span key={segmentPath}>
+                    {" / "}
+                    <Link to={createFileBrowserSearch(segmentPath)} className={TEXT_LINK_CLASS}>
+                      {segment}
+                    </Link>
+                  </span>
+                );
+              })}
+            </span>
             <label>表示：</label>
             <select className="border border-slate-400 px-1 py-0.5">
               <option>全て</option>
@@ -490,56 +591,140 @@ export function RepositoryDetailScreen({
             <select className="border border-slate-400 px-1 py-0.5">
               <option>名前順</option>
             </select>
-            <span className="text-xs text-slate-600">※ ルートツリーの実データを表示しています。</span>
+            <span className="text-xs text-slate-600">
+              ※ {browserPath.length === 0 ? "ルート" : browserPath} の実データを表示しています。
+            </span>
           </div>
 
-          <table className={TABLE_CLASS}>
-            <thead>
-              <tr>
-                <th>名前</th>
-                <th className="w-20">種別</th>
-                <th className="w-20">サイズ</th>
-                <th className="w-16">モード</th>
-                <th className="w-32">オブジェクトID</th>
-                <th className="w-16">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rootEntries.length === 0 ? (
-                <GitHubTableStateRow
-                  colSpan={6}
-                  tone="empty"
-                  title="表示可能なファイルがありません。"
-                  detail="ルートツリーが空か、このトークンではツリーを参照できません。"
-                />
-              ) : (
-                rootEntries.map((entry) => (
-                  <tr key={entry.oid}>
-                    <td className={MONO_CLASS}>
-                      {entry.type === "tree" ? `📁 ${entry.name}` : `📄 ${entry.name}`}
-                    </td>
-                    <td className="text-center">{getEntryKindLabel(entry.type)}</td>
+          {fileBrowserQuery.loading && browserObject == null ? (
+            <div className="py-8 text-center text-slate-600">GitHub からファイル一覧を取得しています。</div>
+          ) : fileBrowserQuery.error ? (
+            <GitHubInlineState
+              tone="error"
+              className="py-8"
+              {...describeGitHubError(fileBrowserQuery.error, "ファイル一覧の取得に失敗しました。")}
+            />
+          ) : browserObject == null ? (
+            <GitHubInlineState
+              tone="empty"
+              title="指定されたパスを表示できません。"
+              detail="対象のファイルまたはフォルダが存在しないか、このトークンでは参照できません。"
+              className="py-8"
+            />
+          ) : browserBlob === null ? (
+            <>
+              <table className={TABLE_CLASS}>
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th className="w-20">種別</th>
+                    <th className="w-20">サイズ</th>
+                    <th className="w-16">モード</th>
+                    <th className="w-32">オブジェクトID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {browserPath.length === 0 ? null : (
+                    <tr>
+                      <td className={MONO_CLASS}>
+                        <Link to={createFileBrowserSearch(parentBrowserPath)} className={TEXT_LINK_CLASS}>
+                          ↩ ..
+                        </Link>
+                      </td>
+                      <td className="text-center">上位</td>
+                      <td className={clsx("text-right", MONO_CLASS)}>－</td>
+                      <td className={clsx("text-center", MONO_CLASS)}>－</td>
+                      <td className={MONO_CLASS}>－</td>
+                    </tr>
+                  )}
+                  {sortedEntries.length === 0 ? (
+                    <GitHubTableStateRow
+                      colSpan={5}
+                      tone="empty"
+                      title="表示可能なファイルがありません。"
+                      detail="このフォルダは空か、このトークンではツリーを参照できません。"
+                    />
+                  ) : (
+                    sortedEntries.map((entry) => {
+                      const nextPath = browserPath.length === 0 ? entry.name : `${browserPath}/${entry.name}`;
+
+                      return (
+                        <tr key={entry.oid}>
+                          <td className={MONO_CLASS}>
+                            <Link to={createFileBrowserSearch(nextPath)} className={TEXT_LINK_CLASS}>
+                              {entry.type === "tree" ? `📁 ${entry.name}` : `📄 ${entry.name}`}
+                            </Link>
+                          </td>
+                          <td className="text-center">{getEntryKindLabel(entry.type)}</td>
+                          <td className={clsx("text-right", MONO_CLASS)}>
+                            {entry.object?.__typename === "Blob"
+                              ? formatGitHubByteSize(entry.object.byteSize)
+                              : "－"}
+                          </td>
+                          <td className={clsx("text-center", MONO_CLASS)}>{entry.mode}</td>
+                          <td className={MONO_CLASS}>{entry.oid.slice(0, 12)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+
+              <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-xs text-slate-600">
+                {browserPath.length === 0 ? "ルートツリー" : `${browserPath} フォルダ`}:{" "}
+                {sortedEntries.length} 件を表示中
+              </div>
+            </>
+          ) : (
+            <>
+              <table className={TABLE_CLASS}>
+                <tbody>
+                  <tr>
+                    <th>ファイル名</th>
+                    <td className={MONO_CLASS}>{browserPathSegments.at(-1) ?? "－"}</td>
+                    <th>種別</th>
+                    <td>ファイル</td>
+                  </tr>
+                  <tr>
+                    <th>サイズ</th>
                     <td className={clsx("text-right", MONO_CLASS)}>
-                      {entry.object?.__typename === "Blob"
-                        ? formatGitHubByteSize(entry.object.byteSize)
-                        : "－"}
+                      {formatGitHubByteSize(browserBlob.byteSize)}
                     </td>
-                    <td className={clsx("text-center", MONO_CLASS)}>{entry.mode}</td>
-                    <td className={MONO_CLASS}>{entry.oid.slice(0, 12)}</td>
-                    <td className="text-center">
-                      <a href={repository?.url} target="_blank" rel="noreferrer" className={TEXT_LINK_CLASS}>
-                        GitHub
-                      </a>
+                    <th>オブジェクトID</th>
+                    <td className={MONO_CLASS}>{browserBlob.oid.slice(0, 12)}</td>
+                  </tr>
+                  <tr>
+                    <th>戻る</th>
+                    <td colSpan={3}>
+                      <Link to={createFileBrowserSearch(parentBrowserPath)} className={TEXT_LINK_CLASS}>
+                        {parentBrowserPath.length === 0 ? "ルートへ戻る" : `${parentBrowserPath} へ戻る`}
+                      </Link>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
 
-          <div className="border-t border-t-slate-300 bg-slate-50 px-1.5 py-1 text-xs text-slate-600">
-            ルートツリー: {rootEntries.length} 件を表示中
-          </div>
+              <div className="border-t border-t-slate-300 bg-slate-50 p-2">
+                {browserBlob.isBinary ? (
+                  <GitHubInlineState
+                    tone="empty"
+                    title="このファイルはバイナリ形式です。"
+                    detail="テキストプレビューに対応していないため、GitHub 本体で確認してください。"
+                    className="border border-slate-300 bg-white p-4 text-xs"
+                  />
+                ) : (
+                  <pre
+                    className={clsx(
+                      "max-h-144 overflow-auto bg-white p-3 text-xs whitespace-pre-wrap",
+                      MONO_CLASS,
+                    )}
+                  >
+                    {browserBlob.text ?? ""}
+                  </pre>
+                )}
+              </div>
+            </>
+          )}
         </>
       );
     }
@@ -1019,7 +1204,7 @@ export function RepositoryDetailScreen({
                 </tr>
                 <tr>
                   <th>所有者</th>
-                  <td className={MONO_CLASS}>{repository?.owner.login ?? coordinates?.owner ?? "－"}</td>
+                  <td className={MONO_CLASS}>{repository?.owner?.login ?? coordinates?.owner ?? "－"}</td>
                 </tr>
                 <tr>
                   <th>既定ブランチ</th>
@@ -1032,12 +1217,12 @@ export function RepositoryDetailScreen({
           <Panel title="統計情報" bodyClassName="p-0">
             <ul className={TODO_LIST_CLASS}>
               {[
-                ["総コミット数", String(latestCommit?.history.totalCount ?? 0)],
+                ["総コミット数", String(latestCommit?.history?.totalCount ?? 0)],
                 ["ブランチ数", String(repository?.branchRefsSummary?.totalCount ?? 0)],
-                ["ウォッチャー数", String(repository?.watchers.totalCount ?? 0)],
+                ["ウォッチャー数", String(repository?.watchers?.totalCount ?? 0)],
                 ["スター数", String(repository?.stargazerCount ?? 0)],
-                ["オープン中チケット", `${repository?.openIssues.totalCount ?? 0} 件`],
-                ["オープン中プルリクエスト", `${repository?.openPullRequests.totalCount ?? 0} 件`],
+                ["オープン中チケット", `${repository?.openIssues?.totalCount ?? 0} 件`],
+                ["オープン中プルリクエスト", `${repository?.openPullRequests?.totalCount ?? 0} 件`],
               ].map(([label, value]) => (
                 <li key={label} className={TODO_LIST_ITEM_CLASS}>
                   <span>{label}</span>
@@ -1153,7 +1338,7 @@ export function RepositoryDetailScreen({
               </tr>
               <tr>
                 <th>所有者</th>
-                <td>{getOwnerLabel(repository.owner)}</td>
+                <td>{getOwnerLabel(repository?.owner)}</td>
                 <th>主要言語</th>
                 <td>{repository.primaryLanguage?.name ?? "未設定"}</td>
               </tr>
@@ -1221,9 +1406,9 @@ export function RepositoryDetailScreen({
       >
         <div className={TABS_ROW_CLASS}>
           {renderTabButton("files", "ファイル一覧")}
-          {renderTabButton("commits", "コミット履歴", latestCommit?.history.totalCount ?? 0)}
-          {renderTabButton("issues", "チケット一覧", repository?.allIssues.totalCount ?? 0)}
-          {renderTabButton("pullRequests", "プルリクエスト", repository?.allPullRequests.totalCount ?? 0)}
+          {renderTabButton("commits", "コミット履歴", latestCommit?.history?.totalCount ?? 0)}
+          {renderTabButton("issues", "チケット一覧", repository?.allIssues?.totalCount ?? 0)}
+          {renderTabButton("pullRequests", "プルリクエスト", repository?.allPullRequests?.totalCount ?? 0)}
           {renderTabButton("refs", "ブランチ／タグ", combinedRefCount)}
         </div>
 

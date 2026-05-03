@@ -1,0 +1,29 @@
+query RepositoryFileBrowser($owner: String!, $name: String!, $expression: String!) {
+  repository(owner: $owner, name: $name) {
+    id
+    fileObject: object(expression: $expression) {
+      __typename
+      ... on Tree {
+        entries {
+          name
+          type
+          oid
+          mode
+          object {
+            __typename
+            ... on Blob {
+              byteSize
+              isBinary
+            }
+          }
+        }
+      }
+      ... on Blob {
+        oid
+        byteSize
+        isBinary
+        text
+      }
+    }
+  }
+}
