@@ -1,26 +1,14 @@
 import clsx from "clsx";
 import { useForm } from "@tanstack/react-form";
-import { useEffect, useRef, useState } from "react";
-import {
-  Button as AriaButton,
-  Dialog,
-  DialogTrigger,
-  Heading,
-  Modal,
-  ModalOverlay,
-} from "react-aria-components";
+import { Suspense, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
-import {
-  beginGitHubAppLogin,
-  getGitHubAuthConfig,
-  normalizeRedirectTo,
-  useAuthSession,
-} from "../app/auth.tsx";
+import { getGitHubAuthConfig, normalizeRedirectTo, useAuthSession } from "../app/auth.tsx";
 import { FormErrorList } from "../app/components/FormErrorList.tsx";
 import { zodValidators } from "../app/formValidation.ts";
 import { Panel } from "../app/components/Panel.tsx";
+import { LoginOutageDialog } from "../app/dialogs/loginOutageDialog.ts";
 import {
   BODY_BG_CLASS,
   CONTACT_BOX_CLASS,
@@ -44,8 +32,6 @@ const loginFieldValidators = {
   }),
 } as const;
 
-const loginDialogSchema = z.object(loginFieldValidators);
-
 type LoginFormState = {
   userId: string;
   password: string;
@@ -66,38 +52,26 @@ export function LoginScreen(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionQuery = useAuthSession();
-  const [githubError, setGitHubError] = useState<string | null>(null);
-  const loginButtonRef = useRef<HTMLButtonElement | null>(null);
   const redirectTo = normalizeRedirectTo(searchParams.get("redirectTo"));
   const githubConfig = getGitHubAuthConfig();
-  const form = useForm({ defaultValues: initialFormState });
+  const form = useForm({
+    defaultValues: initialFormState,
+    onSubmit: async () => {
+      await LoginOutageDialog.upsert({
+        clientId: githubConfig.clientId,
+        exchangeUrl: githubConfig.exchangeUrl,
+        githubEnabled: githubConfig.enabled,
+        redirectTo,
+        redirectUri: githubConfig.redirectUri,
+      });
+    },
+  });
 
   useEffect(() => {
     if (sessionQuery.data !== undefined && sessionQuery.data !== null) {
       void navigate(redirectTo, { replace: true });
     }
   }, [navigate, redirectTo, sessionQuery.data]);
-
-  async function handleGitHubLogin(): Promise<void> {
-    setGitHubError(null);
-
-    try {
-      await beginGitHubAppLogin(redirectTo);
-    } catch (error) {
-      setGitHubError(error instanceof Error ? error.message : "GitHub ログインの開始に失敗しました。");
-    }
-  }
-
-  function handleLoginButtonPress(event: { continuePropagation(): void }): void {
-    setGitHubError(null);
-
-    if (loginDialogSchema.safeParse(form.state.values).success) {
-      event.continuePropagation();
-      return;
-    }
-
-    void form.handleSubmit();
-  }
 
   return (
     <div className={BODY_BG_CLASS}>
@@ -123,7 +97,7 @@ export function LoginScreen(): JSX.Element {
                 onSubmit={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  loginButtonRef.current?.click();
+                  void form.handleSubmit();
                 }}
               >
                 <table className="w-full border-collapse text-xs">
@@ -258,111 +232,14 @@ export function LoginScreen(): JSX.Element {
                     </tr>
                     <tr>
                       <td colSpan={2} className="px-1.5 py-2 text-center">
-                        <DialogTrigger
-                          onOpenChange={(isOpen) => {
-                            if (!isOpen) {
-                              setGitHubError(null);
-                            }
-                          }}
-                        >
-                          <AriaButton
-                            ref={loginButtonRef}
-                            type="button"
-                            className={buttonClassName({ tone: "primary", size: "lg" })}
-                            onPress={handleLoginButtonPress}
-                          >
-                            ログイン
-                          </AriaButton>
-                          <ModalOverlay
-                            isDismissable
-                            className={({ isEntering, isExiting }) =>
-                              clsx(
-                                "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200 ease-out",
-                                (isEntering || isExiting) && "opacity-0",
-                              )
-                            }
-                          >
-                            <Modal
-                              className={({ isEntering, isExiting }) =>
-                                clsx(
-                                  "w-full max-w-xl overflow-hidden border border-slate-500 bg-slate-50 shadow-2xl outline-none transition duration-200 ease-out",
-                                  (isEntering || isExiting) && "translate-y-2 scale-95",
-                                )
-                              }
-                            >
-                              <Dialog className="outline-none">
-                                <div className="border-b border-b-slate-300 bg-gradient-to-b from-slate-100 to-slate-300 px-3 py-2">
-                                  <Heading slot="title" className="text-xs font-bold text-slate-900">
-                                    ログイン方式切替のお知らせ
-                                  </Heading>
-                                </div>
-                                <div className="space-y-3 p-4 text-xs text-slate-900">
-                                  <div className="border border-red-700 bg-amber-100 px-3 py-2 text-red-800">
-                                    現在、社内統合認証基盤が障害中のため、通常の「ログイン」はご利用いただけません。
-                                  </div>
-                                  <div>
-                                    臨時運用として、
-                                    <b>GitHub App ログイン</b>
-                                    を利用してください。認証後は
-                                    <span className={clsx("px-1", MONO_CLASS)}>{redirectTo}</span>
-                                    に戻ります。
-                                  </div>
-                                  <div className="border border-slate-300 bg-white px-3 py-2">
-                                    <div>
-                                      GitHub client_id：
-                                      {githubConfig.clientId.length > 0 ? (
-                                        <span className={MONO_CLASS}>{githubConfig.clientId}</span>
-                                      ) : (
-                                        "未設定"
-                                      )}
-                                    </div>
-                                    <div>
-                                      callback URL：
-                                      <span className={clsx("ml-1", MONO_CLASS)}>
-                                        {githubConfig.redirectUri}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      exchange endpoint：
-                                      <span className={clsx("ml-1", MONO_CLASS)}>
-                                        {githubConfig.exchangeUrl.length > 0
-                                          ? githubConfig.exchangeUrl
-                                          : "未設定"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {githubError === null ? null : (
-                                    <div className="border border-red-500 bg-red-100 px-3 py-2 text-red-800">
-                                      {githubError}
-                                    </div>
-                                  )}
-                                  <div className="flex justify-end gap-2 border-t border-t-dotted border-t-slate-400 pt-3">
-                                    <AriaButton slot="close" className={buttonClassName()}>
-                                      閉じる
-                                    </AriaButton>
-                                    <AriaButton
-                                      autoFocus
-                                      className={clsx(
-                                        buttonClassName({ tone: "primary" }),
-                                        "disabled:cursor-not-allowed disabled:opacity-50",
-                                      )}
-                                      isDisabled={!githubConfig.enabled}
-                                      onPress={() => void handleGitHubLogin()}
-                                    >
-                                      GitHubでログイン
-                                    </AriaButton>
-                                  </div>
-                                </div>
-                              </Dialog>
-                            </Modal>
-                          </ModalOverlay>
-                        </DialogTrigger>
+                        <button type="submit" className={buttonClassName({ tone: "primary", size: "lg" })}>
+                          ログイン
+                        </button>
                         <span className="px-1" />
                         <button
                           type="button"
                           className={buttonClassName({ size: "lg" })}
                           onClick={() => {
-                            setGitHubError(null);
                             form.reset();
                           }}
                         >
@@ -441,6 +318,10 @@ export function LoginScreen(): JSX.Element {
           </div>
           <div className={clsx("justify-self-end", MONO_CLASS)}>JTC-LGN-000 ／ Ver.5.2.1.0503</div>
         </footer>
+
+        <Suspense fallback={null}>
+          <LoginOutageDialog.Root />
+        </Suspense>
       </div>
     </div>
   );

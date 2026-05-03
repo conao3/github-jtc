@@ -14,6 +14,7 @@
         "graphql": "^16.13.2",
         "react": "19.2.5",
         "react-aria-components": "1.17.0",
+        "react-call": "^1.8.2",
         "react-dom": "19.2.5",
         "react-router-dom": "7.14.2",
         "tailwindcss": "4.2.4",
@@ -934,6 +935,8 @@
     "react-aria": ["react-aria@3.48.0", "", { "dependencies": { "@internationalized/date": "^3.12.1", "@internationalized/number": "^3.6.6", "@internationalized/string": "^3.2.8", "@react-types/shared": "^3.34.0", "@swc/helpers": "^0.5.0", "aria-hidden": "^1.2.3", "clsx": "^2.0.0", "react-stately": "3.46.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react-dom": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1" } }, "sha512-jQjd4rBEIMqecBaAKYJbVGK6EqIHLa5znVQ7jwFyK5vCyljoj6KhgtiahmcIPsG5vG5vEDLw+ba+bEWn6A2P4w=="],
 
     "react-aria-components": ["react-aria-components@1.17.0", "", { "dependencies": { "@internationalized/date": "^3.12.1", "@react-types/shared": "^3.34.0", "@swc/helpers": "^0.5.0", "client-only": "^0.0.1", "react-aria": "3.48.0", "react-stately": "3.46.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react-dom": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1" } }, "sha512-0EyisMgvsFJ2aML3crDYv2tW5vT2Ryf8PGzY/g63JjDdCbLshlwazhS8JNtPF1vkTkungJJ6sVJbKyX+YKSoFA=="],
+
+    "react-call": ["react-call@1.8.2", "", { "peerDependencies": { "react": ">=18" } }, "sha512-0CYGYn3e5jl14RXyUAKt9x5JfsPwLKzCOBexlXaof0hrPtHiAWRzJOBe9oyLryjPHqE0ebH+A/PAgCkrkOJGcw=="],
 
     "react-dom": ["react-dom@19.2.5", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.5" } }, "sha512-J5bAZz+DXMMwW/wV3xzKke59Af6CHY7G4uYLN1OvBcKEsWOs4pQExj86BBKamxl/Ik5bx9whOrvBlSDfWzgSag=="],
 
