@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useAuthSession } from "../app/auth.tsx";
@@ -12,6 +12,7 @@ import {
   createRepositoryRouteId,
   createRepositoryScopedNumberRouteId,
   describeGitHubError,
+  fetchGitHubCommitHistory,
   fetchGitHubRepositoryDetail,
   formatGitHubByteSize,
   formatGitHubDate,
@@ -202,7 +203,7 @@ export function RepositoryDetailScreen({
   const coordinates = parseRepositoryRouteId(repoId, sessionQuery.data?.user.login);
   const currentCommitCursor = commitCursorHistory[commitPage - 1] ?? null;
   const repositoryQuery = useQuery({
-    queryKey: ["github", "repository-detail", coordinates?.owner, coordinates?.name, currentCommitCursor],
+    queryKey: ["github", "repository-detail", coordinates?.owner, coordinates?.name],
     enabled: accessToken !== undefined && coordinates !== null,
     queryFn: () =>
       fetchGitHubRepositoryDetail(accessToken ?? "", {
@@ -210,18 +211,39 @@ export function RepositoryDetailScreen({
         name: coordinates?.name ?? "",
         rootExpression: "HEAD:",
         readmeExpression: "HEAD:README.md",
-        commitHistoryFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
-        commitHistoryAfter: currentCommitCursor,
+      }),
+  });
+  const commitHistoryQuery = useQuery({
+    queryKey: [
+      "github",
+      "repository-detail-commits",
+      coordinates?.owner,
+      coordinates?.name,
+      currentCommitCursor,
+    ],
+    enabled: accessToken !== undefined && coordinates !== null,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      fetchGitHubCommitHistory(accessToken ?? "", {
+        owner: coordinates?.owner ?? "",
+        name: coordinates?.name ?? "",
+        historyFirst: REPOSITORY_DETAIL_COMMIT_PAGE_SIZE,
+        historyAfter: currentCommitCursor,
+        tagsFirst: 1,
       }),
   });
   const repository = repositoryQuery.data;
   const latestCommit =
     repository?.defaultBranchRef?.target?.__typename === "Commit" ? repository.defaultBranchRef.target : null;
+  const commitHistoryTarget =
+    commitHistoryQuery.data?.defaultBranchRef?.target?.__typename === "Commit"
+      ? commitHistoryQuery.data.defaultBranchRef.target
+      : null;
   const rootEntries =
     repository?.rootEntries?.__typename === "Tree"
       ? (repository.rootEntries.entries ?? []).filter(isPresent)
       : [];
-  const recentCommits = (latestCommit?.history.nodes ?? []).filter(isPresent);
+  const recentCommits = (commitHistoryTarget?.history.nodes ?? []).filter(isPresent);
   const recentPullRequests = (repository?.pullRequests.nodes ?? []).filter(isPresent);
   const visiblePullRequests = recentPullRequests.filter((pullRequest) => {
     switch (pullRequestStateFilter) {
@@ -295,7 +317,7 @@ export function RepositoryDetailScreen({
   }
 
   function goToPreviousCommitPage(): void {
-    if (commitPage <= 1 || repositoryQuery.isPending) {
+    if (commitPage <= 1 || commitHistoryQuery.isFetching) {
       return;
     }
 
@@ -303,13 +325,13 @@ export function RepositoryDetailScreen({
   }
 
   function goToNextCommitPage(): void {
-    if (repositoryQuery.isPending) {
+    if (commitHistoryQuery.isFetching) {
       return;
     }
 
-    const endCursor = latestCommit?.history.pageInfo.endCursor;
+    const endCursor = commitHistoryTarget?.history.pageInfo.endCursor;
     if (
-      latestCommit?.history.pageInfo.hasNextPage !== true ||
+      commitHistoryTarget?.history.pageInfo.hasNextPage !== true ||
       endCursor === null ||
       endCursor === undefined
     ) {
@@ -450,7 +472,21 @@ export function RepositoryDetailScreen({
               </tr>
             </thead>
             <tbody>
-              {recentCommits.length === 0 ? (
+              {commitHistoryQuery.isPending ? (
+                <GitHubTableStateRow
+                  colSpan={6}
+                  tone="empty"
+                  title="コミット履歴を取得しています。"
+                  detail="GitHub から既定ブランチの履歴を読み込んでいます。"
+                />
+              ) : commitHistoryQuery.isError ? (
+                <GitHubTableStateRow
+                  colSpan={6}
+                  tone="error"
+                  title="コミット履歴の取得に失敗しました。"
+                  detail={describeGitHubError(commitHistoryQuery.error, "").detail}
+                />
+              ) : recentCommits.length === 0 ? (
                 <GitHubTableStateRow
                   colSpan={6}
                   tone="empty"
@@ -511,22 +547,22 @@ export function RepositoryDetailScreen({
           </table>
           <div className={PAGER_CLASS}>
             <span className={MUTED_CLASS}>
-              {repositoryQuery.isPending
+              {commitHistoryQuery.isFetching
                 ? `ページ ${commitPage} を取得中...`
                 : `全 ${latestCommit?.history.totalCount ?? 0}件中 ページ ${commitPage} / 1ページ ${REPOSITORY_DETAIL_COMMIT_PAGE_SIZE}件`}
             </span>
-            {renderCommitPagerButton("≪先頭", commitPage === 1 || repositoryQuery.isPending, () =>
+            {renderCommitPagerButton("≪先頭", commitPage === 1 || commitHistoryQuery.isFetching, () =>
               applyRepositoryDetailSearchParams("commits", pullRequestStateFilter, 1, [null]),
             )}
             {renderCommitPagerButton(
               "＜前",
-              commitPage === 1 || repositoryQuery.isPending,
+              commitPage === 1 || commitHistoryQuery.isFetching,
               goToPreviousCommitPage,
             )}
             <span className={clsx(PAGER_LINK_CLASS, PAGER_LINK_ACTIVE_CLASS)}>現在 {commitPage}</span>
             {renderCommitPagerButton(
               "次＞",
-              latestCommit?.history.pageInfo.hasNextPage !== true || repositoryQuery.isPending,
+              commitHistoryTarget?.history.pageInfo.hasNextPage !== true || commitHistoryQuery.isFetching,
               goToNextCommitPage,
             )}
           </div>

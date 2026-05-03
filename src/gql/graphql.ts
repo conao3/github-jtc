@@ -696,8 +696,6 @@ export type RepositoryDetailQueryVariables = Exact<{
   name: string;
   rootExpression: string;
   readmeExpression: string;
-  commitHistoryFirst: number;
-  commitHistoryAfter?: string | null | undefined;
 }>;
 
 export type RepositoryDetailQuery = {
@@ -755,22 +753,7 @@ export type RepositoryDetailQuery = {
             __typename: "Commit";
             committedDate: string;
             messageHeadline: string;
-            history: {
-              totalCount: number;
-              pageInfo: { hasNextPage: boolean; endCursor: string | null };
-              nodes: Array<{
-                id: string;
-                oid: string;
-                abbreviatedOid: string;
-                messageHeadline: string;
-                committedDate: string;
-                url: string;
-                author: { name: string | null; user: { login: string } | null } | null;
-                associatedPullRequests: {
-                  nodes: Array<{ id: string; number: number; url: string } | null> | null;
-                } | null;
-              } | null> | null;
-            };
+            history: { totalCount: number };
             author: {
               name: string | null;
               user: { login: string; avatarUrl: string; url: string } | null;
@@ -3044,16 +3027,6 @@ export const RepositoryDetailDocument = {
           variable: { kind: "Variable", name: { kind: "Name", value: "readmeExpression" } },
           type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "String" } } },
         },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "commitHistoryFirst" } },
-          type: { kind: "NonNullType", type: { kind: "NamedType", name: { kind: "Name", value: "Int" } } },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "commitHistoryAfter" } },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -3320,119 +3293,13 @@ export const RepositoryDetailDocument = {
                                       {
                                         kind: "Argument",
                                         name: { kind: "Name", value: "first" },
-                                        value: {
-                                          kind: "Variable",
-                                          name: { kind: "Name", value: "commitHistoryFirst" },
-                                        },
-                                      },
-                                      {
-                                        kind: "Argument",
-                                        name: { kind: "Name", value: "after" },
-                                        value: {
-                                          kind: "Variable",
-                                          name: { kind: "Name", value: "commitHistoryAfter" },
-                                        },
+                                        value: { kind: "IntValue", value: "1" },
                                       },
                                     ],
                                     selectionSet: {
                                       kind: "SelectionSet",
                                       selections: [
                                         { kind: "Field", name: { kind: "Name", value: "totalCount" } },
-                                        {
-                                          kind: "Field",
-                                          name: { kind: "Name", value: "pageInfo" },
-                                          selectionSet: {
-                                            kind: "SelectionSet",
-                                            selections: [
-                                              { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
-                                              { kind: "Field", name: { kind: "Name", value: "endCursor" } },
-                                            ],
-                                          },
-                                        },
-                                        {
-                                          kind: "Field",
-                                          name: { kind: "Name", value: "nodes" },
-                                          selectionSet: {
-                                            kind: "SelectionSet",
-                                            selections: [
-                                              { kind: "Field", name: { kind: "Name", value: "id" } },
-                                              { kind: "Field", name: { kind: "Name", value: "oid" } },
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "abbreviatedOid" },
-                                              },
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "messageHeadline" },
-                                              },
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "committedDate" },
-                                              },
-                                              { kind: "Field", name: { kind: "Name", value: "url" } },
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "author" },
-                                                selectionSet: {
-                                                  kind: "SelectionSet",
-                                                  selections: [
-                                                    { kind: "Field", name: { kind: "Name", value: "name" } },
-                                                    {
-                                                      kind: "Field",
-                                                      name: { kind: "Name", value: "user" },
-                                                      selectionSet: {
-                                                        kind: "SelectionSet",
-                                                        selections: [
-                                                          {
-                                                            kind: "Field",
-                                                            name: { kind: "Name", value: "login" },
-                                                          },
-                                                        ],
-                                                      },
-                                                    },
-                                                  ],
-                                                },
-                                              },
-                                              {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "associatedPullRequests" },
-                                                arguments: [
-                                                  {
-                                                    kind: "Argument",
-                                                    name: { kind: "Name", value: "first" },
-                                                    value: { kind: "IntValue", value: "1" },
-                                                  },
-                                                ],
-                                                selectionSet: {
-                                                  kind: "SelectionSet",
-                                                  selections: [
-                                                    {
-                                                      kind: "Field",
-                                                      name: { kind: "Name", value: "nodes" },
-                                                      selectionSet: {
-                                                        kind: "SelectionSet",
-                                                        selections: [
-                                                          {
-                                                            kind: "Field",
-                                                            name: { kind: "Name", value: "id" },
-                                                          },
-                                                          {
-                                                            kind: "Field",
-                                                            name: { kind: "Name", value: "number" },
-                                                          },
-                                                          {
-                                                            kind: "Field",
-                                                            name: { kind: "Name", value: "url" },
-                                                          },
-                                                        ],
-                                                      },
-                                                    },
-                                                  ],
-                                                },
-                                              },
-                                            ],
-                                          },
-                                        },
                                       ],
                                     },
                                   },
