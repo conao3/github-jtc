@@ -268,7 +268,6 @@ export function LoginScreen(): JSX.Element {
               </form>
 
               <div className="mt-3.5 border-t border-t-dotted border-t-slate-400 pt-2 text-xs">
-                <div className="mb-3 text-center text-slate-500">-または-</div>
                 <div className="mb-3 text-center">
                   <button
                     type="button"
@@ -280,9 +279,6 @@ export function LoginScreen(): JSX.Element {
                   >
                     GitHubでログイン
                   </button>
-                  <div className="mt-1 text-xs text-slate-600">
-                    社内認証の入力を省略して GitHub App 認証へ進みます。
-                  </div>
                 </div>
                 {githubLoginError === null ? null : (
                   <div className="mb-3 border border-red-500 bg-red-100 px-2 py-1.5 text-red-800">
