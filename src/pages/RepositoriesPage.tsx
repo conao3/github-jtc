@@ -309,7 +309,6 @@ export function RepositoriesScreen(): JSX.Element {
     >
       <Panel
         title="検索条件"
-        action={<span className={MUTED_CLASS}>画面内絞込 / GitHubカーソルページ切替</span>}
         bodyClassName="p-0"
       >
         <form
