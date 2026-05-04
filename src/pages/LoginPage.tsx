@@ -297,6 +297,17 @@ export function LoginScreen(): JSX.Element {
                 <div>
                   ▶ <span className={TEXT_LINK_CLASS}>よくあるご質問</span>
                 </div>
+                <div>
+                  ▶{" "}
+                  <a
+                    href="https://github.com/conao3/github-jtc"
+                    target="_blank"
+                    rel="noreferrer"
+                    className={TEXT_LINK_CLASS}
+                  >
+                    ソースコードはこちら (GitHub)
+                  </a>
+                </div>
               </div>
             </Panel>
           </div>
