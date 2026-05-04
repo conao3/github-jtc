@@ -286,9 +286,14 @@ export function JtcChrome({
               <button type="button" className={buttonClassName({ size: "sm" })}>
                 マニュアル
               </button>
-              <button type="button" className={buttonClassName({ size: "sm" })}>
-                お問い合わせ
-              </button>
+              <a
+                href="https://github.com/conao3/github-jtc"
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClassName({ size: "sm" })}
+              >
+                ★ GitHub
+              </a>
               <button
                 type="button"
                 className={buttonClassName({ size: "sm", tone: "primary" })}
