@@ -49,7 +49,7 @@
 
             packages = [
               pkgs.bun
-              pkgs.nodejs_24
+              pkgs.nodejs_latest
               pkgs.pkg-config
             ]
             ++ pkgs.lib.optionals pkgs.stdenv.isLinux linuxDesktopPackages;

@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useState } from "react";
 import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
-import type { ReactCall } from "react-call";
+import type { PropsWithCall } from "react-call";
 
 import { beginGitHubAppLogin } from "../auth.tsx";
 import { MONO_CLASS, buttonClassName } from "../styles.ts";
@@ -14,7 +14,7 @@ export default function LoginOutageDialog({
   githubEnabled,
   redirectTo,
   redirectUri,
-}: ReactCall.Props<LoginOutageDialogProps, LoginOutageDialogResult, {}>): JSX.Element {
+}: PropsWithCall<LoginOutageDialogProps, LoginOutageDialogResult, {}>): JSX.Element {
   const [githubError, setGitHubError] = useState<string | null>(null);
 
   async function handleGitHubLogin(): Promise<void> {

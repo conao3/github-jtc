@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Derive allowed origins
         run: |
@@ -39,11 +39,11 @@ jobs:
           PAGES_BASE_URL: ${{ vars.PAGES_BASE_URL }}
 
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: workers/github-auth-broker
-          wranglerVersion: "4.87.0"
+          wranglerVersion: "4.154.0"
           secrets: |
             GITHUB_APP_CLIENT_ID
             GITHUB_APP_CLIENT_SECRET
