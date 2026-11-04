@@ -14,7 +14,6 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
         "aarch64-darwin"
       ];
 
@@ -52,9 +51,9 @@
               pkgs.nodejs_latest
               pkgs.pkg-config
             ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isLinux linuxDesktopPackages;
+            ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux linuxDesktopPackages;
 
-            LD_LIBRARY_PATH = pkgs.lib.optionalString pkgs.stdenv.isLinux (
+            LD_LIBRARY_PATH = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux (
               pkgs.lib.makeLibraryPath [
                 pkgs.webkitgtk_4_1
                 pkgs.libsoup_3
@@ -63,7 +62,7 @@
               ]
             );
 
-            GIO_MODULE_PATH = pkgs.lib.optionalString pkgs.stdenv.isLinux "${pkgs.glib-networking}/lib/gio/modules";
+            GIO_MODULE_PATH = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux "${pkgs.glib-networking}/lib/gio/modules";
 
             shellHook = ''
               export PATH="$PWD/node_modules/.bin:$PATH"
