@@ -35,7 +35,9 @@ This repository assumes the following deployment split:
 - `APP_REDIRECT_URI` optional
   Set this only if you want to hard-code the GitHub App callback URL.
 
-### GitHub repository secrets
+### GitHub secrets
+
+Set these as secrets of the `production` environment or of the repository.
 
 - `CLOUDFLARE_API_TOKEN`
   Used for Worker deployment
@@ -50,7 +52,16 @@ This repository assumes the following deployment split:
 
 ### Workflows
 
+- `.github/workflows/build.yml`
+  Builds the site on pushes to `master` and on pull requests
 - `.github/workflows/deploy-pages.yml`
-  Pages build and deploy
+  Builds the site and deploys it to GitHub Pages in the `github-pages` environment
 - `.github/workflows/deploy-worker.yml`
-  Cloudflare Worker deploy
+  Deploys the Cloudflare Worker in the `production` environment
+
+Both deploy workflows run only by manual dispatch from `master`, which is the only branch the `github-pages` and `production` environments allow:
+
+```sh
+gh workflow run deploy-pages.yml --ref master
+gh workflow run deploy-worker.yml --ref master
+```

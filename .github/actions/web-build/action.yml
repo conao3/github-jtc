@@ -1,0 +1,58 @@
+name: Build web
+description: Build the Vite site into dist/web with the SPA fallback
+
+inputs:
+  pages-base-path:
+    description: Base path override for the Pages site
+    required: false
+    default: ""
+  app-client-id:
+    description: GitHub App Client ID
+    required: false
+    default: ""
+  app-exchange-url:
+    description: Auth broker exchange URL
+    required: false
+    default: ""
+  app-redirect-uri:
+    description: GitHub App callback URL override
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2.2.0
+
+    - name: Derive Pages base path
+      shell: bash
+      run: |
+        repo="${GITHUB_REPOSITORY#*/}"
+        if [ -n "${PAGES_BASE_PATH}" ]; then
+          base_path="${PAGES_BASE_PATH}"
+        elif [[ "${repo}" == *.github.io ]]; then
+          base_path="/"
+        else
+          base_path="/${repo}/"
+        fi
+
+        echo "VITE_PUBLIC_BASE_PATH=${base_path}" >> "${GITHUB_ENV}"
+      env:
+        PAGES_BASE_PATH: ${{ inputs.pages-base-path }}
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Build
+      shell: bash
+      run: bun run build
+      env:
+        VITE_GITHUB_APP_CLIENT_ID: ${{ inputs.app-client-id }}
+        VITE_GITHUB_APP_EXCHANGE_URL: ${{ inputs.app-exchange-url }}
+        VITE_GITHUB_APP_REDIRECT_URI: ${{ inputs.app-redirect-uri }}
+
+    - name: Add SPA fallback
+      shell: bash
+      run: cp dist/web/index.html dist/web/404.html

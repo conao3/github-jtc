@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Build web
+        uses: $/.github/actions/web-build
+        with:
+          pages-base-path: ${{ vars.PAGES_BASE_PATH }}
+          app-client-id: ${{ vars.APP_CLIENT_ID }}
+          app-exchange-url: ${{ vars.APP_EXCHANGE_URL }}
+          app-redirect-uri: ${{ vars.APP_REDIRECT_URI }}

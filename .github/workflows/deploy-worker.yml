@@ -1,11 +1,6 @@
 name: Deploy Auth Broker Worker
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "workers/github-auth-broker/**"
   workflow_dispatch:
 
 permissions:
@@ -14,6 +9,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1

@@ -3,6 +3,9 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
+    '.github/workflows/build.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'oven-sh/setup-bun@v2.2.0'
     '.github/workflows/deploy-pages.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/configure-pages@v6.0.0'
