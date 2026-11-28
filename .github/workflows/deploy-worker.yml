@@ -22,7 +22,7 @@ jobs:
           if [ -n "${WORKER_ALLOWED_ORIGINS}" ]; then
             allowed_origins="${WORKER_ALLOWED_ORIGINS}"
           elif [ -n "${PAGES_BASE_URL}" ]; then
-            allowed_origins="$(python3 -c 'from urllib.parse import urlsplit; import os; value = os.environ[\"PAGES_BASE_URL\"].strip(); parts = urlsplit(value); print(f\"{parts.scheme}://{parts.netloc}\" if parts.scheme and parts.netloc else \"\")')"
+            allowed_origins="$(python3 -c 'from urllib.parse import urlsplit; import os; parts = urlsplit(os.environ["PAGES_BASE_URL"].strip()); print(f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else "")')"
           elif [[ "${repo}" == *.github.io ]]; then
             allowed_origins="https://${repo}"
           else
